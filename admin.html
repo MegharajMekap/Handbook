@@ -120,13 +120,15 @@
     box-shadow:0 4px 12px -3px rgba(18,53,104,.4);
   }
   .brandIcon svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .signout{
+  .topbarActions{display:flex;align-items:center;gap:10px}
+  .signout,.homeBtn{
     background:var(--card);border:1px solid var(--line);border-radius:8px;padding:9px 15px;
     font-size:13.5px;font-weight:600;color:var(--ink-soft);cursor:pointer;
     display:inline-flex;align-items:center;gap:7px;transition:border-color .15s ease,background .15s ease;
+    text-decoration:none;
   }
-  .signout:hover{border-color:#C6D0E0;background:var(--navy-tint);color:var(--navy)}
-  .signout svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .signout:hover,.homeBtn:hover{border-color:#C6D0E0;background:var(--navy-tint);color:var(--navy)}
+  .signout svg,.homeBtn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
   .statRow{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:36px}
   .stat{
@@ -334,7 +336,10 @@
           <p class="sub">Class Recordings and Notes · site analytics</p>
         </div>
       </div>
-      <button class="signout" id="signOutBtn"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>Sign out</button>
+      <div class="topbarActions">
+        <a class="homeBtn" href="index.html"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Home</a>
+        <button class="signout" id="signOutBtn"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>Sign out</button>
+      </div>
     </div>
 
     <div class="tabBar" id="tabBar">
