@@ -1023,6 +1023,7 @@
     text-decoration:none;box-sizing:border-box;
   }
   .profileMenuItem:hover{background:var(--navy-tint);color:var(--navy)}
+  .profileMenuItem[hidden]{display:none}
 
   /* ---------- account sign-in / create-account modal ---------- */
   .authOverlay{
@@ -1353,6 +1354,7 @@
       <div class="profileMenu" id="profileMenu" hidden>
         <div class="profileMenuEmail" id="profileMenuEmail"></div>
         <a class="profileMenuItem" href="profile.html" id="profileLink">Your profile</a>
+        <a class="profileMenuItem" href="admin.html" id="adminDashLink" hidden>Admin dashboard</a>
         <button class="profileMenuItem" id="signOutBtn">Sign out</button>
       </div>
     </div>
@@ -1663,6 +1665,7 @@
   const profileMenu = document.getElementById("profileMenu");
   const profileMenuEmail = document.getElementById("profileMenuEmail");
   const signOutBtn = document.getElementById("signOutBtn");
+  const adminDashLink = document.getElementById("adminDashLink");
 
   const authOverlay = document.getElementById("authOverlay");
   const authClose = document.getElementById("authClose");
@@ -1813,12 +1816,18 @@
         profileIcon.hidden = false;
       }
       profileMenuEmail.textContent = user.email || "";
+      // admin / super admin accounts get a shortcut to the dashboard
+      adminDashLink.hidden = true;
+      firebase.database().ref("roles/" + user.uid).once("value")
+        .then(function(snap){ adminDashLink.hidden = !snap.val(); })
+        .catch(function(){ adminDashLink.hidden = true; });
       profileBtn.setAttribute("aria-label", "Account: " + (user.displayName || user.email));
     } else {
       profileBtn.classList.remove("signedIn");
       profileIcon.hidden = false;
       profilePhoto.hidden = true;
       profileMenu.hidden = true;
+      adminDashLink.hidden = true;
       profileBtn.setAttribute("aria-label", "Sign in or create account");
     }
   });
@@ -2770,7 +2779,7 @@ setTab(location.hash === "#notes" || location.hash === "#calendar" ? location.ha
   function tick(){
     const active = activeNotices();
     if(!active.length){ bar.hidden = true; return; }
-    const key = active.map(n => n.text).join("|");
+    const key = active.map(n => n.text + (n.isNew ? "*" : "")).join("|");
     if(key !== shownKey){
       shownKey = key;
       const itemsHtml = active.map(n => '<span class="notice-item">' + esc(n.text) +

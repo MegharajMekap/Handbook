@@ -219,7 +219,22 @@
     font-size:12.5px;font-weight:600;color:#B3261E;cursor:pointer;transition:background .15s ease,border-color .15s ease;
   }
   .annDel:hover{background:#FDECEC;border-color:#F5C6C6}
-  .annClear{color:var(--ink-soft)}
+  .annClear,.annEdit{color:var(--ink-soft)}
+  .annEdit:hover{background:var(--navy-tint);border-color:#C6D0E0;color:var(--navy)}
+  .annActions{display:flex;gap:8px;flex:none}
+  @media (max-width:640px){
+    .annCard{flex-wrap:wrap}
+    .annCard .txt{flex-basis:100%}
+    .annActions{width:100%}
+    .annActions .annDel{flex:1;padding:9px 12px}
+  }
+  .annCancel{
+    margin-top:16px;margin-left:8px;background:none;border:1px solid var(--line);border-radius:9px;
+    padding:11px 18px;font-size:14px;font-weight:600;color:var(--ink-soft);cursor:pointer;
+  }
+  .annCancel:hover{background:var(--navy-tint);color:var(--navy)}
+  .annCancel[hidden]{display:none}
+  .annCard.editing{border-color:var(--navy);box-shadow:0 0 0 3px var(--navy-tint)}
   .annClear:hover{background:var(--navy-tint);border-color:#C6D0E0}
 
   /* ---------- pagination ---------- */
@@ -265,6 +280,7 @@
   }
   .tag.new{background:#E8F5EC;color:#1E8A4C}
   .tag.del{background:#FDECEC;color:#B3261E}
+  .tag.edit{background:var(--navy-tint);color:var(--navy)}
   .devPill{
     display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;
     padding:2px 8px;border-radius:999px;text-transform:capitalize;
@@ -520,7 +536,7 @@
     <p class="limitedNote" id="limitedNote" hidden>You're signed in as <strong>Admin</strong> — you can post announcements below. Full site analytics (visitor IPs, locations, device data) are only visible to the Super Admin.</p>
 
     <div class="section">
-      <div class="sectionHead"><h2><span class="dot" style="background:var(--navy)"></span>Add announcement</h2></div>
+      <div class="sectionHead"><h2><span class="dot" style="background:var(--navy)"></span><span id="annFormTitle">Add announcement</span></h2></div>
       <p class="sectionNote">Shows in the scrolling banner at the top of the main site, publicly. Leave "Expires" blank for no auto-expiry.</p>
       <form class="annForm" id="annForm">
         <div class="annGrid">
@@ -536,8 +552,9 @@
         <label class="annCheck"><input type="checkbox" id="annIsNew" checked> Show "New" badge</label>
         <button type="submit" class="annSubmit" id="annSubmit">
           <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-          Add announcement
+          <span id="annSubmitLabel">Add announcement</span>
         </button>
+        <button type="button" class="annCancel" id="annCancel" hidden>Cancel</button>
         <div class="annMsg" id="annMsg"></div>
       </form>
       <div class="annList" id="annList"><div class="empty">Loading…</div></div>
@@ -722,6 +739,44 @@ function startAnnouncements(){
   const annForm = document.getElementById("annForm");
   const annSubmit = document.getElementById("annSubmit");
   const annMsg = document.getElementById("annMsg");
+  const annCancel = document.getElementById("annCancel");
+  let editingKey = null;
+  let editingPrev = null;
+
+  // ISO string -> value for <input type="datetime-local"> in local time
+  function toLocalInput(iso){
+    if(!iso) return "";
+    const d = new Date(iso);
+    const p = function(n){ return String(n).padStart(2, "0"); };
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + "T" + p(d.getHours()) + ":" + p(d.getMinutes());
+  }
+
+  function setEditMode(key, v){
+    editingKey = key;
+    editingPrev = key ? { text: v.text, expires: v.expires || null, isNew: !!v.isNew } : null;
+    document.getElementById("annFormTitle").textContent = key ? "Edit announcement" : "Add announcement";
+    document.getElementById("annSubmitLabel").textContent = key ? "Save changes" : "Add announcement";
+    annCancel.hidden = !key;
+    if(key){
+      document.getElementById("annText").value = v.text || "";
+      document.getElementById("annExpires").value = toLocalInput(v.expires);
+      document.getElementById("annIsNew").checked = !!v.isNew;
+      annMsg.className = "annMsg";
+      annForm.scrollIntoView({ behavior: "smooth", block: "center" });
+      document.getElementById("annText").focus({ preventScroll: true });
+    } else {
+      annForm.reset();
+      document.getElementById("annIsNew").checked = true;
+    }
+    [].forEach.call(document.querySelectorAll("#annList .annCard"), function(card){
+      card.classList.toggle("editing", !!key && card.dataset.key === key);
+    });
+  }
+
+  annCancel.addEventListener("click", function(){
+    setEditMode(null);
+    annMsg.className = "annMsg";
+  });
 
   annForm.addEventListener("submit", function(e){
     e.preventDefault();
@@ -731,6 +786,29 @@ function startAnnouncements(){
     const isNew = document.getElementById("annIsNew").checked;
     annSubmit.disabled = true;
     annMsg.className = "annMsg";
+    if(editingKey){
+      const key = editingKey;
+      const prev = editingPrev;
+      const changes = {
+        text: text,
+        expires: expiresLocal ? new Date(expiresLocal).toISOString() : null,
+        isNew: isNew,
+        editedBy: currentActor(),
+        editedTs: firebase.database.ServerValue.TIMESTAMP
+      };
+      db.ref("announcements/" + key).update(changes).then(function(){
+        logAudit({ action: "edit", annKey: key, text: changes.text, expires: changes.expires, isNew: changes.isNew, prev: prev });
+        setEditMode(null);
+        annMsg.textContent = "Announcement updated — changes are live on the site.";
+        annMsg.classList.add("ok");
+      }).catch(function(err){
+        annMsg.textContent = "Failed to save: " + err.message;
+        annMsg.classList.add("err");
+      }).finally(function(){
+        annSubmit.disabled = false;
+      });
+      return;
+    }
     const payload = {
       text: text,
       expires: expiresLocal ? new Date(expiresLocal).toISOString() : null,
@@ -756,6 +834,7 @@ function startAnnouncements(){
     const rows = [];
     snap.forEach(function(child){ rows.unshift({ key: child.key, val: child.val() }); });
     const list = document.getElementById("annList");
+    if(editingKey && !rows.some(function(r){ return r.key === editingKey; })) setEditMode(null);
     if(!rows.length){
       list.innerHTML = '<div class="empty">No announcements yet — add one above.</div>';
       return;
@@ -768,12 +847,24 @@ function startAnnouncements(){
       else meta.push("No expiry");
       if(v.isNew) meta.push('<span class="tag new">New badge</span>');
       if(v.createdBy && v.createdBy.email) meta.push("Added by " + esc(v.createdBy.email));
-      return '<div class="annCard"' + (expired ? ' style="opacity:.55"' : '') + '>' +
+      if(v.editedBy && v.editedBy.email) meta.push("Edited by " + esc(v.editedBy.email));
+      return '<div class="annCard' + (r.key === editingKey ? ' editing' : '') + '" data-key="' + esc(r.key) + '"' + (expired ? ' style="opacity:.55"' : '') + '>' +
         '<div class="txt"><p>' + esc(v.text) + '</p><div class="meta">' + meta.join(" · ") + '</div></div>' +
-        '<button class="annDel" data-key="' + esc(r.key) + '">Delete</button>' +
+        '<div class="annActions">' +
+          '<button class="annDel annEdit" data-edit-key="' + esc(r.key) + '">Edit</button>' +
+          '<button class="annDel annRemove" data-key="' + esc(r.key) + '">Delete</button>' +
+        '</div>' +
       '</div>';
     }).join("");
-    [].forEach.call(list.querySelectorAll(".annDel"), function(btn){
+    const byKey = {};
+    rows.forEach(function(r){ byKey[r.key] = r.val; });
+    [].forEach.call(list.querySelectorAll("[data-edit-key]"), function(btn){
+      btn.addEventListener("click", function(){
+        const key = btn.dataset.editKey;
+        if(byKey[key]) setEditMode(key, byKey[key]);
+      });
+    });
+    [].forEach.call(list.querySelectorAll(".annRemove"), function(btn){
       btn.addEventListener("click", function(){
         if(!confirm("Delete this announcement?")) return;
         const key = btn.dataset.key;
@@ -829,11 +920,14 @@ function startAuditLog(){
       const who = (v.by && v.by.email) || "Unknown";
       const actionLabel = v.action === "add" ? '<span class="tag new">Added</span>'
         : v.action === "delete" ? '<span class="tag del">Deleted</span>'
+        : v.action === "edit" ? '<span class="tag edit">Edited</span>'
         : '<span class="tag">Restored</span>';
-      const canRevert = v.action === "add" || v.action === "delete";
-      const revertLabel = v.action === "add" ? "Remove" : "Restore";
+      const canRevert = v.action === "add" || v.action === "delete" || (v.action === "edit" && v.prev);
+      const revertLabel = v.action === "add" ? "Remove" : v.action === "edit" ? "Undo edit" : "Restore";
+      const wasText = v.action === "edit" && v.prev && v.prev.text !== v.text
+        ? ' <span style="color:var(--mute)">(was: ' + esc(v.prev.text) + ')</span>' : '';
       return '<div class="annCard">' +
-        '<div class="txt"><p>' + actionLabel + ' <strong>' + esc(v.text) + '</strong></p>' +
+        '<div class="txt"><p>' + actionLabel + ' <strong>' + esc(v.text) + '</strong>' + wasText + '</p>' +
         '<div class="meta">' + esc(who) + ' · ' + esc(fmtTime(v.ts)) + '</div></div>' +
         (canRevert ? '<button class="annDel" data-audit-key="' + esc(r.key) + '">' + revertLabel + '</button>' : '') +
         '<button class="annDel annClear" data-clear-key="' + esc(r.key) + '" title="Remove this entry from the activity log — does not undo the change">Clear entry</button>' +
@@ -853,6 +947,20 @@ function startAuditLog(){
               createdBy: currentActor(), ts: firebase.database.ServerValue.TIMESTAMP
             }).then(function(ref){
               logAudit({ action: "restore", annKey: ref.key, text: v.text, expires: v.expires || null, isNew: !!v.isNew });
+            });
+          } else if(v.action === "edit"){
+            if(!confirm('Undo this edit and change the announcement back to "' + v.prev.text + '"?')) return;
+            const annRef = db.ref("announcements/" + v.annKey);
+            annRef.once("value").then(function(cur){
+              if(!cur.exists()){ alert("That announcement has since been deleted."); return; }
+              const now = cur.val();
+              annRef.update({
+                text: v.prev.text, expires: v.prev.expires || null, isNew: !!v.prev.isNew,
+                editedBy: currentActor(), editedTs: firebase.database.ServerValue.TIMESTAMP
+              }).then(function(){
+                logAudit({ action: "edit", annKey: v.annKey, text: v.prev.text, expires: v.prev.expires || null, isNew: !!v.prev.isNew,
+                  prev: { text: now.text, expires: now.expires || null, isNew: !!now.isNew } });
+              });
             });
           } else if(v.action === "add"){
             if(!confirm('Remove "' + v.text + '"? (undoes this addition)')) return;
