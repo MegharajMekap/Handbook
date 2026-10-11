@@ -148,6 +148,11 @@
   .statIcon.amber{background:linear-gradient(150deg,#FDBA74,#F97316)}
   .stat .n{font-family:var(--serif);font-weight:700;font-size:1.65rem;color:var(--ink);line-height:1.1}
   .stat .l{font-size:12px;color:var(--mute);margin-top:3px}
+  @media (max-width:640px){
+    .statRow{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+    .stat{padding:14px;flex-direction:column;align-items:flex-start;gap:10px}
+    .stat .n{font-size:1.4rem}
+  }
 
   .section{margin-bottom:40px}
   .sectionHead{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px}
@@ -171,6 +176,138 @@
   }
   .chartCard .chartSub{font-weight:500;font-size:11.5px;color:var(--mute)}
   .chartBody{min-height:150px}
+  .rangeBar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:0 0 16px}
+  .rangeChips{display:inline-flex;flex-wrap:wrap;gap:6px;padding:4px;background:rgba(255,255,255,.7);
+    border:1px solid var(--line);border-radius:12px}
+  .rangeChip{
+    background:none;border:none;border-radius:9px;padding:7px 13px;font-size:12.5px;font-weight:600;
+    color:var(--ink-soft);cursor:pointer;transition:background .15s ease,color .15s ease;
+  }
+  .rangeChip:hover{background:var(--navy-tint);color:var(--navy)}
+  .rangeChip.active{background:var(--navy);color:#fff}
+  .rangeDates{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--mute)}
+  .rangeDates input{
+    font:inherit;font-size:12.5px;font-weight:500;color:var(--ink);background:var(--card);
+    border:1px solid var(--line);border-radius:9px;padding:6px 9px;
+  }
+  .rangeDates input:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px var(--navy-tint)}
+  .rangeDates.active input{border-color:var(--navy)}
+  .rangeSummary{margin-left:auto;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px 8px;
+    font-size:12.5px;color:var(--mute);font-variant-numeric:tabular-nums}
+  .rangeStat{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;
+    background:rgba(255,255,255,.75);border:1px solid var(--line);color:var(--ink-soft);white-space:nowrap}
+  .rangeStat b{color:var(--ink);font-weight:700}
+  .rangeStat .pk{width:8px;height:8px;border-radius:50%;background:#F97316;flex:none}
+  .rangeStat.up{color:#1E7A4C;background:#E8F5EC;border-color:#CBE8D5}
+  .rangeStat.down{color:#B3261E;background:#FDECEC;border-color:#F5C6C6}
+  .rangeStat.flat{color:var(--mute)}
+  .rangeNote{font-size:12px;color:#B8590A;margin:-8px 0 14px}
+  .rangeNote[hidden]{display:none}
+  @media (max-width:640px){.rangeSummary{margin-left:0;flex-basis:100%;justify-content:flex-start}}
+
+  /* ---- jump nav ---- */
+  .jumpNav{
+    position:sticky;top:10px;z-index:30;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;
+    width:fit-content;max-width:100%;margin:0 0 26px;padding:5px;border-radius:14px;
+    background:rgba(255,255,255,.82);-webkit-backdrop-filter:blur(12px) saturate(1.4);backdrop-filter:blur(12px) saturate(1.4);
+    border:1px solid var(--line);box-shadow:0 10px 24px -14px rgba(22,35,58,.3);
+  }
+  .jumpNav::-webkit-scrollbar{display:none}
+  .jumpNav[hidden]{display:none}
+  .jumpNav a{
+    flex:none;text-decoration:none;font-size:12.5px;font-weight:600;color:var(--mute);
+    padding:7px 14px;border-radius:10px;transition:background .15s ease,color .15s ease;
+  }
+  .jumpNav a:hover{background:var(--navy-tint);color:var(--navy)}
+  .jumpNav a.on{background:var(--navy);color:#fff}
+  #secOverview,#secTrends,#secInstalls,#secVisits{scroll-margin-top:72px}
+  .updatedAt{font-size:12px;color:var(--mute);margin:-14px 0 22px}
+
+  /* ---- chart tooltips + loading skeletons ---- */
+  .vbar{position:relative;outline:none}
+  .vbar::after{
+    content:attr(data-tip);position:absolute;left:50%;top:-4px;transform:translate(-50%,-100%) scale(.96);
+    background:var(--ink);color:#fff;font-size:11.5px;font-weight:600;line-height:1.3;white-space:nowrap;
+    padding:5px 9px;border-radius:8px;opacity:0;pointer-events:none;z-index:6;
+    box-shadow:0 8px 18px -6px rgba(22,35,58,.5);transition:opacity .12s ease,transform .12s ease;
+  }
+  .vbar.tipL::after{left:0;transform:translate(0,-100%) scale(.96)}
+  .vbar.tipR::after{left:auto;right:0;transform:translate(0,-100%) scale(.96)}
+  .vbar:hover::after,.vbar:focus-visible::after{opacity:1;transform:translate(-50%,-100%) scale(1)}
+  .vbar.tipL:hover::after,.vbar.tipL:focus-visible::after{transform:translate(0,-100%) scale(1)}
+  .vbar.tipR:hover::after,.vbar.tipR:focus-visible::after{transform:translate(0,-100%) scale(1)}
+  .vbar:hover .vbarFill{filter:brightness(1.18)}
+  .vbar .vbarFill{transition:filter .12s ease}
+  .chartBody:empty{
+    min-height:150px;border-radius:12px;
+    background:linear-gradient(100deg,var(--line-soft) 30%,#F6F8FC 50%,var(--line-soft) 70%);
+    background-size:220% 100%;animation:skeleton 1.3s ease-in-out infinite;
+  }
+  @keyframes skeleton{from{background-position:120% 0}to{background-position:-120% 0}}
+  @media (prefers-reduced-motion:reduce){.chartBody:empty{animation:none}}
+
+  .liveDot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#1E8A4C;margin-right:6px;
+    vertical-align:middle;box-shadow:0 0 0 0 rgba(30,138,76,.5);animation:livePing 1.8s ease-out infinite}
+  @keyframes livePing{0%{box-shadow:0 0 0 0 rgba(30,138,76,.45)}80%,100%{box-shadow:0 0 0 8px rgba(30,138,76,0)}}
+  @media (prefers-reduced-motion:reduce){.liveDot{animation:none}}
+  .exportBtn{
+    display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);
+    border-radius:9px;padding:6px 12px;font-size:12.5px;font-weight:600;color:var(--navy);cursor:pointer;
+    transition:background .15s ease,border-color .15s ease;
+  }
+  .exportBtn:hover{background:var(--navy-tint);border-color:#C6D0E0}
+  .exportBtn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .sectionTools{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+
+  /* ---- stat cards: soft colour glow, sparkline, delta ---- */
+  .stat{position:relative;overflow:hidden;--glow:rgba(27,75,143,.11)}
+  .stat:has(.statIcon.green){--glow:rgba(13,148,136,.15)}
+  .stat:has(.statIcon.violet){--glow:rgba(147,51,234,.13)}
+  .stat:has(.statIcon.amber){--glow:rgba(249,115,22,.15)}
+  .stat::after{
+    content:"";position:absolute;right:-34px;top:-40px;width:130px;height:130px;border-radius:50%;
+    background:radial-gradient(circle,var(--glow),transparent 68%);pointer-events:none;
+  }
+  .stat > *{position:relative;z-index:1}
+  .stat .n{font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .miniDelta{display:block;font-size:11px;font-weight:600;color:var(--mute);margin-top:2px}
+  .spark{position:absolute;right:14px;top:16px;width:30%;height:28px;overflow:visible}
+  .spark[hidden]{display:none}
+  @media (max-width:640px){.spark{position:static;width:100%;height:34px}}
+
+  /* ---- charts: gridlines, gradient bars, donut, shares ---- */
+  .chartCard{transition:box-shadow .2s ease,border-color .2s ease}
+  .chartCard:hover{border-color:rgba(27,75,143,.22)}
+  .vbars{
+    background-image:repeating-linear-gradient(to top,transparent 0,transparent calc(25% - 1px),var(--line-soft) calc(25% - 1px),var(--line-soft) 25%);
+    background-origin:content-box;border-bottom:1px solid var(--line);
+  }
+  .vbar .vbarFill{background:linear-gradient(180deg,#3F73BE,var(--navy))}
+  .vbar .vbarFill.peak{background:linear-gradient(180deg,#FDA55A,#F97316)}
+  .barPct{font-weight:500;color:var(--mute);margin-left:6px;font-size:11px}
+  .barValue{min-width:64px}
+  .chartBody .empty{border:1px dashed var(--line);border-radius:12px;background:rgba(246,247,250,.6)}
+  .donutWrap{display:flex;align-items:center;gap:22px;flex-wrap:wrap;padding:4px 0}
+  .donut{position:relative;width:128px;height:128px;border-radius:50%;flex:none;
+    box-shadow:0 10px 24px -12px rgba(22,35,58,.35)}
+  .donut::after{content:"";position:absolute;inset:23px;border-radius:50%;background:var(--card);
+    box-shadow:inset 0 2px 6px rgba(22,35,58,.08)}
+  .donutCenter{position:absolute;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .donutCenter b{font-family:var(--serif);font-size:1.5rem;line-height:1;color:var(--ink)}
+  .donutCenter span{font-size:10.5px;color:var(--mute);margin-top:3px}
+  .donutLegend{flex:1;min-width:130px;display:flex;flex-direction:column;gap:9px}
+  .donutLegend .row{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--ink-soft)}
+  .donutLegend .sw{width:10px;height:10px;border-radius:3px;flex:none}
+  .donutLegend .nm{flex:1}
+  .donutLegend .ct{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+  .donutLegend .pc{color:var(--mute);font-size:11.5px;min-width:34px;text-align:right}
+
+  /* ---- tables ---- */
+  th{background:linear-gradient(180deg,#F3F7FD,var(--navy-tint))}
+  td:first-child{white-space:nowrap;color:var(--ink);font-weight:600}
+  .filterInput{border-radius:999px;padding:6px 12px;transition:border-color .15s ease,box-shadow .15s ease}
+  .tableWrap{scrollbar-width:thin}
+  .section h2{letter-spacing:-.01em}
   .chartBody .empty{padding:40px 10px;font-size:12.5px}
   .barRow{display:flex;align-items:center;gap:10px;margin-bottom:9px}
   .barRow:last-child{margin-bottom:0}
@@ -439,30 +576,54 @@
     </div>
 
     <div id="tabPanelAnalytics" class="tabPanel">
+    <nav class="jumpNav" id="analyticsNav" aria-label="Analytics sections" hidden>
+      <a href="#secOverview" data-target="secOverview" class="on">Overview</a>
+      <a href="#secTrends" data-target="secTrends">Trends</a>
+      <a href="#secInstalls" data-target="secInstalls">PWA installs</a>
+      <a href="#secVisits" data-target="secVisits">Visitor log</a>
+    </nav>
     <div id="superOnly" hidden>
+    <div id="secOverview">
+    <p class="updatedAt" id="updatedAt"></p>
       <div class="statRow">
-        <div class="stat"><div class="statIcon green"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div><div><div class="n" id="statOnline">–</div><div class="l">Online right now</div></div></div>
+        <div class="stat"><div class="statIcon green"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div><div><div class="n" id="statOnline">–</div><div class="l"><span class="liveDot"></span>Online right now</div></div></div>
         <div class="stat"><div class="statIcon navy"><svg viewBox="0 0 24 24"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg></div><div><div class="n" id="statTotal">–</div><div class="l">Total visits (all time)</div></div></div>
         <div class="stat"><div class="statIcon violet"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 18h6"/></svg></div><div><div class="n" id="statInstalls">–</div><div class="l">PWA installs logged</div></div></div>
         <div class="stat"><div class="statIcon amber"><svg viewBox="0 0 24 24"><path d="M9 5H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/><path d="M9 15l10-10M13 5h6v6"/></svg></div><div><div class="n" id="statLogged">–</div><div class="l">Visit log entries loaded</div></div></div>
       </div>
       <div class="statRow">
-        <div class="stat"><div class="statIcon navy"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg></div><div><div class="n" id="statToday">–</div><div class="l">Visits today</div></div></div>
+        <div class="stat"><div class="statIcon navy"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg></div><div><div class="n" id="statToday">–</div><div class="l">Visits today<span class="miniDelta" id="todayDelta"></span></div></div><svg class="spark" id="sparkToday" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true" hidden></svg></div>
         <div class="stat"><div class="statIcon green"><svg viewBox="0 0 24 24"><path d="M17 2l4 4-4 4M21 6H8a5 5 0 0 0 0 10h1M7 22l-4-4 4-4M3 18h13a5 5 0 0 0 0-10h-1"/></svg></div><div><div class="n" id="statReturning">–</div><div class="l">Returning visitors</div></div></div>
         <div class="stat"><div class="statIcon violet"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div><div><div class="n" id="statAvgDuration">–</div><div class="l">Avg. session duration</div></div></div>
         <div class="stat"><div class="statIcon amber"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg></div><div><div class="n" id="statAvgLoad">–</div><div class="l">Avg. page load time</div></div></div>
       </div>
     </div>
+    </div>
 
     <div id="superOnlySections" hidden>
-      <div class="section">
+      <div class="section" id="secTrends">
         <div class="sectionHead">
           <h2><span class="dot" style="background:var(--navy)"></span>Analytics dashboard</h2>
         </div>
-        <p class="sectionNote">Computed from the visit log entries currently loaded below · updates as more load.</p>
+        <p class="sectionNote">Charts follow the date range below · computed from the visit log, older entries load automatically.</p>
+        <div class="rangeBar">
+          <div class="rangeChips" role="group" aria-label="Date range">
+            <button type="button" class="rangeChip" data-range="7">7 days</button>
+            <button type="button" class="rangeChip active" data-range="14">14 days</button>
+            <button type="button" class="rangeChip" data-range="30">30 days</button>
+            <button type="button" class="rangeChip" data-range="90">90 days</button>
+            <button type="button" class="rangeChip" data-range="all">All time</button>
+          </div>
+          <div class="rangeDates" id="rangeDates">
+            <label>From <input type="date" id="rangeFrom"></label>
+            <label>To <input type="date" id="rangeTo"></label>
+          </div>
+          <div class="rangeSummary" id="rangeSummary"></div>
+        </div>
+        <p class="rangeNote" id="rangeNote" hidden></p>
         <div class="chartsGrid">
           <div class="chartCard">
-            <h3>Visits per day <span class="chartSub">last 14 days</span></h3>
+            <h3>Visits per day <span class="chartSub" id="chartRangeLabel">last 14 days</span></h3>
             <div class="chartBody" id="chartVisitsPerDay"></div>
           </div>
           <div class="chartCard">
@@ -480,7 +641,7 @@
         </div>
       </div>
 
-      <div class="section">
+      <div class="section" id="secInstalls">
         <div class="sectionHead">
           <h2><span class="dot" style="background:#9333EA"></span>PWA installs</h2>
         </div>
@@ -518,11 +679,18 @@
         </div>
       </div>
 
-      <div class="section">
+      <div class="section" id="secVisits">
         <div class="sectionHead">
           <h2><span class="dot" style="background:#F97316"></span>Visitor log</h2>
         </div>
-        <div class="sectionHead"><p class="sectionNote">Most recent first · 5 per page.</p><button class="clearFilters" id="visitsClearFilters" hidden>Clear filters</button></div>
+        <div class="sectionHead"><p class="sectionNote">Most recent first · 5 per page.</p>
+          <div class="sectionTools">
+            <button class="clearFilters" id="visitsClearFilters" hidden>Clear filters</button>
+            <button type="button" class="exportBtn" id="visitsExport" title="Download the visits matching the current filters as a CSV file">
+              <svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Export CSV
+            </button>
+          </div>
+        </div>
         <div class="tableWrap">
           <table>
             <thead>
@@ -747,6 +915,7 @@ function stopDashboard(){
   document.getElementById("roleBadge").hidden = true;
   document.getElementById("limitedNote").hidden = true;
   document.getElementById("superOnly").hidden = true;
+  document.getElementById("analyticsNav").hidden = true;
   document.getElementById("superOnlySections").hidden = true;
   document.getElementById("auditSection").hidden = true;
   document.getElementById("tabBtnAnalytics").hidden = true;
@@ -764,6 +933,9 @@ function stopDashboard(){
   ["statOnline","statTotal","statInstalls","statLogged","statToday","statReturning","statAvgDuration","statAvgLoad"].forEach(function(id){
     document.getElementById(id).textContent = "–";
   });
+  document.getElementById("sparkToday").setAttribute("hidden", "");
+  document.getElementById("sparkToday").innerHTML = "";
+  document.getElementById("todayDelta").textContent = "";
   ["chartVisitsPerDay","chartDevices","chartLocations","chartIsps"].forEach(function(id){
     document.getElementById(id).innerHTML = "";
   });
@@ -788,6 +960,7 @@ function startDashboard(isSuper){
   roleBadge.classList.toggle("admin", !isSuper);
   document.getElementById("limitedNote").hidden = isSuper;
   document.getElementById("superOnly").hidden = !isSuper;
+  document.getElementById("analyticsNav").hidden = !isSuper;
   document.getElementById("superOnlySections").hidden = !isSuper;
   document.getElementById("auditSection").hidden = !isSuper;
   document.getElementById("tabBtnAnalytics").hidden = !isSuper;
@@ -1347,7 +1520,7 @@ function startAnalytics(){
     renderVisitsPage();
   });
 
-  function barsHTML(entries, colorFn){
+  function barsHTML(entries, colorFn, total){
     if(!entries.length) return '<div class="empty">No data yet.</div>';
     const max = Math.max.apply(null, entries.map(function(e){ return e.value; })) || 1;
     return entries.map(function(e, i){
@@ -1355,9 +1528,28 @@ function startAnalytics(){
       return '<div class="barRow">' +
         '<div class="barLabel" title="' + esc(e.label) + '">' + esc(e.label) + '</div>' +
         '<div class="barTrack"><div class="barFill" style="width:' + pct + '%;background:' + (colorFn ? colorFn(e, i) : "var(--navy)") + '"></div></div>' +
-        '<div class="barValue">' + e.value + '</div>' +
+        '<div class="barValue">' + e.value + (total ? '<span class="barPct">' + Math.round((e.value / total) * 100) + '%</span>' : '') + '</div>' +
       '</div>';
     }).join("");
+  }
+
+  function donutHTML(entries, colorFn){
+    if(!entries.length) return '<div class="empty">No data yet.</div>';
+    const total = entries.reduce(function(a, e){ return a + e.value; }, 0) || 1;
+    let acc = 0;
+    const stops = entries.map(function(e, i){
+      const from = acc / total * 100;
+      acc += e.value;
+      return colorFn(e, i) + " " + from + "% " + (acc / total * 100) + "%";
+    }).join(", ");
+    return '<div class="donutWrap">' +
+      '<div class="donut" style="background:conic-gradient(' + stops + ')" role="img" aria-label="Device split">' +
+        '<div class="donutCenter"><b>' + total + '</b><span>visits</span></div></div>' +
+      '<div class="donutLegend">' + entries.map(function(e, i){
+        return '<div class="row"><span class="sw" style="background:' + colorFn(e, i) + '"></span>' +
+          '<span class="nm">' + esc(e.label) + '</span><span class="ct">' + e.value + '</span>' +
+          '<span class="pc">' + Math.round(e.value / total * 100) + '%</span></div>';
+      }).join("") + '</div></div>';
   }
 
   function topCounts(values, limit){
@@ -1367,11 +1559,125 @@ function startAnalytics(){
       .sort(function(a, b){ return b.value - a.value; }).slice(0, limit);
   }
 
+  /* ---- analytics date range (charts only) ---- */
+  const RANGE_MAX_DAYS = 366;
+  const RANGE_FETCH_CAP = 2000;
+  let rangeMode = { days: 14, from: "", to: "" };   // days: number | "all"; from + to set => custom
+
+  function dayStart(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function addDays(d, n){ return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+  function parseDateInput(v){ const p = v.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function toDateInput(d){
+    const p = function(n){ return String(n).padStart(2, "0"); };
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+  }
+  function fmtRangeDate(d){ return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }); }
+  function oldestLoadedTs(){
+    let min = null;
+    visitRows.forEach(function(r){ if(typeof r.ts === "number" && (min === null || r.ts < min)) min = r.ts; });
+    return min;
+  }
+
+  function getAnalyticsRange(){
+    const today = dayStart(new Date());
+    const tomorrow = addDays(today, 1);
+    let start, end = tomorrow, label;
+    if(rangeMode.from && rangeMode.to){
+      let a = parseDateInput(rangeMode.from), b = parseDateInput(rangeMode.to);
+      if(a > b){ const t = a; a = b; b = t; }
+      start = a;
+      end = addDays(b, 1);
+      if(end > tomorrow) end = tomorrow;
+      label = fmtRangeDate(a) + " – " + fmtRangeDate(b);
+    } else if(rangeMode.days === "all"){
+      const oldest = oldestLoadedTs();
+      start = oldest !== null ? dayStart(new Date(oldest)) : addDays(today, -13);
+      label = "all time";
+    } else {
+      start = addDays(today, -(rangeMode.days - 1));
+      label = "last " + rangeMode.days + " days";
+    }
+    const earliest = addDays(end, -RANGE_MAX_DAYS);
+    if(start < earliest){ start = earliest; label += " (max " + RANGE_MAX_DAYS + " days shown)"; }
+    return { start: start.getTime(), end: end.getTime(), startDate: start, label: label };
+  }
+
+  function syncRangeUI(){
+    const custom = !!(rangeMode.from && rangeMode.to);
+    [].forEach.call(document.querySelectorAll(".rangeChip"), function(btn){
+      btn.classList.toggle("active", !custom && String(rangeMode.days) === btn.dataset.range);
+    });
+    const from = document.getElementById("rangeFrom"), to = document.getElementById("rangeTo");
+    from.value = rangeMode.from; to.value = rangeMode.to;
+    const todayStr = toDateInput(new Date());
+    from.max = todayStr; to.max = todayStr;
+    document.getElementById("rangeDates").classList.toggle("active", custom);
+  }
+
+  // make sure enough log entries are loaded to cover the chosen range
+  function ensureRangeCovered(){
+    const r = getAnalyticsRange();
+    const oldest = oldestLoadedTs();
+    const wantsAll = rangeMode.days === "all" && !(rangeMode.from && rangeMode.to);
+    const full = visitRows.length === visitsQueryLimit;   // could be more in the database
+    // also reach back one extra period so the "vs previous" trend can be computed
+    const needFrom = wantsAll ? r.start : r.start - (r.end - r.start);
+    const reaches = oldest !== null && oldest <= needFrom;
+    if(full && !reaches || (full && wantsAll)){
+      if(visitsQueryLimit < RANGE_FETCH_CAP){
+        visitsQueryLimit = Math.min(RANGE_FETCH_CAP, visitsQueryLimit + 300);
+        return fetchVisitRows().then(ensureRangeCovered);
+      }
+    }
+    return Promise.resolve();
+  }
+
+  function applyRange(){
+    syncRangeUI();
+    updateAnalyticsDashboard();
+    ensureRangeCovered();
+  }
+
+  [].forEach.call(document.querySelectorAll(".rangeChip"), function(btn){
+    btn.onclick = function(){
+      rangeMode = { days: btn.dataset.range === "all" ? "all" : +btn.dataset.range, from: "", to: "" };
+      applyRange();
+    };
+  });
+  function onCustomRangeChange(){
+    const from = document.getElementById("rangeFrom").value;
+    const to = document.getElementById("rangeTo").value;
+    if(from && to){
+      rangeMode = { days: rangeMode.days, from: from, to: to };
+      applyRange();
+    }
+  }
+  document.getElementById("rangeFrom").onchange = onCustomRangeChange;
+  document.getElementById("rangeTo").onchange = onCustomRangeChange;
+
   function updateAnalyticsDashboard(){
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     const todayCount = visitRows.filter(function(r){ return r.ts >= startOfToday; }).length;
     document.getElementById("statToday").textContent = todayCount;
+    const yStart = addDays(new Date(startOfToday), -1).getTime();
+    const yCount = visitRows.filter(function(r){ return r.ts >= yStart && r.ts < startOfToday; }).length;
+    document.getElementById("todayDelta").textContent = "Yesterday " + yCount;
+    const spark = document.getElementById("sparkToday");
+    const sparkCounts = [];
+    for(let i = 13; i >= 0; i--){
+      const a = addDays(new Date(startOfToday), -i).getTime(), b = addDays(new Date(startOfToday), -i + 1).getTime();
+      sparkCounts.push(visitRows.filter(function(r){ return r.ts >= a && r.ts < b; }).length);
+    }
+    const sparkMax = Math.max.apply(null, sparkCounts) || 1;
+    const pts = sparkCounts.map(function(v, i){
+      return (i / (sparkCounts.length - 1) * 100).toFixed(1) + "," + (27 - (v / sparkMax) * 23).toFixed(1);
+    }).join(" ");
+    spark.innerHTML = '<defs><linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0" stop-color="#1B4B8F" stop-opacity=".28"/><stop offset="1" stop-color="#1B4B8F" stop-opacity="0"/></linearGradient></defs>' +
+      '<polygon points="0,30 ' + pts + ' 100,30" fill="url(#sparkFill)"/>' +
+      '<polyline points="' + pts + '" fill="none" stroke="#1B4B8F" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
+    spark.removeAttribute("hidden");   // SVG elements have no .hidden property
 
     const withVisitInfo = visitRows.filter(function(r){ return r.visit; });
     const returningCount = withVisitInfo.filter(function(r){ return r.visit.isReturning; }).length;
@@ -1389,40 +1695,80 @@ function startAnalytics(){
       ? Math.round(loads.reduce(function(a, b){ return a + b; }, 0) / loads.length) + " ms"
       : "–";
 
+    const range = getAnalyticsRange();
+    const rangeRows = visitRows.filter(function(r){ return r.ts >= range.start && r.ts < range.end; });
     const days = [];
-    for(let i = 13; i >= 0; i--){
-      const d = new Date(startOfToday - i * 86400000);
-      days.push({ start: d.getTime(), end: d.getTime() + 86400000, label: d.toLocaleDateString(undefined, { month: "short", day: "numeric" }), value: 0 });
+    for(let d = new Date(range.start); d.getTime() < range.end; d = addDays(d, 1)){
+      const next = addDays(d, 1).getTime();
+      days.push({ start: d.getTime(), end: next, label: d.toLocaleDateString(undefined, { month: "short", day: "numeric" }), value: 0 });
     }
-    visitRows.forEach(function(r){
+    rangeRows.forEach(function(r){
       const day = days.find(function(d){ return r.ts >= d.start && r.ts < d.end; });
       if(day) day.value++;
     });
     const maxDay = Math.max.apply(null, days.map(function(d){ return d.value; })) || 1;
-    document.getElementById("chartVisitsPerDay").innerHTML = '<div class="vbars">' + days.map(function(d){
+    const peakIdx = rangeRows.length ? days.findIndex(function(d){ return d.value === maxDay; }) : -1;
+    const many = days.length > 31;
+    const labelStep = many ? Math.ceil(days.length / 14) : 1;
+    document.getElementById("chartVisitsPerDay").innerHTML = '<div class="vbars" style="gap:' + (many ? 1 : 4) + 'px">' + days.map(function(d, i){
       const pct = Math.max(2, Math.round((d.value / maxDay) * 100));
-      return '<div class="vbar">' +
-        '<div class="vbarValue">' + (d.value || "") + '</div>' +
-        '<div class="vbarFill" style="height:' + pct + '%;background:var(--navy)"></div>' +
-        '<div class="vbarLabel">' + esc(d.label) + '</div>' +
+      const showLabel = !many || i % labelStep === 0;
+      const tip = d.label + " · " + d.value + (d.value === 1 ? " visit" : " visits");
+      const edge = i < 2 ? " tipL" : (i >= days.length - 2 ? " tipR" : "");
+      return '<div class="vbar' + edge + '" tabindex="0" data-tip="' + esc(tip) + '" aria-label="' + esc(tip) + '">' +
+        '<div class="vbarValue">' + (!many && d.value ? d.value : "") + '</div>' +
+        '<div class="vbarFill' + (i === peakIdx ? ' peak' : '') + '" style="height:' + pct + '%"></div>' +
+        '<div class="vbarLabel">' + (showLabel ? esc(d.label) : "") + '</div>' +
       '</div>';
     }).join("") + '</div>';
 
+    document.getElementById("chartRangeLabel").textContent = range.label;
+    const oldestTs = oldestLoadedTs();
+    const parts = ['<span class="rangeStat"><b>' + rangeRows.length + '</b> ' + (rangeRows.length === 1 ? "visit" : "visits") + ' · ' + days.length + (days.length === 1 ? " day" : " days") + '</span>'];
+    if(rangeRows.length){
+      const avg = Math.round((rangeRows.length / days.length) * 10) / 10;
+      parts.push('<span class="rangeStat"><b>' + avg + '</b> avg / day</span>');
+      parts.push('<span class="rangeStat"><span class="pk"></span>Peak <b>' + esc(days[peakIdx].label) + '</b> (' + maxDay + ')</span>');
+    }
+    // trend vs the previous period of the same length (not for "all time")
+    const isAll = rangeMode.days === "all" && !(rangeMode.from && rangeMode.to);
+    if(!isAll){
+      const prevStart = addDays(new Date(range.start), -days.length).getTime();
+      const prevCovered = oldestTs !== null && (oldestTs <= prevStart || visitRows.length < visitsQueryLimit);
+      if(prevCovered){
+        const prevCount = visitRows.filter(function(r){ return r.ts >= prevStart && r.ts < range.start; }).length;
+        if(prevCount > 0){
+          const pct = Math.round(((rangeRows.length - prevCount) / prevCount) * 100);
+          const cls = pct > 0 ? "up" : pct < 0 ? "down" : "flat";
+          parts.push('<span class="rangeStat ' + cls + '" title="' + prevCount + ' visits in the previous ' + days.length + ' days">' +
+            (pct > 0 ? "▲ " : pct < 0 ? "▼ " : "– ") + Math.abs(pct) + '% vs previous ' + days.length + (days.length === 1 ? " day" : " days") + '</span>');
+        }
+      }
+    }
+    document.getElementById("rangeSummary").innerHTML = parts.join("");
+    document.getElementById("updatedAt").textContent = "Updated " + new Date().toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+    const rangeNote = document.getElementById("rangeNote");
+    const incomplete = visitRows.length === visitsQueryLimit && oldestTs !== null && oldestTs > range.start;
+    rangeNote.hidden = !incomplete;
+    if(incomplete) rangeNote.textContent = "Only the " + visitRows.length + " most recent visits are loaded, so older days in this range may be undercounted.";
+
     const deviceColors = { mobile: "#F97316", tablet: "#9333EA", desktop: "var(--navy)" };
-    const deviceEntries = topCounts(visitRows.map(function(r){ return r.device && r.device.type; }), 3)
+    const deviceEntries = topCounts(rangeRows.map(function(r){ return r.device && r.device.type; }), 3)
       .map(function(e){ return Object.assign({}, e, { label: e.label.charAt(0).toUpperCase() + e.label.slice(1) }); });
-    document.getElementById("chartDevices").innerHTML = barsHTML(deviceEntries, function(e){
+    document.getElementById("chartDevices").innerHTML = donutHTML(deviceEntries, function(e){
       return deviceColors[e.label.toLowerCase()] || "var(--navy)";
     });
 
     document.getElementById("chartLocations").innerHTML = barsHTML(
-      topCounts(visitRows.map(visitLocationStr), 5),
-      function(){ return "#0D9488"; }
+      topCounts(rangeRows.map(visitLocationStr), 5),
+      function(){ return "#0D9488"; },
+      rangeRows.length
     );
 
     document.getElementById("chartIsps").innerHTML = barsHTML(
-      topCounts(visitRows.map(function(r){ return r.isp; }), 5),
-      function(){ return "var(--navy)"; }
+      topCounts(rangeRows.map(function(r){ return r.isp; }), 5),
+      function(){ return "var(--navy)"; },
+      rangeRows.length
     );
   }
 
@@ -1454,7 +1800,59 @@ function startAnalytics(){
     renderVisitsPage();
   }
 
-  loadVisits();
+  /* ---- export the (filtered) visitor log to CSV ---- */
+  function csvCell(v){
+    let t = v === null || v === undefined ? "" : String(v);
+    if(/^[=+\-@\t\r]/.test(t)) t = "'" + t;   // stop spreadsheet formula injection
+    return /[",\n\r]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+  }
+  document.getElementById("visitsExport").onclick = function(){
+    const rows = getFilteredVisitRows();
+    if(!rows.length){ alert("There are no visits to export."); return; }
+    const head = ["Time","City","Region","Country","IP address","ISP","Device","Viewport","PWA","Return visit","Visit count",
+      "Duration (min)","Tabs","Search used","Subjects","Recordings opened","Notes opened","Load time (ms)"];
+    const list = function(a){ return (a || []).join("; "); };
+    const lines = [head.map(csvCell).join(",")].concat(rows.map(function(r){
+      return [
+        fmtTime(r.ts), r.city, r.region, r.country, r.ip, r.isp,
+        r.device && r.device.type, r.device && r.device.viewport, r.device && r.device.pwa ? "yes" : "no",
+        r.visit ? (r.visit.isReturning ? "returning" : "new") : "", r.visit && r.visit.visitCount,
+        typeof r.durationSec === "number" ? Math.round(r.durationSec / 6) / 10 : "",
+        list(r.tabsVisited), r.searchUsed ? "yes" : "no", list(r.subjectFilters),
+        list(r.recordingsOpened), list(r.notesOpened),
+        r.performance && r.performance.loadMs ? Math.round(r.performance.loadMs) : ""
+      ].map(csvCell).join(",");
+    }));
+    const blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "visitor-log-" + toDateInput(new Date()) + ".csv";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+  };
+
+  /* ---- jump nav: smooth scroll + highlight the section in view ---- */
+  const jumpNav = document.getElementById("analyticsNav");
+  jumpNav.onclick = function(e){
+    const a = e.target.closest("a[data-target]");
+    if(!a) return;
+    e.preventDefault();
+    document.getElementById(a.dataset.target).scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  function updateJumpNavActive(){
+    const ids = ["secOverview", "secTrends", "secInstalls", "secVisits"];
+    let current = ids[0];
+    ids.forEach(function(id){
+      const el = document.getElementById(id);
+      if(el && !el.closest("[hidden]") && el.getBoundingClientRect().top <= 140) current = id;
+    });
+    [].forEach.call(jumpNav.querySelectorAll("a"), function(a){ a.classList.toggle("on", a.dataset.target === current); });
+  }
+  window.onscroll = updateJumpNavActive;
+
+  rangeMode = { days: 14, from: "", to: "" };
+  syncRangeUI();
+  loadVisits().then(ensureRangeCovered);
   refreshVisitsFn = function(){
     return loadVisits();
   };

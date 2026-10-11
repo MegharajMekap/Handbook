@@ -1273,7 +1273,8 @@
     background:linear-gradient(180deg,#F5F8FD,#EAF1FA);
     box-shadow:0 1px 2px rgba(22,35,58,.05),inset 0 1px 0 rgba(255,255,255,.8);
   }
-  .lockup img{border-radius:10px}
+  /* logo.jpg carries its own white margin, so the rounded corners never clip the artwork */
+  .lockup img{height:64px;padding:0;background:#fff;border-radius:14px;box-shadow:0 1px 2px rgba(22,35,58,.06),0 6px 16px -8px rgba(22,35,58,.25),inset 0 0 0 1px rgba(27,75,143,.08)}
   .standfirst{line-height:1.6}
 
   /* controls */
