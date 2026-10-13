@@ -630,6 +630,72 @@
   /* ---------- calendar ---------- */
   .timetable{margin-top:6px;scroll-margin-top:20px}
   .calLegend{font-size:12.5px;color:var(--mute);margin:0 0 16px}
+  .calFilter{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:16px 0 14px}
+  .calPicker{
+    position:relative;display:flex;align-items:stretch;height:44px;
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    box-shadow:0 1px 2px rgba(22,35,58,.05),0 6px 18px -10px rgba(22,35,58,.22);
+  }
+  .calPicker button{font:inherit;background:none;border:0;cursor:pointer;color:var(--navy);-webkit-tap-highlight-color:transparent}
+  .calPicker svg,.calNow svg{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  .calNav{width:42px;display:flex;align-items:center;justify-content:center;transition:background .15s}
+  .calNav svg{width:17px;height:17px}
+  .calNav:first-child{border-radius:13px 0 0 13px}
+  .calNav:last-of-type{border-radius:0 13px 13px 0}
+  .calNav:hover:not(:disabled){background:var(--navy-tint)}
+  .calNav:disabled{color:var(--mute);opacity:.35;cursor:default}
+  .calMonthBtn{
+    display:flex;align-items:center;gap:9px;padding:0 16px;min-width:190px;justify-content:center;
+    border-left:1px solid var(--line-soft) !important;border-right:1px solid var(--line-soft) !important;
+    font-size:15px;font-weight:700;color:var(--ink) !important;letter-spacing:.005em;transition:background .15s;
+  }
+  .calMonthBtn:hover,.calMonthBtn[aria-expanded="true"]{background:var(--navy-tint)}
+  .calMonthIco{width:17px;height:17px;color:var(--navy)}
+  .calCaret{width:15px;height:15px;color:var(--mute);transition:transform .2s}
+  .calMonthBtn[aria-expanded="true"] .calCaret{transform:rotate(180deg)}
+  .calNow{
+    display:inline-flex;align-items:center;gap:7px;height:44px;padding:0 16px;
+    font:inherit;font-size:14px;font-weight:600;color:#fff;cursor:pointer;
+    background:linear-gradient(135deg,var(--navy),var(--navy-deep));border:0;border-radius:14px;
+    box-shadow:0 6px 16px -6px rgba(27,75,143,.55);transition:transform .15s,box-shadow .15s,opacity .15s;
+  }
+  .calNow svg{width:15px;height:15px}
+  .calNow:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 10px 20px -8px rgba(27,75,143,.6)}
+  .calNow:disabled{opacity:0;pointer-events:none;transform:translateX(-6px)}
+  .calPop{
+    position:absolute;top:calc(100% + 8px);left:0;z-index:30;width:min(340px,calc(100vw - 32px));
+    background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;
+    box-shadow:0 18px 40px -12px rgba(22,35,58,.35);animation:calPopIn .18s ease;
+    max-height:min(420px,70vh);overflow-y:auto;
+  }
+  .calPop[hidden]{display:none}
+  @keyframes calPopIn{from{opacity:0;transform:translateY(-6px) scale(.98)}to{opacity:1;transform:none}}
+  .calPopYear{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--mute);margin:6px 4px 8px}
+  .calPopYear:first-child{margin-top:2px}
+  .calPopGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
+  .calPopGrid button{
+    position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 4px 8px;
+    border-radius:10px;border:1px solid transparent;font-size:14px;font-weight:600;color:var(--ink);
+    transition:background .12s,border-color .12s;
+  }
+  .calPopGrid button small{font-size:10.5px;font-weight:500;color:var(--mute)}
+  .calPopGrid button:hover:not(:disabled){background:var(--navy-tint)}
+  .calPopGrid button:disabled{opacity:.3;cursor:default}
+  .calPopGrid button.is-now{border-color:var(--navy)}
+  .calPopGrid button.is-now::after{
+    content:"";position:absolute;top:6px;right:7px;width:6px;height:6px;border-radius:50%;background:#D9503F;
+  }
+  .calPopGrid button.is-sel{background:var(--navy);color:#fff}
+  .calPopGrid button.is-sel small{color:rgba(255,255,255,.75)}
+  @media (max-width:480px){
+    .calFilter{gap:8px}
+    .calPicker{flex:1 1 100%}
+    .calMonthBtn{flex:1;min-width:0}
+    .calNow{flex:1 1 100%;justify-content:center}
+    .calNow:disabled{display:none}
+  }
+  .caltable tr.calRow-done td{opacity:.55}
+  .calNoClass{padding:18px;text-align:center;color:var(--mute);font-size:14px}
   .calMonth{margin-bottom:30px}
   .calMonth:last-child{margin-bottom:0}
   .calMonthCard{
@@ -1402,6 +1468,14 @@
     </button>
   </div>
 </div>
+<script>
+  /* Hide the gate before first paint if this device already acknowledged it.
+     Bump ACK_VERSION when the notice text changes to ask everyone again. */
+  window.ACK_KEY = "mekapIpAck";
+  window.ACK_VERSION = "1";
+  try { window.ackAccepted = localStorage.getItem(window.ACK_KEY) === window.ACK_VERSION; } catch(e) { window.ackAccepted = false; }
+  if(window.ackAccepted) document.getElementById("ackOverlay").hidden = true;
+</script>
 
 <div class="noticeOverlay" id="noticeOverlay" role="dialog" aria-modal="true" aria-labelledby="noticeBoxTitle" hidden>
   <div class="noticeBox">
@@ -1593,6 +1667,26 @@
       <div class="nhead">
         <h2>Calendar</h2>
         <span class="ntally" id="caltally"></span>
+      </div>
+      <div class="calFilter" role="group" aria-label="Choose month">
+        <div class="calPicker">
+          <button type="button" class="calNav" id="calPrev" aria-label="Previous month">
+            <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <button type="button" class="calMonthBtn" id="calMonthBtn" aria-haspopup="true" aria-expanded="false">
+            <svg class="calMonthIco" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+            <span id="calMonthLabel"></span>
+            <svg class="calCaret" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <button type="button" class="calNav" id="calNext" aria-label="Next month">
+            <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+          <div class="calPop" id="calPop" hidden></div>
+        </div>
+        <button type="button" class="calNow" id="calNow">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/></svg>
+          This month
+        </button>
       </div>
       <div id="calOut"></div>
     </section>
@@ -1801,11 +1895,12 @@
   window.addEventListener("pagehide", sendEngagement);
 })();
 
-/* IP acknowledgment gate — shown on every page load, not just once */
+/* IP acknowledgment gate — shown once per device, remembered in localStorage */
 (function(){
   const overlay = document.getElementById("ackOverlay");
   const go = document.getElementById("ackGo");
   const label = document.getElementById("ackGoLabel");
+  if(window.ackAccepted) return;
   document.body.style.overflow = "hidden";
   go.focus();
   document.addEventListener("keydown", function(e){
@@ -1815,6 +1910,8 @@
     if(go.classList.contains("success")) return;
     go.classList.add("success");
     label.textContent = "Access granted";
+    try { localStorage.setItem(window.ACK_KEY, window.ACK_VERSION); } catch(e) {}
+    window.ackAccepted = true;
     setTimeout(function(){
       overlay.hidden = true;
       document.body.style.overflow = "";
@@ -2484,7 +2581,8 @@ function calLinkCell(r){
 function calRow(r){
   const s = sub(r.subject);
   const d = d0(r.date);
-  return '<tr style="--accent:' + s.color + '">' +
+  const done = endStamp(r) <= Date.now();
+  return '<tr' + (done ? ' class="calRow-done"' : '') + ' style="--accent:' + s.color + '">' +
     '<td><span class="calDateDow">' + DOW[d.getDay()].slice(0,3) + '</span>' +
       '<span class="calDateNum">' + d.getDate() + ' ' + MON[d.getMonth()].slice(0,3) + '</span></td>' +
     '<td><span class="calSubjFull" style="color:' + s.color + '">' + esc(r.subject) + '</span>' +
@@ -2496,17 +2594,6 @@ function calRow(r){
       '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M12 14v6M9 17h6"/></svg>' +
       'Google Calendar</a></td>' +
   '</tr>';
-}
-
-function groupByMonth(list){
-  const map = new Map();
-  list.forEach(r => {
-    const d = d0(r.date);
-    const key = d.getFullYear() + "-" + d.getMonth();
-    if(!map.has(key)) map.set(key, { year:d.getFullYear(), month:d.getMonth(), items:[] });
-    map.get(key).items.push(r);
-  });
-  return [...map.values()];
 }
 
 function calChip(r){
@@ -2567,18 +2654,99 @@ function calMonthGrid(year, month, items, todayFlag, pastItems){
   return '<div class="calGrid">' + cells + '</div>';
 }
 
-function calMonthBlock(g, todayFlag, pastByMonth){
-  const key = g.year + "-" + g.month;
+function calMonthBlock(year, month, upcoming, past, todayFlag, emptyHtml){
+  const all = past.concat(upcoming).sort((a,b) => stamp(a) - stamp(b));
   return '<div class="calMonth">' +
     '<div class="calMonthCard">' +
-      '<div class="calMonthHeader"><span class="calMonthName">' + MON[g.month] + '</span><span class="calMonthYear">' + g.year + '</span></div>' +
-      calMonthGrid(g.year, g.month, g.items, todayFlag, pastByMonth.get(key)) +
+      '<div class="calMonthHeader"><span class="calMonthName">' + MON[month] + '</span><span class="calMonthYear">' + year + '</span></div>' +
+      calMonthGrid(year, month, upcoming, todayFlag, past) +
     '</div>' +
-    '<div style="overflow-x:auto"><table class="caltable"><thead><tr>' +
-      '<th>Date</th><th>Subject</th><th>Session</th><th>Time</th><th>Link</th><th>Add</th>' +
-    '</tr></thead><tbody>' + g.items.map(calRow).join("") + '</tbody></table></div>' +
+    (all.length
+      ? '<div style="overflow-x:auto"><table class="caltable"><thead><tr>' +
+          '<th>Date</th><th>Subject</th><th>Session</th><th>Time</th><th>Link</th><th>Add</th>' +
+        '</tr></thead><tbody>' + all.map(calRow).join("") + '</tbody></table></div>'
+      : emptyHtml) +
   '</div>';
 }
+
+/* month filter — null means "the current month" */
+let calView = null;
+let calSel = null; // month index currently shown
+const calMonthBtn = document.getElementById("calMonthBtn");
+const calMonthLabel = document.getElementById("calMonthLabel");
+const calPop = document.getElementById("calPop");
+const calPrev = document.getElementById("calPrev");
+const calNext = document.getElementById("calNext");
+const calNow = document.getElementById("calNow");
+const monthIdx = (y, m) => y * 12 + m;
+const nowMonthIdx = () => { const n = new Date(); return monthIdx(n.getFullYear(), n.getMonth()); };
+
+function calMonthRange(){
+  const cur = nowMonthIdx();
+  let lo = cur, hi = cur;
+  RECORDINGS.forEach(r => {
+    const d = d0(r.date);
+    const i = monthIdx(d.getFullYear(), d.getMonth());
+    if(i < lo) lo = i;
+    if(i > hi) hi = i;
+  });
+  return [lo, hi];
+}
+
+function syncCalFilter(sel, lo, hi){
+  const cur = nowMonthIdx();
+  calSel = sel;
+  calMonthLabel.textContent = MON[sel % 12] + " " + Math.floor(sel / 12);
+  calPrev.disabled = sel <= lo;
+  calNext.disabled = sel >= hi;
+  calNow.disabled = sel === cur;
+
+  const counts = new Map();
+  RECORDINGS.forEach(r => {
+    const d = d0(r.date);
+    const i = monthIdx(d.getFullYear(), d.getMonth());
+    counts.set(i, (counts.get(i) || 0) + 1);
+  });
+  let html = "";
+  for(let y = Math.floor(lo / 12); y <= Math.floor(hi / 12); y++){
+    html += '<div class="calPopYear">' + y + '</div><div class="calPopGrid">';
+    for(let m = 0; m < 12; m++){
+      const i = monthIdx(y, m);
+      const n = counts.get(i) || 0;
+      const cls = (i === cur ? "is-now " : "") + (i === sel ? "is-sel" : "");
+      html += '<button type="button" data-month="' + i + '"' + (cls ? ' class="' + cls.trim() + '"' : '') +
+        (i < lo || i > hi ? ' disabled' : '') + '>' + MON[m].slice(0,3) +
+        '<small>' + (n ? n + (n === 1 ? ' class' : ' classes') : '—') + '</small></button>';
+    }
+    html += '</div>';
+  }
+  calPop.innerHTML = html;
+}
+
+function toggleCalPop(open){
+  calPop.hidden = !open;
+  calMonthBtn.setAttribute("aria-expanded", open);
+  if(open){
+    const s = calPop.querySelector(".is-sel");
+    if(s) s.scrollIntoView({ block:"nearest" });
+  }
+}
+function setCalView(i){
+  calView = i === nowMonthIdx() ? null : i;
+  toggleCalPop(false);
+  renderCalendar();
+}
+calMonthBtn.addEventListener("click", e => { e.stopPropagation(); toggleCalPop(calPop.hidden); });
+calPop.addEventListener("click", e => {
+  e.stopPropagation();
+  const b = e.target.closest("button[data-month]");
+  if(b && !b.disabled) setCalView(+b.dataset.month);
+});
+document.addEventListener("click", () => { if(!calPop.hidden) toggleCalPop(false); });
+document.addEventListener("keydown", e => { if(e.key === "Escape" && !calPop.hidden){ toggleCalPop(false); calMonthBtn.focus(); } });
+calPrev.addEventListener("click", () => setCalView(calSel - 1));
+calNext.addEventListener("click", () => setCalView(calSel + 1));
+calNow.addEventListener("click", () => setCalView(nowMonthIdx()));
 
 function matchesFilter(r, q){
   if(active !== "All" && r.subject !== active) return false;
@@ -2596,18 +2764,6 @@ function todayFlagText(){
   return "";
 }
 
-function pastByMonthMap(){
-  const q = qBox.value.trim().toLowerCase();
-  const map = new Map();
-  RECORDINGS.filter(r => matchesFilter(r, q) && endStamp(r) <= Date.now()).forEach(r => {
-    const d = d0(r.date);
-    const key = d.getFullYear() + "-" + d.getMonth();
-    if(!map.has(key)) map.set(key, []);
-    map.get(key).push(r);
-  });
-  return map;
-}
-
 function renderCalendar(){
   const q = qBox.value.trim().toLowerCase();
   const upcomingAll = upcomingSorted();
@@ -2616,24 +2772,22 @@ function renderCalendar(){
   const filtering = q !== "" || active !== "All";
   const list = upcomingAll.filter(r => matchesFilter(r, q));
 
-  if(!upcomingAll.length){
-    calOut.innerHTML = '<div class="empty"><h3>No classes left on the schedule</h3><p>Check back once the next term is added.</p></div>';
-    caltally.textContent = "0 upcoming classes";
-    return;
-  }
-  if(!list.length){
-    calOut.innerHTML = '<div class="empty"><h3>Nothing matches that yet</h3>' +
-      '<p>Try a different subject, or clear the search to see all ' + upcomingAll.length + ' upcoming classes.</p>' +
-      '<button class="reset" id="calReset">Show everything</button></div>';
-    caltally.textContent = "0 of " + upcomingAll.length + " upcoming classes";
-    return;
-  }
+  const [lo, hi] = calMonthRange();
+  const sel = Math.min(hi, Math.max(lo, calView === null ? nowMonthIdx() : calView));
+  syncCalFilter(sel, lo, hi);
+  const year = Math.floor(sel / 12), month = sel % 12;
+  const inMonth = r => { const d = d0(r.date); return d.getFullYear() === year && d.getMonth() === month; };
+  const upcoming = list.filter(inMonth);
+  const past = RECORDINGS.filter(r => inMonth(r) && matchesFilter(r, q) && endStamp(r) <= Date.now());
 
-  const months = groupByMonth(list);
-  const todayFlag = todayFlagText();
-  const pastByMonth = pastByMonthMap();
+  const emptyHtml = filtering
+    ? '<div class="empty"><h3>Nothing matches that in ' + MON[month] + '</h3>' +
+        '<p>Try a different subject or month, or clear the search.</p>' +
+        '<button class="reset" id="calReset">Show everything</button></div>'
+    : '<p class="calNoClass">No classes scheduled in ' + MON[month] + ' ' + year + '.</p>';
+
   calOut.innerHTML = '<p class="calLegend">Tap a class or its “Open link” to view the recording · tap + to add it to your own calendar.</p>' +
-    months.map(g => calMonthBlock(g, todayFlag, pastByMonth)).join("");
+    calMonthBlock(year, month, upcoming, past, todayFlagText(), emptyHtml);
 
   caltally.textContent = filtering
     ? list.length + " of " + upcomingAll.length + " upcoming classes"
@@ -3499,6 +3653,8 @@ setTab(location.hash === "#notes" || location.hash === "#calendar" ? location.ha
   }
 
   window.playStandfirstTyping = type;
+  // No gate to dismiss on a return visit, so start the typing right away.
+  if(window.ackAccepted) type();
 
   // Keep the greeting/festival line current if the page is left open across
   // a boundary (e.g. 11:59 AM -> 12:00 PM, or into midnight on a festival
