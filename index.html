@@ -781,6 +781,24 @@
     cursor:pointer;display:flex;align-items:center;justify-content:center;
   }
   .calChipAdd:hover{background:rgba(255,255,255,.5)}
+  /* offline (on-campus) classes: campus icon + diagonal stripes on the chip */
+  .calChip-campus{
+    background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.2) 0 3px,transparent 3px 7px);
+    box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.55),0 1px 2px rgba(22,35,58,.14);
+  }
+  .calChip-done.calChip-campus{
+    background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.55) 0 3px,transparent 3px 7px);
+    box-shadow:inset 0 0 0 1px #C3CAD8;
+  }
+  .calCampusIco{flex:none;width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  .calCampus{
+    display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
+    font-size:12px;font-weight:700;color:#9A3412;background:#FFF1E6;border:1px solid #FED7AA;
+    padding:3px 9px;border-radius:999px;
+  }
+  .calCampus .calCampusIco{width:12px;height:12px}
+  .calLegendCampus{display:inline-flex;align-items:center;gap:4px;font-weight:600;color:#9A3412}
+
   /* admin-added events: tinted chip with a coloured edge, so they read apart from classes */
   .calChip-event{
     background:#F1F5F9;
@@ -883,6 +901,8 @@
       display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;
     }
     .calChip-event .calEvIco{display:none}
+    .calChip-campus{gap:2px;padding-left:2px;padding-right:2px}
+    .calCampusIco{width:8px;height:8px}
     /* no room for "+" in a phone-width day — the timetable below has a
        Google Calendar button on every row */
     .calChipAdd{display:none !important}
@@ -2604,8 +2624,11 @@ function googleCalUrl(r){
   return "https://calendar.google.com/calendar/render?" + params.toString();
 }
 
+// small campus (building) icon marking offline classes
+const CAMPUS_ICO = '<svg class="calCampusIco" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10l9-6 9 6M5 10v9M19 10v9M9.5 10v9M14.5 10v9M3 21h18"/></svg>';
+
 function calLinkCell(r){
-  if(r.campus) return "Offline class";
+  if(r.campus) return '<span class="calCampus">' + CAMPUS_ICO + 'On campus</span>';
   if(isPending(r)) return "";
   return '<a href="' + esc(r.url) + '" target="_blank" rel="noopener">Open link</a>';
 }
@@ -2632,11 +2655,12 @@ function calChip(r){
   const s = sub(r.subject);
   const playable = !r.campus && !isPending(r) && !!r.url;
   const live = isLive(r);
-  const statusText = r.campus ? "Offline class" : (isPending(r) ? calLinkCell(r).replace(/<[^>]+>/g,"") : "");
+  const statusText = r.campus ? "Offline class · on campus" : (isPending(r) ? calLinkCell(r).replace(/<[^>]+>/g,"") : "");
   const tip = r.subject + " — " + r.lecture + "\n" + slot(r) + (r.faculty ? "\n" + r.faculty : "") + (statusText ? "\n" + statusText : "") + (live ? "\nLive now" : "");
-  return '<div class="calChip' + (playable ? ' calChip-link' : '') + (live ? ' calChip-live' : '') + '" style="background:' + s.color + '"' +
+  return '<div class="calChip' + (playable ? ' calChip-link' : '') + (live ? ' calChip-live' : '') + (r.campus ? ' calChip-campus' : '') + '" style="background-color:' + s.color + '"' +
     ' title="' + esc(tip) + '"' + (playable ? ' data-url="' + esc(r.url) + '"' : '') + '>' +
     (live ? '<span class="calChipDot" aria-hidden="true"></span>' : '') +
+    (r.campus ? CAMPUS_ICO : '') +
     '<span class="calChipText">' + esc(s.code) + '<span class="calChipLecture"> · ' + esc(r.lecture) + '</span> <span class="calChipTime">' + esc(r.time || "") + '</span></span>' +
     '<a class="calChipAdd calBtn" href="' + esc(googleCalUrl(r)) + '" target="_blank" rel="noopener" aria-label="Add to Google Calendar" title="Add to Google Calendar">+</a>' +
   '</div>';
@@ -2646,8 +2670,10 @@ function calChipDone(r){
   const s = sub(r.subject);
   const clickable = !isQuiz(r);
   const tip = r.subject + " — " + r.lecture + "\n" + slot(r) + (r.faculty ? "\n" + r.faculty : "") +
+    (r.campus ? "\nOffline class · on campus" : "") +
     (clickable ? "\nCompleted · tap to view in Recordings" : "\nCompleted");
-  return '<div class="calChip calChip-done"' + (clickable ? ' data-recid="' + esc(recId(r)) + '"' : "") + ' title="' + esc(tip) + '">' +
+  return '<div class="calChip calChip-done' + (r.campus ? ' calChip-campus' : '') + '"' + (clickable ? ' data-recid="' + esc(recId(r)) + '"' : "") + ' title="' + esc(tip) + '">' +
+    (r.campus ? CAMPUS_ICO : '') +
     '<span class="calChipText">' + esc(s.code) + '<span class="calChipLecture"> · ' + esc(r.lecture) + '</span></span>' +
   '</div>';
 }
@@ -2906,7 +2932,7 @@ function renderCalendar(){
         '<button class="reset" id="calReset">Show everything</button></div>'
     : '<p class="calNoClass">No classes scheduled in ' + MON[month] + ' ' + year + '.</p>';
 
-  calOut.innerHTML = '<p class="calLegend">Tap a class or its “Open link” to view the recording · tinted chips are events and deadlines · tap + to add any of them to your own calendar.</p>' +
+  calOut.innerHTML = '<p class="calLegend">Tap a class or its “Open link” to view the recording · tinted chips are events and deadlines · <span class="calLegendCampus">' + CAMPUS_ICO + 'striped = offline class on campus</span> · tap + to add any of them to your own calendar.</p>' +
     calMonthBlock(year, month, upcoming, past, events, todayFlagText(), emptyHtml);
 
   caltally.textContent = filtering
