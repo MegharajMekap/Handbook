@@ -374,6 +374,54 @@
   .annCard.editing{border-color:var(--navy);box-shadow:0 0 0 3px var(--navy-tint)}
   .annClear:hover{background:var(--navy-tint);border-color:#C6D0E0}
 
+  /* ---------- 12-hour time picker (hour / minute / AM-PM) ---------- */
+  .time12{display:flex;align-items:center;gap:4px}
+  .time12 select{
+    flex:1;min-width:0;padding:11px 6px;border:1px solid var(--line);border-radius:9px;
+    font:inherit;font-size:14.5px;background:var(--page);color:var(--ink);text-align:center;cursor:pointer;
+    transition:border-color .15s ease,box-shadow .15s ease;
+  }
+  .time12 select:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px var(--navy-tint)}
+  .time12 .sep{font-weight:700;color:var(--mute)}
+  .time12 .t12clear{
+    flex:none;border:0;background:none;color:var(--mute);font-size:18px;line-height:1;cursor:pointer;padding:4px;
+  }
+  .time12 .t12clear:hover{color:#B3261E}
+  .time12:not(.has-value) .t12clear{visibility:hidden}
+  .dt12{display:flex;flex-direction:column;gap:8px}
+
+  /* ---------- calendar events ---------- */
+  .field select,.field textarea{
+    width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:9px;
+    font:inherit;font-size:14.5px;background:var(--page);color:var(--ink);
+    transition:border-color .15s ease,box-shadow .15s ease;
+  }
+  .field textarea{resize:vertical;min-height:70px}
+  .field select:focus,.field textarea:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px var(--navy-tint)}
+  .evGrid{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+  .evGrid .field{margin-bottom:0}
+  .evGrid .wide{grid-column:1 / -1}
+  .evRow3{display:grid;grid-template-columns:1fr 1.35fr 1fr 1.35fr;gap:14px}
+  @media (max-width:980px){.evRow3{grid-template-columns:1fr 1fr}}
+  @media (max-width:640px){.evGrid,.evRow3{grid-template-columns:1fr}}
+  .evHint{font-size:11.5px;color:var(--mute);margin-top:5px}
+  .evDate{
+    flex:none;width:54px;text-align:center;border-radius:10px;padding:6px 0 7px;
+    background:var(--navy-tint);color:var(--navy);line-height:1.1;
+  }
+  .evDate b{display:block;font-size:19px}
+  .evDate span{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+  .evType{
+    display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;
+    padding:2px 7px;border-radius:5px;color:#fff;margin-right:6px;vertical-align:1px;
+  }
+  .evFilter{display:flex;gap:6px;margin:0 0 12px}
+  .evFilter button{
+    border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 13px;
+    font:inherit;font-size:12.5px;font-weight:600;color:var(--ink-soft);cursor:pointer;
+  }
+  .evFilter button.on{background:var(--navy);border-color:var(--navy);color:#fff}
+
   /* ---------- pagination ---------- */
   .pagination{display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap;margin-top:14px}
   .pageBtn{
@@ -573,6 +621,7 @@
     <div class="tabBar" id="tabBar">
       <button class="tabBtn" id="tabBtnAnalytics" data-tab="analytics">Analytics</button>
       <button class="tabBtn" id="tabBtnAnnouncements" data-tab="announcements">Announcements</button>
+      <button class="tabBtn" id="tabBtnEvents" data-tab="events">Calendar events</button>
     </div>
 
     <div id="tabPanelAnalytics" class="tabPanel">
@@ -788,8 +837,11 @@
             <input type="text" id="annText" placeholder="e.g. FRA Quiz 3 will be held this Saturday" required maxlength="200">
           </div>
           <div class="field">
-            <label for="annExpires">Expires (optional)</label>
-            <input type="datetime-local" id="annExpires">
+            <label for="annExpDate">Expires (optional)</label>
+            <div class="dt12" id="annExpires">
+              <input type="date" id="annExpDate" aria-label="Expiry date">
+              <div class="time12" data-label="Expiry time"></div>
+            </div>
           </div>
         </div>
         <label class="annCheck"><input type="checkbox" id="annIsNew" checked> Show "New" badge</label>
@@ -808,8 +860,81 @@
         <div class="sectionHead">
           <h2><span class="dot" style="background:#1E8A4C"></span>Admin activity</h2>
         </div>
-        <p class="sectionNote">Every announcement added, deleted, or restored, by whichever admin made the change. "Remove"/"Restore" undoes that specific action.</p>
+        <p class="sectionNote">Every announcement added, edited, deleted, or restored, by whichever admin made the change. "Remove"/"Restore" undoes that specific action.</p>
         <div class="annList" id="auditList"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+    </div>
+
+    <div id="tabPanelEvents" class="tabPanel" hidden>
+    <div class="section">
+      <div class="sectionHead"><h2><span class="dot" style="background:#7C3AED"></span><span id="evFormTitle">Add calendar event</span></h2></div>
+      <p class="sectionNote">Shows on the Calendar tab of the main site, publicly — on the month grid and in the timetable below it. Leave the times blank for an all-day event.</p>
+      <form class="annForm" id="evForm">
+        <div class="evGrid">
+          <div class="field">
+            <label for="evTitle">Event title</label>
+            <input type="text" id="evTitle" placeholder="e.g. FRA assignment due / Diwali holiday / Guest lecture" required maxlength="120">
+          </div>
+          <div class="field">
+            <label for="evType">Type</label>
+            <select id="evType">
+              <option value="event">Event</option>
+              <option value="deadline">Deadline</option>
+              <option value="exam">Exam / Quiz</option>
+              <option value="holiday">Holiday</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="wide evRow3">
+            <div class="field">
+              <label for="evDate">Date</label>
+              <input type="date" id="evDate" required>
+            </div>
+            <div class="field">
+              <label>Start time (optional)</label>
+              <div class="time12" id="evStart" data-label="Start time"></div>
+            </div>
+            <div class="field">
+              <label for="evDur">Duration (optional)</label>
+              <select id="evDur"></select>
+            </div>
+            <div class="field">
+              <label>End time (optional)</label>
+              <div class="time12" id="evEnd" data-label="End time"></div>
+            </div>
+          </div>
+          <div class="field wide">
+            <label for="evLink">Link (optional)</label>
+            <input type="url" id="evLink" placeholder="https://… — Zoom, form, document">
+          </div>
+          <div class="field wide">
+            <label for="evNote">Details (optional)</label>
+            <textarea id="evNote" maxlength="300" placeholder="Venue, what to bring, submission instructions…"></textarea>
+          </div>
+        </div>
+        <button type="submit" class="annSubmit" id="evSubmit">
+          <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          <span id="evSubmitLabel">Add event</span>
+        </button>
+        <button type="button" class="annCancel" id="evCancel" hidden>Cancel</button>
+        <div class="annMsg" id="evMsg"></div>
+      </form>
+      <div class="evFilter" id="evFilter">
+        <button type="button" class="on" data-f="upcoming">Upcoming</button>
+        <button type="button" data-f="past">Past</button>
+        <button type="button" data-f="all">All</button>
+      </div>
+      <div class="annList" id="evList"><div class="empty">Loading…</div></div>
+    </div>
+
+    <div id="evAuditSection" hidden>
+      <div class="section">
+        <div class="sectionHead">
+          <h2><span class="dot" style="background:#1E8A4C"></span>Admin activity</h2>
+        </div>
+        <p class="sectionNote">Every calendar event added, edited, deleted, or restored, by whichever admin made the change. "Remove"/"Restore"/"Undo edit" undoes that specific action.</p>
+        <div class="annList" id="evAuditList"><div class="empty">Loading…</div></div>
       </div>
     </div>
     </div>
@@ -832,6 +957,60 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
+
+/* 12-hour time picker. Each .time12 element gets a .value of "HH:MM"
+   (24-hour, like <input type="time">) or "" when left blank, so form code
+   reads and writes it like a normal time input. A .dt12 wrapper
+   (date input + .time12) does the same with "YYYY-MM-DDTHH:MM". */
+function initTime12(el){
+  const opt = (v, t) => '<option value="' + v + '">' + t + '</option>';
+  let hours = opt("", "Hr"), mins = opt("", "Min");
+  for(let h = 1; h <= 12; h++) hours += opt(h, h);
+  for(let m = 0; m < 60; m += 5) mins += opt(String(m).padStart(2, "0"), String(m).padStart(2, "0"));
+  const label = el.dataset.label || "Time";
+  el.innerHTML = '<select class="t12h" aria-label="' + label + ' hour">' + hours + '</select><span class="sep">:</span>' +
+    '<select class="t12m" aria-label="' + label + ' minute">' + mins + '</select>' +
+    '<select class="t12p" aria-label="' + label + ' AM or PM">' + opt("AM", "AM") + opt("PM", "PM") + '</select>' +
+    '<button type="button" class="t12clear" aria-label="Clear ' + label.toLowerCase() + '" title="Clear">×</button>';
+  const h = el.querySelector(".t12h"), m = el.querySelector(".t12m"), p = el.querySelector(".t12p");
+  const sync = () => el.classList.toggle("has-value", !!h.value);
+  // picking an hour fills in :00 so a single choice gives a valid time
+  h.addEventListener("change", () => { if(h.value && !m.value) m.value = "00"; sync(); });
+  m.addEventListener("change", () => { if(m.value && !h.value) h.value = "12"; sync(); });
+  el.querySelector(".t12clear").addEventListener("click", () => {
+    el.value = "";
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  const form = el.closest("form");
+  if(form) form.addEventListener("reset", () => setTimeout(sync));
+  Object.defineProperty(el, "value", {
+    get(){
+      if(!h.value) return "";
+      let hr = +h.value % 12;
+      if(p.value === "PM") hr += 12;
+      return String(hr).padStart(2, "0") + ":" + (m.value || "00");
+    },
+    set(v){
+      const mt = /^(\d{1,2}):(\d{2})/.exec(v || "");
+      if(!mt){ h.value = ""; m.value = ""; p.value = "AM"; sync(); return; }
+      const hr = +mt[1];
+      if(!m.querySelector('option[value="' + mt[2] + '"]')) m.insertAdjacentHTML("beforeend", opt(mt[2], mt[2]));
+      h.value = String(hr % 12 || 12);
+      m.value = mt[2];
+      p.value = hr >= 12 ? "PM" : "AM";
+      sync();
+    }
+  });
+}
+function initDate12(el){
+  const d = el.querySelector('input[type="date"]'), t = el.querySelector(".time12");
+  Object.defineProperty(el, "value", {
+    get(){ return d.value ? d.value + "T" + (t.value || "23:59") : ""; },
+    set(v){ const parts = (v || "").split("T"); d.value = parts[0] || ""; t.value = parts[1] || ""; }
+  });
+}
+document.querySelectorAll(".time12").forEach(initTime12);
+document.querySelectorAll(".dt12").forEach(initDate12);
 
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmtTime = ts => ts ? new Date(ts).toLocaleString(undefined, { dateStyle:"medium", timeStyle:"short" }) : "–";
@@ -872,8 +1051,8 @@ document.getElementById("signOutBtn").addEventListener("click", function(){
 let dashboardStarted = false;
 let activeListeners = [];
 let refreshVisitsFn = null;
-function trackListener(ref, cb){
-  ref.on("value", cb);
+function trackListener(ref, cb, errCb){
+  ref.on("value", cb, errCb);
   activeListeners.push({ ref: ref, cb: cb });
 }
 
@@ -918,11 +1097,14 @@ function stopDashboard(){
   document.getElementById("analyticsNav").hidden = true;
   document.getElementById("superOnlySections").hidden = true;
   document.getElementById("auditSection").hidden = true;
+  document.getElementById("evAuditSection").hidden = true;
   document.getElementById("tabBtnAnalytics").hidden = true;
   switchTab("announcements");
 
   document.getElementById("annList").innerHTML = '<div class="empty">Loading…</div>';
+  document.getElementById("evList").innerHTML = '<div class="empty">Loading…</div>';
   document.getElementById("auditList").innerHTML = '<div class="empty">Loading…</div>';
+  document.getElementById("evAuditList").innerHTML = '<div class="empty">Loading…</div>';
   document.getElementById("installsBody").innerHTML = '<tr><td colspan="4" class="empty">Loading…</td></tr>';
   document.getElementById("visitsBody").innerHTML = '<tr><td colspan="13" class="empty">Loading…</td></tr>';
   document.getElementById("installsPager").innerHTML = "";
@@ -945,12 +1127,14 @@ function stopDashboard(){
 function switchTab(name){
   document.getElementById("tabPanelAnalytics").hidden = name !== "analytics";
   document.getElementById("tabPanelAnnouncements").hidden = name !== "announcements";
+  document.getElementById("tabPanelEvents").hidden = name !== "events";
   [].forEach.call(document.querySelectorAll(".tabBtn"), function(btn){
     btn.classList.toggle("active", btn.dataset.tab === name);
   });
 }
 document.getElementById("tabBtnAnalytics").addEventListener("click", function(){ switchTab("analytics"); });
 document.getElementById("tabBtnAnnouncements").addEventListener("click", function(){ switchTab("announcements"); });
+document.getElementById("tabBtnEvents").addEventListener("click", function(){ switchTab("events"); });
 
 /* ---------- dashboard data ---------- */
 function startDashboard(isSuper){
@@ -963,10 +1147,12 @@ function startDashboard(isSuper){
   document.getElementById("analyticsNav").hidden = !isSuper;
   document.getElementById("superOnlySections").hidden = !isSuper;
   document.getElementById("auditSection").hidden = !isSuper;
+  document.getElementById("evAuditSection").hidden = !isSuper;
   document.getElementById("tabBtnAnalytics").hidden = !isSuper;
   switchTab(isSuper ? "analytics" : "announcements");
 
   startAnnouncements();
+  startEvents();
   if(isSuper){ startAnalytics(); startAuditLog(); }
 }
 
@@ -1127,6 +1313,215 @@ function startAnnouncements(){
   });
 }
 
+/* ---- calendar events (Firebase "calendarEvents", shown on the site's Calendar tab) ---- */
+const EVENT_TYPES = {
+  event:    { label: "Event",       color: "#2563EB" },
+  deadline: { label: "Deadline",    color: "#DC2626" },
+  exam:     { label: "Exam / Quiz", color: "#7C3AED" },
+  holiday:  { label: "Holiday",     color: "#16A34A" },
+  other:    { label: "Other",       color: "#64748B" }
+};
+const evMON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+// "13:05" <-> "1:05 PM" (the site stores times the same way as class times)
+function to12(t){
+  if(!t) return "";
+  const parts = t.split(":"); let h = +parts[0];
+  const ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12;
+  return h + ":" + parts[1] + " " + ap;
+}
+function from12(t){
+  const m = (t || "").match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if(!m) return "";
+  let h = +m[1] % 12; if(m[3].toUpperCase() === "PM") h += 12;
+  return String(h).padStart(2, "0") + ":" + m[2];
+}
+function evEndMs(v){
+  return new Date(v.date + "T" + (from12(v.ends || v.time) || "23:59")).getTime();
+}
+function evPayload(v){
+  return { title: v.title, type: v.type, date: v.date, time: v.time || null, ends: v.ends || null, link: v.link || null, note: v.note || null };
+}
+
+let eventsWired = false;
+let evEditingKey = null, evEditingPrev = null, evRows = [], evFilter = "upcoming";
+let evLastStart = ""; // start time before the latest change, to keep the duration when it moves
+const EV_DURATIONS = [15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 210, 240, 300, 360, 480];
+const evToMin = t => +t.slice(0, 2) * 60 + +t.slice(3, 5);
+const evFromMin = n => String(Math.floor(n / 60)).padStart(2, "0") + ":" + String(n % 60).padStart(2, "0");
+const fmtDur = n => (n >= 60 ? Math.floor(n / 60) + "h" : "") + (n % 60 ? (n >= 60 ? " " : "") + (n % 60) + "m" : "");
+// Duration dropdown mirrors start→end: a preset when it matches, else "custom"
+function syncEvDuration(){
+  const sel = document.getElementById("evDur");
+  const start = document.getElementById("evStart").value, end = document.getElementById("evEnd").value;
+  const d = start && end ? evToMin(end) - evToMin(start) : 0;
+  let html = '<option value="">—</option>' + EV_DURATIONS.map(n => '<option value="' + n + '">' + fmtDur(n) + '</option>').join("");
+  if(d > 0 && EV_DURATIONS.indexOf(d) === -1) html += '<option value="' + d + '">' + fmtDur(d) + ' (custom)</option>';
+  sel.innerHTML = html;
+  sel.value = d > 0 ? String(d) : "";
+}
+function startEvents(){
+  const form = document.getElementById("evForm");
+  const submit = document.getElementById("evSubmit");
+  const msg = document.getElementById("evMsg");
+  const cancel = document.getElementById("evCancel");
+  const list = document.getElementById("evList");
+  const f = id => document.getElementById(id);
+  function setEditMode(key, v){
+    evEditingKey = key;
+    evEditingPrev = key ? evPayload(v) : null;
+    f("evFormTitle").textContent = key ? "Edit calendar event" : "Add calendar event";
+    f("evSubmitLabel").textContent = key ? "Save changes" : "Add event";
+    cancel.hidden = !key;
+    if(key){
+      f("evTitle").value = v.title || "";
+      f("evType").value = EVENT_TYPES[v.type] ? v.type : "event";
+      f("evDate").value = v.date || "";
+      f("evStart").value = from12(v.time);
+      f("evEnd").value = from12(v.ends);
+      evLastStart = f("evStart").value;
+      syncEvDuration();
+      f("evLink").value = v.link || "";
+      f("evNote").value = v.note || "";
+      msg.className = "annMsg";
+      form.scrollIntoView({ behavior: "smooth", block: "center" });
+      f("evTitle").focus({ preventScroll: true });
+    } else {
+      form.reset();
+      evLastStart = "";
+      syncEvDuration();
+    }
+    renderList();
+  }
+
+  function renderList(){
+    const now = Date.now();
+    const shown = evRows.filter(r => evFilter === "all" || (evFilter === "past") === (evEndMs(r.val) < now));
+    // upcoming: soonest first; past/all: most recent first
+    shown.sort((a, b) => evFilter === "upcoming"
+      ? evEndMs(a.val) - evEndMs(b.val)
+      : evEndMs(b.val) - evEndMs(a.val));
+    if(!shown.length){
+      list.innerHTML = '<div class="empty">' + (evRows.length ? "No " + evFilter + " events." : "No calendar events yet — add one above.") + '</div>';
+      return;
+    }
+    list.innerHTML = shown.map(function(r){
+      const v = r.val;
+      const t = EVENT_TYPES[v.type] || EVENT_TYPES.event;
+      const d = new Date(v.date + "T00:00:00");
+      const past = evEndMs(v) < now;
+      const meta = [v.time ? esc(v.time) + (v.ends ? " – " + esc(v.ends) : "") : "All day"];
+      if(v.link) meta.push('<a href="' + esc(v.link) + '" target="_blank" rel="noopener">Link</a>');
+      if(v.createdBy && v.createdBy.email) meta.push("Added by " + esc(v.createdBy.email));
+      if(v.editedBy && v.editedBy.email) meta.push("Edited by " + esc(v.editedBy.email));
+      return '<div class="annCard' + (r.key === evEditingKey ? ' editing' : '') + '" data-key="' + esc(r.key) + '"' + (past ? ' style="opacity:.55"' : '') + '>' +
+        '<div class="evDate"><b>' + d.getDate() + '</b><span>' + evMON[d.getMonth()] + ' ' + String(d.getFullYear()).slice(2) + '</span></div>' +
+        '<div class="txt"><p><span class="evType" style="background:' + t.color + '">' + t.label + '</span>' + esc(v.title) + '</p>' +
+          (v.note ? '<div class="meta">' + esc(v.note) + '</div>' : '') +
+          '<div class="meta">' + meta.join(" · ") + '</div></div>' +
+        '<div class="annActions">' +
+          '<button class="annDel annEdit" data-ev-edit="' + esc(r.key) + '">Edit</button>' +
+          '<button class="annDel" data-ev-del="' + esc(r.key) + '">Delete</button>' +
+        '</div>' +
+      '</div>';
+    }).join("");
+  }
+
+  if(!eventsWired){
+    eventsWired = true;
+    cancel.addEventListener("click", function(){ setEditMode(null); msg.className = "annMsg"; });
+
+    // start + duration decide the end time; moving the start drags the
+    // end along (same duration); editing the end updates the duration
+    const setEndFrom = (start, dur) => { f("evEnd").value = evFromMin(Math.min(evToMin(start) + dur, 23 * 60 + 59)); };
+    syncEvDuration();
+    f("evStart").addEventListener("change", function(){
+      const start = f("evStart").value, end = f("evEnd").value, picked = +f("evDur").value;
+      if(evLastStart && start && end){
+        const dur = evToMin(end) - evToMin(evLastStart);
+        if(dur > 0) setEndFrom(start, dur);
+      } else if(start && !end && picked){
+        setEndFrom(start, picked); // duration chosen before the start time
+      }
+      evLastStart = start;
+      syncEvDuration();
+    });
+    f("evDur").addEventListener("change", function(){
+      const start = f("evStart").value, dur = +this.value;
+      if(!dur){ f("evEnd").value = ""; syncEvDuration(); return; }
+      if(start) setEndFrom(start, dur);
+      else { msg.textContent = "Pick a start time — the end time will follow from the duration."; msg.className = "annMsg err"; return; }
+      msg.className = "annMsg";
+      syncEvDuration();
+    });
+    f("evEnd").addEventListener("change", syncEvDuration);
+
+    f("evFilter").addEventListener("click", function(e){
+      const b = e.target.closest("button[data-f]");
+      if(!b) return;
+      evFilter = b.dataset.f;
+      [].forEach.call(this.children, x => x.classList.toggle("on", x === b));
+      renderList();
+    });
+
+    list.addEventListener("click", function(e){
+      const ed = e.target.closest("[data-ev-edit]");
+      const del = e.target.closest("[data-ev-del]");
+      const row = k => evRows.find(r => r.key === k);
+      if(ed && row(ed.dataset.evEdit)) setEditMode(ed.dataset.evEdit, row(ed.dataset.evEdit).val);
+      if(del){
+        const r = row(del.dataset.evDel);
+        if(!r || !confirm('Delete the event "' + r.val.title + '"?')) return;
+        db.ref("calendarEvents/" + r.key).remove().then(function(){
+          logAudit({ kind: "event", action: "delete", evKey: r.key, text: r.val.title, data: evPayload(r.val) });
+        });
+      }
+    });
+
+    form.addEventListener("submit", function(e){
+      e.preventDefault();
+      const start = f("evStart").value, end = f("evEnd").value;
+      if(end && !start){ msg.textContent = "Add a start time too, or clear the end time for an all-day event."; msg.className = "annMsg err"; return; }
+      if(start && end && end <= start){ msg.textContent = "End time must be after the start time."; msg.className = "annMsg err"; return; }
+      const data = evPayload({
+        title: f("evTitle").value.trim(),
+        type: f("evType").value,
+        date: f("evDate").value,
+        time: to12(start),
+        ends: to12(end),
+        link: f("evLink").value.trim(),
+        note: f("evNote").value.trim()
+      });
+      if(!data.title || !data.date) return;
+      submit.disabled = true;
+      msg.className = "annMsg";
+      const key = evEditingKey, prev = evEditingPrev;
+      const op = key
+        ? db.ref("calendarEvents/" + key).update(Object.assign({}, data, { editedBy: currentActor(), editedTs: firebase.database.ServerValue.TIMESTAMP }))
+            .then(function(){ logAudit({ kind: "event", action: "edit", evKey: key, text: data.title, data: data, prev: prev }); })
+        : db.ref("calendarEvents").push(Object.assign({}, data, { createdBy: currentActor(), ts: firebase.database.ServerValue.TIMESTAMP }))
+            .then(function(ref){ logAudit({ kind: "event", action: "add", evKey: ref.key, text: data.title, data: data }); });
+      op.then(function(){
+        setEditMode(null);
+        msg.textContent = key ? "Event updated — changes are live on the Calendar." : "Event added — now live on the Calendar.";
+        msg.className = "annMsg ok";
+      }).catch(function(err){
+        msg.textContent = "Failed to save: " + err.message;
+        msg.className = "annMsg err";
+      }).finally(function(){ submit.disabled = false; });
+    });
+  }
+
+  trackListener(db.ref("calendarEvents"), function(snap){
+    evRows = [];
+    snap.forEach(function(child){ evRows.push({ key: child.key, val: child.val() }); });
+    if(evEditingKey && !evRows.some(r => r.key === evEditingKey)) setEditMode(null);
+    else renderList();
+  }, function(err){
+    list.innerHTML = '<div class="empty">Could not load events: ' + esc(err.message) +
+      ' — check that the Firebase database rules allow "calendarEvents".</div>';
+  });
+}
+
 function paginationHTML(current, total){
   if(total <= 1) return "";
   const keep = new Set([1, total, current]);
@@ -1146,15 +1541,52 @@ function paginationHTML(current, total){
   return html;
 }
 
+function revertEventAudit(v){
+  const ref = db.ref("calendarEvents/" + v.evKey);
+  if(v.action === "add"){
+    if(!confirm('Remove the event "' + v.text + '"? (undoes this addition)')) return;
+    ref.remove().then(function(){ logAudit({ kind: "event", action: "delete", evKey: v.evKey, text: v.text, data: v.data }); });
+  } else if(v.action === "delete"){
+    if(!confirm('Restore the event "' + v.text + '"?')) return;
+    // put it back under its original key so later undo entries still point at it
+    ref.set(Object.assign({}, v.data, { createdBy: currentActor(), ts: firebase.database.ServerValue.TIMESTAMP })).then(function(){
+      logAudit({ kind: "event", action: "restore", evKey: v.evKey, text: v.text, data: v.data });
+    });
+  } else if(v.action === "edit" && v.prev){
+    if(!confirm('Undo this edit and change the event back to "' + v.prev.title + '"?')) return;
+    ref.once("value").then(function(cur){
+      if(!cur.exists()){ alert("That event has since been deleted."); return; }
+      const now = evPayload(cur.val());
+      ref.update(Object.assign({}, v.prev, { editedBy: currentActor(), editedTs: firebase.database.ServerValue.TIMESTAMP })).then(function(){
+        logAudit({ kind: "event", action: "edit", evKey: v.evKey, text: v.prev.title, data: v.prev, prev: now });
+      });
+    });
+  }
+}
+
+/* Admin activity: one auditLog listener feeding two lists — announcement
+   entries on the Announcements tab, calendar-event entries on the
+   Calendar events tab. */
 function startAuditLog(){
-  const list = document.getElementById("auditList");
+  const views = [
+    makeAuditView(document.getElementById("auditList"), v => v.kind !== "event", "No announcement activity logged yet."),
+    makeAuditView(document.getElementById("evAuditList"), v => v.kind === "event", "No calendar event activity logged yet.")
+  ];
+  trackListener(db.ref("auditLog").limitToLast(150), function(snap){
+    const rows = [];
+    snap.forEach(function(child){ rows.unshift({ key: child.key, val: child.val() }); });
+    views.forEach(function(view){ view(rows); });
+  });
+}
+
+function makeAuditView(list, belongs, emptyText){
   const PAGE_SIZE = 5;
   let auditRows = [];
   let auditPage = 1;
 
   function renderAuditPage(){
     if(!auditRows.length){
-      list.innerHTML = '<div class="empty">No admin activity logged yet.</div>';
+      list.innerHTML = '<div class="empty">' + emptyText + '</div>';
       return;
     }
     const totalPages = Math.max(1, Math.ceil(auditRows.length / PAGE_SIZE));
@@ -1172,10 +1604,13 @@ function startAuditLog(){
         : '<span class="tag">Restored</span>';
       const canRevert = v.action === "add" || v.action === "delete" || (v.action === "edit" && v.prev);
       const revertLabel = v.action === "add" ? "Remove" : v.action === "edit" ? "Undo edit" : "Restore";
-      const wasText = v.action === "edit" && v.prev && v.prev.text !== v.text
-        ? ' <span style="color:var(--mute)">(was: ' + esc(v.prev.text) + ')</span>' : '';
+      const prevText = v.prev && (v.kind === "event" ? v.prev.title : v.prev.text);
+      const wasText = v.action === "edit" && v.prev && prevText !== v.text
+        ? ' <span style="color:var(--mute)">(was: ' + esc(prevText) + ')</span>' : '';
+      const kindLabel = v.kind === "event" && v.data && v.data.date
+        ? '<span class="tag">' + esc(v.data.date) + '</span> ' : '';
       return '<div class="annCard">' +
-        '<div class="txt"><p>' + actionLabel + ' <strong>' + esc(v.text) + '</strong>' + wasText + '</p>' +
+        '<div class="txt"><p>' + actionLabel + ' ' + kindLabel + '<strong>' + esc(v.text) + '</strong>' + wasText + '</p>' +
         '<div class="meta">' + esc(who) + ' · ' + esc(fmtTime(v.ts)) + '</div></div>' +
         (canRevert ? '<button class="annDel" data-audit-key="' + esc(r.key) + '">' + revertLabel + '</button>' : '') +
         '<button class="annDel annClear" data-clear-key="' + esc(r.key) + '" title="Remove this entry from the activity log — does not undo the change">Clear entry</button>' +
@@ -1188,6 +1623,7 @@ function startAuditLog(){
         db.ref("auditLog/" + key).once("value").then(function(snap){
           const v = snap.val();
           if(!v) return;
+          if(v.kind === "event"){ revertEventAudit(v); return; }
           if(v.action === "delete"){
             if(!confirm('Restore "' + v.text + '"?')) return;
             db.ref("announcements").push({
@@ -1236,12 +1672,10 @@ function startAuditLog(){
     });
   }
 
-  trackListener(db.ref("auditLog").limitToLast(150), function(snap){
-    const rows = [];
-    snap.forEach(function(child){ rows.unshift({ key: child.key, val: child.val() }); });
-    auditRows = rows;
+  return function(rows){
+    auditRows = rows.filter(function(r){ return belongs(r.val); });
     renderAuditPage();
-  });
+  };
 }
 
 function wireFilterInput(id, filters, key, isSelect, onChange){

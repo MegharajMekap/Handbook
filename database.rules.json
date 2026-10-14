@@ -1,0 +1,56 @@
+{
+  "rules": {
+    "presence": {
+      ".read": true,
+      "$sessionId": {
+        ".write": "!newData.exists() || (!data.exists() && newData.val() == true)"
+      }
+    },
+    "totalVisits": {
+      ".read": true,
+      ".write": "newData.isNumber() && ((!data.exists() && newData.val() == 1) || (data.exists() && newData.val() == data.val() + 1))"
+    },
+    "visitorLog": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).val() == 'super'",
+      ".indexOn": ["ts"],
+      "$visitId": {
+        ".write": "!data.exists() && newData.exists() && newData.hasChild('ts')",
+        "$field": {
+          ".write": "data.parent().exists() && !data.exists() && $field.matches(/^(durationSec|tabsVisited|searchUsed|subjectFilters|recordingsOpened|notesOpened|performance)$/)"
+        }
+      }
+    },
+    "pwaInstalls": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).val() == 'super'",
+      ".indexOn": ["ts"],
+      "$installId": {
+        ".write": "!data.exists() && newData.exists() && newData.hasChildren(['kind', 'ts'])"
+      }
+    },
+    "announcements": {
+      ".read": true,
+      ".write": "auth != null && root.child('roles').child(auth.uid).exists()",
+      "$annId": {
+        ".validate": "newData.child('text').isString() && newData.child('text').val().length <= 200"
+      }
+    },
+    "calendarEvents": {
+      ".read": true,
+      ".write": "auth != null && root.child('roles').child(auth.uid).exists()",
+      "$eventId": {
+        ".validate": "newData.child('title').isString() && newData.child('title').val().length <= 120 && newData.child('date').val().matches(/^\\d{4}-\\d{2}-\\d{2}$/)"
+      }
+    },
+    "auditLog": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).val() == 'super'",
+      ".indexOn": ["ts"],
+      "$entryId": {
+        ".write": "auth != null && ((!data.exists() && newData.exists() && root.child('roles').child(auth.uid).exists()) || (!newData.exists() && root.child('roles').child(auth.uid).val() == 'super'))",
+        ".validate": "!newData.exists() || newData.child('by/uid').val() == auth.uid"
+      }
+    },
+    "roles": {
+      "$uid": { ".read": "auth != null && auth.uid == $uid", ".write": false }
+    }
+  }
+}
