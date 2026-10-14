@@ -913,6 +913,8 @@
             <textarea id="evNote" maxlength="300" placeholder="Venue, what to bring, submission instructions…"></textarea>
           </div>
         </div>
+        <label class="annCheck"><input type="checkbox" id="evAnnounce"> Also post as an announcement (scrolling banner on the site)</label>
+        <p class="evHint" id="evAnnHint">Adds “title — date, time” to the banner with a “New” badge; it expires when the event ends. Edit its wording any time in the Announcements tab.</p>
         <button type="submit" class="annSubmit" id="evSubmit">
           <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
           <span id="evSubmitLabel">Add event</span>
@@ -1280,6 +1282,7 @@ function startAnnouncements(){
       if(v.expires) meta.push((expired ? "Expired " : "Expires ") + new Date(v.expires).toLocaleString(undefined, { dateStyle:"medium", timeStyle:"short" }));
       else meta.push("No expiry");
       if(v.isNew) meta.push('<span class="tag new">New badge</span>');
+      if(v.fromEvent) meta.push('<span class="tag">From calendar event</span>');
       if(v.createdBy && v.createdBy.email) meta.push("Added by " + esc(v.createdBy.email));
       if(v.editedBy && v.editedBy.email) meta.push("Edited by " + esc(v.editedBy.email));
       return '<div class="annCard' + (r.key === editingKey ? ' editing' : '') + '" data-key="' + esc(r.key) + '"' + (expired ? ' style="opacity:.55"' : '') + '>' +
@@ -1338,8 +1341,45 @@ function from12(t){
 function evEndMs(v){
   return new Date(v.date + "T" + (from12(v.ends || v.time) || "23:59")).getTime();
 }
+// banner text + expiry for an event posted as an announcement
+function evAnnText(d){
+  const dt = new Date(d.date + "T00:00:00");
+  const day = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][dt.getDay()] + ", " + dt.getDate() + " " + evMON[dt.getMonth()];
+  const when = d.time ? day + " · " + d.time + (d.ends ? " – " + d.ends : "") : day;
+  return (d.title + " — " + when).slice(0, 200);
+}
+function evAnnExpires(d){
+  return new Date(d.date + "T" + (from12(d.ends || d.time) || "23:59")).toISOString();
+}
+let evAnnKeys = new Set(); // announcements that still exist, to know if an event's link is live
+const evLinkedAnn = v => !!(v && v.annKey && evAnnKeys.has(v.annKey));
+
 function evPayload(v){
   return { title: v.title, type: v.type, date: v.date, time: v.time || null, ends: v.ends || null, link: v.link || null, note: v.note || null };
+}
+
+// Post an event to the banner as a normal announcement (so it shows, and can
+// be edited, in the Announcements tab and its activity log) and remember the
+// link on the event.
+function postEventAnn(evKey, d){
+  const payload = {
+    text: evAnnText(d), expires: evAnnExpires(d), isNew: true, fromEvent: evKey,
+    createdBy: currentActor(), ts: firebase.database.ServerValue.TIMESTAMP
+  };
+  return db.ref("announcements").push(payload).then(function(ref){
+    logAudit({ action: "add", annKey: ref.key, text: payload.text, expires: payload.expires, isNew: true });
+    return db.ref("calendarEvents/" + evKey + "/annKey").set(ref.key);
+  });
+}
+function removeEventAnn(annKey){
+  const ref = db.ref("announcements/" + annKey);
+  return ref.once("value").then(function(snap){
+    const v = snap.val();
+    if(!v) return;
+    return ref.remove().then(function(){
+      logAudit({ action: "delete", annKey: annKey, text: v.text, expires: v.expires || null, isNew: !!v.isNew });
+    });
+  });
 }
 
 let eventsWired = false;
@@ -1382,11 +1422,16 @@ function startEvents(){
       syncEvDuration();
       f("evLink").value = v.link || "";
       f("evNote").value = v.note || "";
+      f("evAnnounce").checked = evLinkedAnn(v);
+      f("evAnnHint").textContent = evLinkedAnn(v)
+        ? "Already in the banner — edit its wording in the Announcements tab. Untick to remove it from the banner."
+        : "Adds “title — date, time” to the banner with a “New” badge; it expires when the event ends.";
       msg.className = "annMsg";
       form.scrollIntoView({ behavior: "smooth", block: "center" });
       f("evTitle").focus({ preventScroll: true });
     } else {
       form.reset();
+      f("evAnnHint").textContent = "Adds “title — date, time” to the banner with a “New” badge; it expires when the event ends. Edit its wording any time in the Announcements tab.";
       evLastStart = "";
       syncEvDuration();
     }
@@ -1410,6 +1455,7 @@ function startEvents(){
       const d = new Date(v.date + "T00:00:00");
       const past = evEndMs(v) < now;
       const meta = [v.time ? esc(v.time) + (v.ends ? " – " + esc(v.ends) : "") : "All day"];
+      if(evLinkedAnn(v)) meta.push('<span class="tag new">In banner</span>');
       if(v.link) meta.push('<a href="' + esc(v.link) + '" target="_blank" rel="noopener">Link</a>');
       if(v.createdBy && v.createdBy.email) meta.push("Added by " + esc(v.createdBy.email));
       if(v.editedBy && v.editedBy.email) meta.push("Edited by " + esc(v.editedBy.email));
@@ -1471,8 +1517,10 @@ function startEvents(){
       if(del){
         const r = row(del.dataset.evDel);
         if(!r || !confirm('Delete the event "' + r.val.title + '"?')) return;
+        const dropAnn = evLinkedAnn(r.val) && confirm("Also remove its announcement from the banner?");
         db.ref("calendarEvents/" + r.key).remove().then(function(){
           logAudit({ kind: "event", action: "delete", evKey: r.key, text: r.val.title, data: evPayload(r.val) });
+          if(dropAnn) removeEventAnn(r.val.annKey);
         });
       }
     });
@@ -1495,14 +1543,22 @@ function startEvents(){
       submit.disabled = true;
       msg.className = "annMsg";
       const key = evEditingKey, prev = evEditingPrev;
+      const current = key ? (evRows.find(r => r.key === key) || {}).val : null;
+      const wantAnn = f("evAnnounce").checked, hasAnn = evLinkedAnn(current);
       const op = key
         ? db.ref("calendarEvents/" + key).update(Object.assign({}, data, { editedBy: currentActor(), editedTs: firebase.database.ServerValue.TIMESTAMP }))
-            .then(function(){ logAudit({ kind: "event", action: "edit", evKey: key, text: data.title, data: data, prev: prev }); })
+            .then(function(){ logAudit({ kind: "event", action: "edit", evKey: key, text: data.title, data: data, prev: prev }); return key; })
         : db.ref("calendarEvents").push(Object.assign({}, data, { createdBy: currentActor(), ts: firebase.database.ServerValue.TIMESTAMP }))
-            .then(function(ref){ logAudit({ kind: "event", action: "add", evKey: ref.key, text: data.title, data: data }); });
-      op.then(function(){
+            .then(function(ref){ logAudit({ kind: "event", action: "add", evKey: ref.key, text: data.title, data: data }); return ref.key; });
+      op.then(function(evKey){
+        if(wantAnn && !hasAnn) return postEventAnn(evKey, data);
+        if(!wantAnn && hasAnn) return removeEventAnn(current.annKey).then(function(){
+          return db.ref("calendarEvents/" + evKey + "/annKey").remove();
+        });
+      }).then(function(){
         setEditMode(null);
-        msg.textContent = key ? "Event updated — changes are live on the Calendar." : "Event added — now live on the Calendar.";
+        msg.textContent = (key ? "Event updated — changes are live on the Calendar" : "Event added — now live on the Calendar") +
+          (wantAnn && !hasAnn ? " and in the announcement banner." : !wantAnn && hasAnn ? "; removed from the banner." : ".");
         msg.className = "annMsg ok";
       }).catch(function(err){
         msg.textContent = "Failed to save: " + err.message;
@@ -1510,6 +1566,12 @@ function startEvents(){
       }).finally(function(){ submit.disabled = false; });
     });
   }
+
+  trackListener(db.ref("announcements"), function(snap){
+    evAnnKeys = new Set();
+    snap.forEach(function(child){ evAnnKeys.add(child.key); });
+    renderList();
+  });
 
   trackListener(db.ref("calendarEvents"), function(snap){
     evRows = [];
