@@ -708,7 +708,8 @@
   }
   .calMonthHeader .calMonthName{font-weight:700;font-size:17px;letter-spacing:.01em}
   .calMonthHeader .calMonthYear{font-weight:600;font-size:13px;opacity:.8;margin-left:5px}
-  .calGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--line)}
+  .calGrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--line)}
+  .calCell,.calChips,.calChip{min-width:0}
   .calDow{
     background:var(--navy-tint);color:var(--navy);text-align:center;
     font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:8px 2px;
@@ -874,6 +875,19 @@
     .calChipAdd svg{width:10px;height:10px}
     .calChipTime{display:none}
     .calChipLecture{display:none}
+    /* events: wrap the title inside the day instead of widening it */
+    .calChip-event{align-items:flex-start;padding:3px 3px 3px 5px;box-shadow:inset 2px 0 0 var(--ev)}
+    .calChip-event.calChip-link:hover{box-shadow:inset 2px 0 0 var(--ev)}
+    .calChip-event .calChipText{
+      white-space:normal;overflow-wrap:anywhere;hyphens:auto;font-size:9px;line-height:1.2;
+      display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;
+    }
+    .calChip-event .calEvIco{display:none}
+    /* no room for "+" in a phone-width day — the timetable below has a
+       Google Calendar button on every row */
+    .calChipAdd{display:none !important}
+    .calChip{justify-content:center}
+    .calChip-event{justify-content:flex-start}
     .calTodayFlag{font-size:.7rem}
     .caltable th:nth-child(3),
     .caltable td:nth-child(3){display:none}
