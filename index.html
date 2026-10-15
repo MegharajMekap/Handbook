@@ -2139,7 +2139,11 @@
       adminDashLink.hidden = true;
       firebase.database().ref("roles/" + user.uid).once("value")
         .then(function(snap){ adminDashLink.hidden = !snap.val(); })
-        .catch(function(){ adminDashLink.hidden = true; });
+        .catch(function(err){
+          // usually means the live database rules don't let a user read their own roles/<uid>
+          console.warn("Admin dashboard link: could not read roles/" + user.uid, err);
+          adminDashLink.hidden = true;
+        });
       profileBtn.setAttribute("aria-label", "Account: " + (user.displayName || user.email));
     } else {
       profileBtn.classList.remove("signedIn");
