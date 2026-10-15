@@ -116,6 +116,14 @@
   .tabBtn[hidden]{display:none}
   .reqBadge{display:inline-block;min-width:18px;padding:1px 6px;margin-left:4px;border-radius:9px;background:#B7791F;color:#fff;font-size:11px;font-weight:700;line-height:16px;text-align:center}
   .reqBadge[hidden]{display:none}
+  .histBar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+  .histSearch{flex:1;min-width:160px;max-width:280px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit;font-size:13px;color:var(--ink)}
+  .histSearch:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px var(--navy-tint)}
+  .reqMsg{margin-top:4px;font-size:12.5px;color:var(--ink-soft)}
+  .notifUnread{box-shadow:inset 3px 0 0 var(--navy)}
+  .notifBar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+  .loginExtra{display:none}
+  .loginExtra.show{display:block}
   .tabPanel[hidden]{display:none}
   .limitedNote{
     background:var(--navy-tint);border:1px solid #DCE6F4;border-radius:10px;
@@ -605,6 +613,10 @@
           <label for="password">Password</label>
           <input type="password" id="password" autocomplete="current-password" required>
         </div>
+        <div class="field loginExtra" id="reqMessageField">
+          <label for="reqMessage">Why do you need access? (optional)</label>
+          <input type="text" id="reqMessage" maxlength="200" placeholder="e.g. Class rep for Section B">
+        </div>
         <button type="submit" class="loginGo" id="loginBtn">Sign in</button>
         <div class="loginErr" id="loginErr"></div>
         <div class="loginOk" id="loginOk"></div>
@@ -634,6 +646,7 @@
       <button class="tabBtn" id="tabBtnAnnouncements" data-tab="announcements">Announcements</button>
       <button class="tabBtn" id="tabBtnEvents" data-tab="events">Calendar events</button>
       <button class="tabBtn" id="tabBtnRequests" data-tab="requests" hidden>Admin requests <span class="reqBadge" id="reqBadge" hidden></span></button>
+      <button class="tabBtn" id="tabBtnNotifs" data-tab="notifs">Notifications <span class="reqBadge" id="notifBadge" hidden></span></button>
     </div>
 
     <div id="tabPanelAnalytics" class="tabPanel">
@@ -889,10 +902,41 @@
 
     <div class="section">
       <div class="sectionHead">
+        <h2><span class="dot" style="background:var(--navy)"></span>Current admins</h2>
+      </div>
+      <p class="sectionNote">Everyone with dashboard access. Revoking removes their Admin role straight away.</p>
+      <div class="annList" id="adminsList"><div class="empty">Loading…</div></div>
+    </div>
+
+    <div class="section">
+      <div class="sectionHead">
         <h2><span class="dot" style="background:#1E8A4C"></span>Request history</h2>
       </div>
-      <p class="sectionNote">Admin access requests you have approved or rejected.</p>
+      <p class="sectionNote">Requests you approved or rejected, and access you revoked. "Undo" puts a decision back to pending.</p>
+      <div class="histBar">
+        <div class="rangeChips" id="histFilter" role="group" aria-label="Filter history">
+          <button type="button" class="rangeChip active" data-f="all">All</button>
+          <button type="button" class="rangeChip" data-f="approve">Approved</button>
+          <button type="button" class="rangeChip" data-f="reject">Rejected</button>
+          <button type="button" class="rangeChip" data-f="revoke">Revoked</button>
+        </div>
+        <input type="search" class="histSearch" id="histSearch" placeholder="Search by email" aria-label="Search history by email">
+      </div>
       <div class="annList" id="requestHistory"><div class="empty">Loading…</div></div>
+    </div>
+    </div>
+
+    <div id="tabPanelNotifs" class="tabPanel" hidden>
+    <div class="section">
+      <div class="sectionHead">
+        <h2><span class="dot" style="background:var(--navy)"></span>Notifications</h2>
+      </div>
+      <p class="sectionNote">What other admins have been doing: announcements, calendar events and access changes. Your own actions don't count as unread.</p>
+      <div class="notifBar">
+        <span class="sectionNote" id="notifSummary" style="margin:0"></span>
+        <button type="button" class="annDel" id="notifMarkRead">Mark all as read</button>
+      </div>
+      <div class="annList" id="notifList"><div class="empty">Loading…</div></div>
     </div>
     </div>
 
@@ -1066,12 +1110,13 @@ document.getElementById("loginSwitchBtn").addEventListener("click", function(){
   document.getElementById("password").autocomplete = requestMode ? "new-password" : "current-password";
   document.getElementById("loginSwitchText").textContent = requestMode ? "Already approved?" : "Need access?";
   this.textContent = requestMode ? "Sign in" : "Request admin access";
+  document.getElementById("reqMessageField").classList.toggle("show", requestMode);
   loginErr.classList.remove("show");
   loginOk.classList.remove("show");
 });
 
 // creates the account (or signs in to an existing one), files a request, then signs out
-function requestAdminAccess(email, password){
+function requestAdminAccess(email, password, message){
   let user;
   return auth.createUserWithEmailAndPassword(email, password)
     .catch(function(err){
@@ -1084,7 +1129,14 @@ function requestAdminAccess(email, password){
     })
     .then(function(snap){
       if(snap.val()) throw { code: "app/already-admin" };
-      return db.ref("adminRequests/" + user.uid).set({ email: user.email, ts: firebase.database.ServerValue.TIMESTAMP });
+      const req = { email: user.email, ts: firebase.database.ServerValue.TIMESTAMP };
+      if(message) req.message = message;
+      return db.ref("adminRequests/" + user.uid).set(req).then(function(){
+        // one notification per requester (fixed key), shown to the Super Admin
+        const n = { type: "request", action: "request", text: user.email, by: { uid: user.uid, email: user.email }, ts: firebase.database.ServerValue.TIMESTAMP };
+        if(message) n.message = message;
+        return db.ref("notifications/req_" + user.uid).set(n).catch(function(){});
+      });
     })
     .then(function(){ return auth.signOut(); });
 }
@@ -1098,7 +1150,7 @@ loginForm.addEventListener("submit", function(e){
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
   if(requestMode){
-    requestAdminAccess(email, password)
+    requestAdminAccess(email, password, document.getElementById("reqMessage").value.trim())
       .then(function(){
         loginOk.textContent = "Request sent. You can sign in once the Super Admin approves it.";
         loginOk.classList.add("show");
@@ -1210,6 +1262,7 @@ function stopDashboard(){
   document.getElementById("auditSection").hidden = true;
   document.getElementById("tabBtnRequests").hidden = true;
   document.getElementById("reqBadge").hidden = true;
+  document.getElementById("notifBadge").hidden = true;
   document.getElementById("evAuditSection").hidden = true;
   document.getElementById("tabBtnAnalytics").hidden = true;
   switchTab("announcements");
@@ -1242,6 +1295,7 @@ function switchTab(name){
   document.getElementById("tabPanelAnnouncements").hidden = name !== "announcements";
   document.getElementById("tabPanelEvents").hidden = name !== "events";
   document.getElementById("tabPanelRequests").hidden = name !== "requests";
+  document.getElementById("tabPanelNotifs").hidden = name !== "notifs";
   [].forEach.call(document.querySelectorAll(".tabBtn"), function(btn){
     btn.classList.toggle("active", btn.dataset.tab === name);
   });
@@ -1250,6 +1304,7 @@ document.getElementById("tabBtnAnalytics").addEventListener("click", function(){
 document.getElementById("tabBtnAnnouncements").addEventListener("click", function(){ switchTab("announcements"); });
 document.getElementById("tabBtnEvents").addEventListener("click", function(){ switchTab("events"); });
 document.getElementById("tabBtnRequests").addEventListener("click", function(){ switchTab("requests"); });
+document.getElementById("tabBtnNotifs").addEventListener("click", function(){ switchTab("notifs"); });
 
 /* ---------- dashboard data ---------- */
 function startDashboard(isSuper){
@@ -1268,8 +1323,9 @@ function startDashboard(isSuper){
   switchTab(isSuper ? "analytics" : "announcements");
 
   startAnnouncements();
+  startNotifications(isSuper);
   startEvents();
-  if(isSuper){ startAnalytics(); startAuditLog(); startAdminRequests(); }
+  if(isSuper){ startAnalytics(); startAuditLog(); startAdminAccess(); }
 }
 
 function currentActor(){
@@ -1282,6 +1338,14 @@ function logAudit(entry){
     by: currentActor(),
     ts: firebase.database.ServerValue.TIMESTAMP
   }, entry)).catch(function(){});
+  // feed for the Notifications tab
+  db.ref("notifications").push({
+    type: entry.kind || "announcement",
+    action: entry.action || "",
+    text: String(entry.text || "").slice(0, 200),
+    by: currentActor(),
+    ts: firebase.database.ServerValue.TIMESTAMP
+  }).catch(function(){});
 }
 
 function startAnnouncements(){
@@ -1740,43 +1804,257 @@ function revertEventAudit(v){
   }
 }
 
-/* Pending admin access requests: approving sets roles/<uid> = "admin". */
-function startAdminRequests(){
-  const list = document.getElementById("requestsList");
-  trackListener(db.ref("adminRequests"), function(snap){
-    const rows = [];
-    snap.forEach(function(child){ rows.push({ key: child.key, val: child.val() }); });
-    const badge = document.getElementById("reqBadge");
-    badge.textContent = rows.length;
-    badge.hidden = !rows.length;
-    if(!rows.length){ list.innerHTML = '<div class="empty">No pending requests.</div>'; return; }
-    list.innerHTML = rows.map(function(r){
-      return '<div class="annCard">' +
-        '<div class="txt"><p><strong>' + esc(r.val.email) + '</strong></p>' +
-        '<div class="meta">Requested ' + esc(fmtTime(r.val.ts)) + '</div></div>' +
-        '<div class="annActions">' +
-        '<button class="annEdit annDel" data-approve="' + esc(r.key) + '" data-email="' + esc(r.val.email) + '">Approve</button>' +
-        '<button class="annDel" data-reject="' + esc(r.key) + '" data-email="' + esc(r.val.email) + '">Reject</button></div>' +
+/* Notifications: a feed of what other admins did (notifications node).
+   Unread = newer than adminReads/<uid> and not made by this admin. */
+function startNotifications(isSuper){
+  const listEl = document.getElementById("notifList");
+  const badge = document.getElementById("notifBadge");
+  const summary = document.getElementById("notifSummary");
+  const markBtn = document.getElementById("notifMarkRead");
+  const me = auth.currentUser;
+  let items = [], lastSeen = 0;
+
+  const VERBS = { add: "added", edit: "edited", delete: "deleted", restore: "restored" };
+  function sentence(n){
+    const who = esc((n.by && n.by.email) || "An admin");
+    const t = '&ldquo;' + esc(n.text) + '&rdquo;';
+    if(n.type === "request") return '<strong>' + esc(n.text) + '</strong> requested admin access';
+    if(n.type === "adminRequest"){
+      if(n.action === "approve") return who + ' approved admin access for <strong>' + esc(n.text) + '</strong>';
+      if(n.action === "reject") return who + ' rejected the admin request from <strong>' + esc(n.text) + '</strong>';
+      if(n.action === "revoke") return who + ' revoked admin access for <strong>' + esc(n.text) + '</strong>';
+    }
+    const noun = n.type === "event" ? "calendar event" : "announcement";
+    return who + ' ' + (VERBS[n.action] || esc(n.action)) + ' ' + noun + ' ' + t;
+  }
+  const isMine = n => n.by && me && n.by.uid === me.uid;
+  const isUnread = n => n.ts > lastSeen && !isMine(n);
+
+  function render(){
+    const rows = items.filter(n => isSuper || (n.type !== "request" && n.type !== "adminRequest"));
+    const unread = rows.filter(isUnread).length;
+    badge.textContent = unread;
+    badge.hidden = !unread;
+    summary.textContent = unread ? unread + " unread" : "You're all caught up";
+    markBtn.hidden = !unread;
+    if(!rows.length){ listEl.innerHTML = '<div class="empty">No notifications yet.</div>'; return; }
+    listEl.innerHTML = rows.map(function(n){
+      return '<div class="annCard' + (isUnread(n) ? ' notifUnread' : '') + '">' +
+        '<div class="txt"><p>' + sentence(n) + '</p>' +
+        (n.message ? '<div class="reqMsg">&ldquo;' + esc(n.message) + '&rdquo;</div>' : '') +
+        '<div class="meta">' + esc(fmtTime(n.ts)) + '</div></div>' +
+        (isUnread(n) ? '<span class="tag new">New</span>' : '') +
       '</div>';
     }).join("");
-  }, function(){ list.innerHTML = '<div class="empty">Could not load requests (check the database rules).</div>'; });
-  list.onclick = function(e){
+  }
+
+  trackListener(db.ref("notifications").orderByChild("ts").limitToLast(100), function(snap){
+    items = [];
+    snap.forEach(function(child){ items.push(child.val()); });
+    items.sort((a, b) => b.ts - a.ts);
+    render();
+  }, function(){ listEl.innerHTML = '<div class="empty">Could not load notifications (check the database rules).</div>'; });
+
+  trackListener(db.ref("adminReads/" + me.uid), function(snap){
+    lastSeen = snap.val() || 0;
+    render();
+  }, function(){});
+
+  markBtn.onclick = function(){
+    // use the newest notification's own timestamp so clock skew can't matter
+    const newest = items.reduce((m, n) => Math.max(m, n.ts || 0), 0);
+    db.ref("adminReads/" + me.uid).set(newest).catch(function(err){ alert("Could not mark as read: " + err.message); });
+  };
+}
+
+/* Admin access: pending requests, current admins and decision history.
+   Approve sets roles/<uid> = "admin"; revoke removes it. Decisions are
+   logged to auditLog (kind "adminRequest") and drive the history list. */
+function startAdminAccess(){
+  const pendingEl = document.getElementById("requestsList");
+  const adminsEl = document.getElementById("adminsList");
+  const histEl = document.getElementById("requestHistory");
+  const filterEl = document.getElementById("histFilter");
+  const searchEl = document.getElementById("histSearch");
+  const me = auth.currentUser;
+  const PAGE_SIZE = 5;
+  let pending = [], roles = {}, history = [];
+  let rolesState = "loading";   // loading | ok | error
+  let filter = "all", query = "", page = 1;
+
+  const lc = v => String(v || "").toLowerCase();
+  function duration(ms){
+    const m = Math.round(ms / 60000);
+    if(m < 1) return "under a minute";
+    if(m < 60) return m + " min";
+    const h = Math.round(m / 60);
+    return h < 48 ? h + " hr" : Math.round(h / 24) + " days";
+  }
+  function emailFor(uid){
+    if(me && uid === me.uid) return me.email;
+    const p = pending.find(r => r.key === uid);
+    if(p) return p.val.email;
+    const h = history.find(r => r.val.uid === uid && r.val.text);
+    return h ? h.val.text : null;
+  }
+
+  function renderPending(){
+    const badge = document.getElementById("reqBadge");
+    badge.textContent = pending.length;
+    badge.hidden = !pending.length;
+    if(!pending.length){ pendingEl.innerHTML = '<div class="empty">No pending requests.</div>'; return; }
+    const rejectedBefore = new Set(history.filter(r => r.val.action === "reject").map(r => lc(r.val.text)));
+    pendingEl.innerHTML = pending.map(function(r){
+      return '<div class="annCard">' +
+        '<div class="txt"><p><strong>' + esc(r.val.email) + '</strong>' +
+        (rejectedBefore.has(lc(r.val.email)) ? ' <span class="tag del">Rejected earlier</span>' : '') + '</p>' +
+        (r.val.message ? '<div class="reqMsg">&ldquo;' + esc(r.val.message) + '&rdquo;</div>' : '') +
+        '<div class="meta">Requested ' + esc(fmtTime(r.val.ts)) + '</div></div>' +
+        '<div class="annActions">' +
+        '<button class="annEdit annDel" data-approve="' + esc(r.key) + '">Approve</button>' +
+        '<button class="annDel" data-reject="' + esc(r.key) + '">Reject</button></div>' +
+      '</div>';
+    }).join("");
+  }
+
+  function renderAdmins(){
+    if(rolesState === "loading"){ adminsEl.innerHTML = '<div class="empty">Loading…</div>'; return; }
+    if(rolesState === "error"){
+      adminsEl.innerHTML = '<div class="empty">Could not load admins. Publish the latest database.rules.json in Firebase (the Super Admin needs read access to <code>roles</code>).</div>';
+      return;
+    }
+    const uids = Object.keys(roles).filter(u => roles[u]);
+    if(!uids.length){ adminsEl.innerHTML = '<div class="empty">No admins found.</div>'; return; }
+    uids.sort((x, y) => (roles[x] === "super" ? 0 : 1) - (roles[y] === "super" ? 0 : 1));
+    adminsEl.innerHTML = uids.map(function(uid){
+      const isSuper = roles[uid] === "super";
+      const email = emailFor(uid);
+      return '<div class="annCard">' +
+        '<div class="txt"><p><strong>' + esc(email || ("UID " + uid.slice(0, 8) + "…")) + '</strong> ' +
+        '<span class="tag' + (isSuper ? " new" : "") + '">' + (isSuper ? "Super Admin" : "Admin") + '</span>' +
+        (me && uid === me.uid ? ' <span class="tag">You</span>' : '') + '</p></div>' +
+        (isSuper ? '' : '<div class="annActions"><button class="annDel" data-revoke="' + esc(uid) + '">Revoke</button></div>') +
+      '</div>';
+    }).join("");
+  }
+
+  function renderHistory(){
+    const q = lc(query).trim();
+    const rows = history.filter(r => (filter === "all" || r.val.action === filter) && (!q || lc(r.val.text).includes(q)));
+    if(!rows.length){
+      histEl.innerHTML = '<div class="empty">' + (history.length ? "Nothing matches." : "No requests handled yet.") + '</div>';
+      return;
+    }
+    const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+    if(page > totalPages) page = totalPages;
+    const start = (page - 1) * PAGE_SIZE;
+    histEl.innerHTML = rows.slice(start, start + PAGE_SIZE).map(function(r){
+      const v = r.val;
+      const tag = v.action === "approve" ? '<span class="tag new">Approved</span>'
+        : v.action === "reject" ? '<span class="tag del">Rejected</span>'
+        : '<span class="tag">Revoked</span>';
+      let meta = 'By ' + esc((v.by && v.by.email) || "Unknown") + ' · ' + esc(fmtTime(v.ts));
+      if(v.reqTs && v.ts) meta += ' · requested ' + esc(fmtTime(v.reqTs)) + ' (decided in ' + duration(v.ts - v.reqTs) + ')';
+      const canUndo = v.uid && (v.action === "approve" || v.action === "reject");
+      return '<div class="annCard"><div class="txt"><p>' + tag + ' <strong>' + esc(v.text) + '</strong></p>' +
+        (v.message ? '<div class="reqMsg">&ldquo;' + esc(v.message) + '&rdquo;</div>' : '') +
+        (v.reason ? '<div class="reqMsg">Reason: ' + esc(v.reason) + '</div>' : '') +
+        '<div class="meta">' + meta + '</div></div>' +
+        (canUndo ? '<div class="annActions"><button class="annDel" data-undo="' + esc(r.key) + '">Undo</button></div>' : '') +
+      '</div>';
+    }).join("") + paginationHTML(page, totalPages);
+  }
+
+  function logDecision(entry){ logAudit(Object.assign({ kind: "adminRequest" }, entry)); }
+
+  trackListener(db.ref("adminRequests"), function(snap){
+    pending = [];
+    snap.forEach(function(child){ pending.push({ key: child.key, val: child.val() }); });
+    renderPending();
+    renderAdmins();
+  }, function(){ pendingEl.innerHTML = '<div class="empty">Could not load requests (check the database rules).</div>'; });
+
+  trackListener(db.ref("roles"), function(snap){
+    roles = snap.val() || {};
+    rolesState = "ok";
+    renderAdmins();
+  }, function(){ rolesState = "error"; renderAdmins(); });
+
+  trackListener(db.ref("auditLog").limitToLast(300), function(snap){
+    history = [];
+    snap.forEach(function(child){
+      if(child.val().kind === "adminRequest") history.unshift({ key: child.key, val: child.val() });
+    });
+    renderPending();
+    renderAdmins();
+    renderHistory();
+  });
+
+  pendingEl.onclick = function(e){
     const a = e.target.closest("[data-approve]"), x = e.target.closest("[data-reject]");
+    const key = a ? a.dataset.approve : x ? x.dataset.reject : null;
+    const r = pending.find(p => p.key === key);
+    if(!r) return;
     if(a){
-      const uid = a.dataset.approve;
-      const email = a.dataset.email;
       a.disabled = true;
-      db.ref("roles/" + uid).set("admin").then(function(){ return db.ref("adminRequests/" + uid).remove(); })
-        .then(function(){ logAudit({ kind: "adminRequest", action: "approve", text: email }); })
+      db.ref("roles/" + key).set("admin")
+        .then(function(){ return db.ref("adminRequests/" + key).remove(); })
+        .then(function(){ logDecision({ action: "approve", uid: key, text: r.val.email, reqTs: r.val.ts || null, message: r.val.message || null }); })
         .catch(function(err){ a.disabled = false; alert("Could not approve: " + err.message); });
-    } else if(x){
-      if(confirm("Reject this request?")){
-        const email = x.dataset.email;
-        db.ref("adminRequests/" + x.dataset.reject).remove()
-          .then(function(){ logAudit({ kind: "adminRequest", action: "reject", text: email }); });
-      }
+    } else {
+      const reason = prompt("Reason for rejecting " + r.val.email + " (optional):", "");
+      if(reason === null) return;
+      db.ref("adminRequests/" + key).remove()
+        .then(function(){ logDecision({ action: "reject", uid: key, text: r.val.email, reqTs: r.val.ts || null, message: r.val.message || null, reason: reason.trim() || null }); })
+        .catch(function(err){ alert("Could not reject: " + err.message); });
     }
   };
+
+  adminsEl.onclick = function(e){
+    const b = e.target.closest("[data-revoke]");
+    if(!b) return;
+    const uid = b.dataset.revoke;
+    const email = emailFor(uid);
+    if(!confirm("Revoke admin access for " + (email || "this account") + "?")) return;
+    b.disabled = true;
+    db.ref("roles/" + uid).remove()
+      .then(function(){ logDecision({ action: "revoke", uid: uid, text: email || ("UID " + uid) }); })
+      .catch(function(err){ b.disabled = false; alert("Could not revoke: " + err.message); });
+  };
+
+  histEl.onclick = function(e){
+    const pg = e.target.closest("[data-page]");
+    if(pg && !pg.disabled){ page = +pg.dataset.page; renderHistory(); return; }
+    const u = e.target.closest("[data-undo]");
+    if(!u) return;
+    const entry = history.find(r => r.key === u.dataset.undo);
+    if(!entry) return;
+    const v = entry.val;
+    if(pending.some(p => p.key === v.uid)){ alert("This person already has a pending request."); return; }
+    if(!confirm("Undo this decision and put " + v.text + " back to pending?")) return;
+    u.disabled = true;
+    const undoRole = v.action === "approve"
+      ? db.ref("roles/" + v.uid).once("value").then(s => s.val() === "admin" ? db.ref("roles/" + v.uid).remove() : null)
+      : Promise.resolve();
+    undoRole
+      .then(function(){
+        const req = { email: v.text, ts: v.reqTs || firebase.database.ServerValue.TIMESTAMP };
+        if(v.message) req.message = v.message;
+        return db.ref("adminRequests/" + v.uid).set(req);
+      })
+      .then(function(){ return db.ref("auditLog/" + entry.key).remove(); })
+      .catch(function(err){ u.disabled = false; alert("Could not undo: " + err.message); });
+  };
+
+  filterEl.onclick = function(e){
+    const c = e.target.closest("[data-f]");
+    if(!c) return;
+    filter = c.dataset.f;
+    page = 1;
+    [].forEach.call(filterEl.querySelectorAll(".rangeChip"), b => b.classList.toggle("active", b === c));
+    renderHistory();
+  };
+  searchEl.oninput = function(){ query = searchEl.value; page = 1; renderHistory(); };
 }
 
 /* Admin activity: one auditLog listener feeding two lists — announcement
@@ -1791,20 +2069,7 @@ function startAuditLog(){
     const rows = [];
     snap.forEach(function(child){ rows.unshift({ key: child.key, val: child.val() }); });
     views.forEach(function(view){ view(rows); });
-    renderRequestHistory(rows);
   });
-}
-
-function renderRequestHistory(rows){
-  const list = document.getElementById("requestHistory");
-  const items = rows.filter(function(r){ return r.val.kind === "adminRequest"; });
-  if(!items.length){ list.innerHTML = '<div class="empty">No requests handled yet.</div>'; return; }
-  list.innerHTML = items.map(function(r){
-    const v = r.val;
-    const tag = v.action === "approve" ? '<span class="tag new">Approved</span>' : '<span class="tag del">Rejected</span>';
-    return '<div class="annCard"><div class="txt"><p>' + tag + ' <strong>' + esc(v.text) + '</strong></p>' +
-      '<div class="meta">By ' + esc((v.by && v.by.email) || "Unknown") + ' · ' + esc(fmtTime(v.ts)) + '</div></div></div>';
-  }).join("");
 }
 
 function makeAuditView(list, belongs, emptyText){

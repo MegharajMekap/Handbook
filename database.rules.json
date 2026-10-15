@@ -49,18 +49,34 @@
         ".validate": "!newData.exists() || newData.child('by/uid').val() == auth.uid"
       }
     },
+    "notifications": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).exists()",
+      ".indexOn": ["ts"],
+      "$nid": {
+        ".write": "auth != null && ((!data.exists() && root.child('roles').child(auth.uid).exists()) || ($nid == 'req_' + auth.uid && root.child('adminRequests').child(auth.uid).exists()))",
+        ".validate": "newData.hasChildren(['type', 'text', 'by', 'ts']) && newData.child('by/uid').val() == auth.uid && newData.child('text').isString() && newData.child('text').val().length <= 300"
+      }
+    },
+    "adminReads": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid && root.child('roles').child(auth.uid).exists()",
+        ".validate": "newData.isNumber()"
+      }
+    },
     "adminRequests": {
       ".read": "auth != null && root.child('roles').child(auth.uid).val() == 'super'",
       "$uid": {
         ".read": "auth != null && auth.uid == $uid",
         ".write": "auth != null && ((auth.uid == $uid && !root.child('roles').child($uid).exists()) || root.child('roles').child(auth.uid).val() == 'super')",
-        ".validate": "!newData.exists() || (newData.hasChildren(['email', 'ts']) && newData.child('email').isString() && newData.child('email').val().length <= 200)"
+        ".validate": "!newData.exists() || (newData.hasChildren(['email', 'ts']) && newData.child('email').isString() && newData.child('email').val().length <= 200 && (!newData.child('message').exists() || (newData.child('message').isString() && newData.child('message').val().length <= 200)))"
       }
     },
     "roles": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).val() == 'super'",
       "$uid": {
         ".read": "auth != null && auth.uid == $uid",
-        ".write": "auth != null && root.child('roles').child(auth.uid).val() == 'super' && newData.val() == 'admin'"
+        ".write": "auth != null && root.child('roles').child(auth.uid).val() == 'super' && (newData.val() == 'admin' || (!newData.exists() && data.val() == 'admin'))"
       }
     }
   }
