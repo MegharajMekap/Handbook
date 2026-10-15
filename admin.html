@@ -84,6 +84,13 @@
     padding:9px 12px;font-size:12.5px;margin-top:14px;display:none;
   }
   .loginErr.show{display:block}
+  .loginOk{
+    color:#1E6B3C;background:#E8F5EC;border:1px solid #BFE3CB;border-radius:8px;
+    padding:9px 12px;font-size:12.5px;margin-top:14px;display:none;
+  }
+  .loginOk.show{display:block}
+  .loginSwitch{margin-top:16px;text-align:center;font-size:12.5px;color:var(--mute)}
+  .loginSwitch button{background:none;border:0;padding:0;font:inherit;font-weight:600;color:var(--navy);cursor:pointer;text-decoration:underline}
 
   /* ---------- dashboard ---------- */
   #dash{display:none}
@@ -598,7 +605,9 @@
         </div>
         <button type="submit" class="loginGo" id="loginBtn">Sign in</button>
         <div class="loginErr" id="loginErr"></div>
+        <div class="loginOk" id="loginOk"></div>
       </form>
+      <div class="loginSwitch"><span id="loginSwitchText">Need access?</span> <button type="button" id="loginSwitchBtn">Request admin access</button></div>
       </div>
     </div>
   </div>
@@ -855,6 +864,16 @@
       <div class="annList" id="annList"><div class="empty">Loading…</div></div>
     </div>
 
+    <div id="requestsSection" hidden>
+      <div class="section">
+        <div class="sectionHead">
+          <h2><span class="dot" style="background:#B7791F"></span>Admin access requests</h2>
+        </div>
+        <p class="sectionNote">People who signed up on the admin page and asked for access. Approving gives them the Admin role (announcements and calendar events only, no analytics).</p>
+        <div class="annList" id="requestsList"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+
     <div id="auditSection" hidden>
       <div class="section">
         <div class="sectionHead">
@@ -1026,13 +1045,68 @@ const loginForm = document.getElementById("loginForm");
 const loginBtn = document.getElementById("loginBtn");
 const loginErr = document.getElementById("loginErr");
 
+const loginOk = document.getElementById("loginOk");
+let requestMode = false;   // true while the form is used to request admin access
+
+document.getElementById("loginSwitchBtn").addEventListener("click", function(){
+  requestMode = !requestMode;
+  document.querySelector("#loginWrap h2").textContent = requestMode ? "Request admin access" : "Admin sign-in";
+  loginBtn.textContent = requestMode ? "Request access" : "Sign in";
+  document.getElementById("password").autocomplete = requestMode ? "new-password" : "current-password";
+  document.getElementById("loginSwitchText").textContent = requestMode ? "Already approved?" : "Need access?";
+  this.textContent = requestMode ? "Sign in" : "Request admin access";
+  loginErr.classList.remove("show");
+  loginOk.classList.remove("show");
+});
+
+// creates the account (or signs in to an existing one), files a request, then signs out
+function requestAdminAccess(email, password){
+  let user;
+  return auth.createUserWithEmailAndPassword(email, password)
+    .catch(function(err){
+      if(err.code === "auth/email-already-in-use") return auth.signInWithEmailAndPassword(email, password);
+      throw err;
+    })
+    .then(function(cred){
+      user = cred.user;
+      return db.ref("roles/" + user.uid).once("value");
+    })
+    .then(function(snap){
+      if(snap.val()) throw { code: "app/already-admin" };
+      return db.ref("adminRequests/" + user.uid).set({ email: user.email, ts: firebase.database.ServerValue.TIMESTAMP });
+    })
+    .then(function(){ return auth.signOut(); });
+}
+
 loginForm.addEventListener("submit", function(e){
   e.preventDefault();
   loginErr.classList.remove("show");
+  loginOk.classList.remove("show");
   loginBtn.disabled = true;
-  loginBtn.textContent = "Signing in…";
+  loginBtn.textContent = requestMode ? "Sending…" : "Signing in…";
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
+  if(requestMode){
+    requestAdminAccess(email, password)
+      .then(function(){
+        loginOk.textContent = "Request sent. You can sign in once the Super Admin approves it.";
+        loginOk.classList.add("show");
+      })
+      .catch(function(err){
+        loginErr.textContent = err.code === "app/already-admin" ? "This account already has admin access. Use Sign in."
+          : err.code === "auth/invalid-credential" || err.code === "auth/wrong-password" ? "That email is already registered. Enter its existing password."
+          : err.code === "auth/weak-password" ? "Password should be at least 6 characters."
+          : err.code === "auth/invalid-email" ? "Enter a valid email address."
+          : "Couldn't send the request: " + (err.message || err.code);
+        loginErr.classList.add("show");
+        if(auth.currentUser) auth.signOut();
+      })
+      .finally(function(){
+        loginBtn.disabled = false;
+        loginBtn.textContent = "Request access";
+      });
+    return;
+  }
   auth.signInWithEmailAndPassword(email, password)
     .catch(function(err){
       loginErr.textContent = err.code === "auth/invalid-credential" || err.code === "auth/wrong-password" || err.code === "auth/user-not-found"
@@ -1068,16 +1142,22 @@ refreshBtn.addEventListener("click", function(){
   });
 });
 
-function denyAccess(msg){
+function denyAccess(msg, uid){
   dashboardStarted = false;
-  auth.signOut().then(function(){
-    loginErr.textContent = msg;
-    loginErr.classList.add("show");
+  const pending = uid
+    ? db.ref("adminRequests/" + uid).once("value").then(function(s){ return s.exists(); }, function(){ return false; })
+    : Promise.resolve(false);
+  pending.then(function(isPending){
+    return auth.signOut().then(function(){
+      loginErr.textContent = isPending ? "Your admin request is waiting for the Super Admin's approval." : msg;
+      loginErr.classList.add("show");
+    });
   });
 }
 
 auth.onAuthStateChanged(function(user){
   if(user){
+    if(requestMode) return;   // the request flow signs itself out
     if(!dashboardStarted){
       dashboardStarted = true;
       // the dashboard stays hidden until a role is confirmed
@@ -1085,7 +1165,7 @@ auth.onAuthStateChanged(function(user){
         .then(function(snap){
           const role = snap.val();
           if(!role){
-            denyAccess("This account doesn't have admin access.");
+            denyAccess("This account doesn't have admin access. Use \"Request admin access\" below.", user.uid);
             return;
           }
           loginWrap.style.display = "none";
@@ -1117,6 +1197,7 @@ function stopDashboard(){
   document.getElementById("analyticsNav").hidden = true;
   document.getElementById("superOnlySections").hidden = true;
   document.getElementById("auditSection").hidden = true;
+  document.getElementById("requestsSection").hidden = true;
   document.getElementById("evAuditSection").hidden = true;
   document.getElementById("tabBtnAnalytics").hidden = true;
   switchTab("announcements");
@@ -1167,13 +1248,14 @@ function startDashboard(isSuper){
   document.getElementById("analyticsNav").hidden = !isSuper;
   document.getElementById("superOnlySections").hidden = !isSuper;
   document.getElementById("auditSection").hidden = !isSuper;
+  document.getElementById("requestsSection").hidden = !isSuper;
   document.getElementById("evAuditSection").hidden = !isSuper;
   document.getElementById("tabBtnAnalytics").hidden = !isSuper;
   switchTab(isSuper ? "analytics" : "announcements");
 
   startAnnouncements();
   startEvents();
-  if(isSuper){ startAnalytics(); startAuditLog(); }
+  if(isSuper){ startAnalytics(); startAuditLog(); startAdminRequests(); }
 }
 
 function currentActor(){
@@ -1642,6 +1724,36 @@ function revertEventAudit(v){
       });
     });
   }
+}
+
+/* Pending admin access requests: approving sets roles/<uid> = "admin". */
+function startAdminRequests(){
+  const list = document.getElementById("requestsList");
+  trackListener(db.ref("adminRequests"), function(snap){
+    const rows = [];
+    snap.forEach(function(child){ rows.push({ key: child.key, val: child.val() }); });
+    if(!rows.length){ list.innerHTML = '<div class="empty">No pending requests.</div>'; return; }
+    list.innerHTML = rows.map(function(r){
+      return '<div class="annCard">' +
+        '<div class="txt"><p><strong>' + esc(r.val.email) + '</strong></p>' +
+        '<div class="meta">Requested ' + esc(fmtTime(r.val.ts)) + '</div></div>' +
+        '<div class="annActions">' +
+        '<button class="annEdit annDel" data-approve="' + esc(r.key) + '">Approve</button>' +
+        '<button class="annDel" data-reject="' + esc(r.key) + '">Reject</button></div>' +
+      '</div>';
+    }).join("");
+  }, function(){ list.innerHTML = '<div class="empty">Could not load requests (check the database rules).</div>'; });
+  list.onclick = function(e){
+    const a = e.target.closest("[data-approve]"), x = e.target.closest("[data-reject]");
+    if(a){
+      const uid = a.dataset.approve;
+      a.disabled = true;
+      db.ref("roles/" + uid).set("admin").then(function(){ return db.ref("adminRequests/" + uid).remove(); })
+        .catch(function(err){ a.disabled = false; alert("Could not approve: " + err.message); });
+    } else if(x){
+      if(confirm("Reject this request?")) db.ref("adminRequests/" + x.dataset.reject).remove();
+    }
+  };
 }
 
 /* Admin activity: one auditLog listener feeding two lists — announcement
