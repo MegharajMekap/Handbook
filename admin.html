@@ -114,6 +114,8 @@
   .tabBtn:hover{color:var(--ink-soft)}
   .tabBtn.active{color:var(--navy);border-bottom-color:var(--navy)}
   .tabBtn[hidden]{display:none}
+  .reqBadge{display:inline-block;min-width:18px;padding:1px 6px;margin-left:4px;border-radius:9px;background:#B7791F;color:#fff;font-size:11px;font-weight:700;line-height:16px;text-align:center}
+  .reqBadge[hidden]{display:none}
   .tabPanel[hidden]{display:none}
   .limitedNote{
     background:var(--navy-tint);border:1px solid #DCE6F4;border-radius:10px;
@@ -631,6 +633,7 @@
       <button class="tabBtn" id="tabBtnAnalytics" data-tab="analytics">Analytics</button>
       <button class="tabBtn" id="tabBtnAnnouncements" data-tab="announcements">Announcements</button>
       <button class="tabBtn" id="tabBtnEvents" data-tab="events">Calendar events</button>
+      <button class="tabBtn" id="tabBtnRequests" data-tab="requests" hidden>Admin requests <span class="reqBadge" id="reqBadge" hidden></span></button>
     </div>
 
     <div id="tabPanelAnalytics" class="tabPanel">
@@ -864,16 +867,6 @@
       <div class="annList" id="annList"><div class="empty">Loading…</div></div>
     </div>
 
-    <div id="requestsSection" hidden>
-      <div class="section">
-        <div class="sectionHead">
-          <h2><span class="dot" style="background:#B7791F"></span>Admin access requests</h2>
-        </div>
-        <p class="sectionNote">People who signed up on the admin page and asked for access. Approving gives them the Admin role (announcements and calendar events only, no analytics).</p>
-        <div class="annList" id="requestsList"><div class="empty">Loading…</div></div>
-      </div>
-    </div>
-
     <div id="auditSection" hidden>
       <div class="section">
         <div class="sectionHead">
@@ -882,6 +875,24 @@
         <p class="sectionNote">Every announcement added, edited, deleted, or restored, by whichever admin made the change. "Remove"/"Restore" undoes that specific action.</p>
         <div class="annList" id="auditList"><div class="empty">Loading…</div></div>
       </div>
+    </div>
+    </div>
+
+    <div id="tabPanelRequests" class="tabPanel" hidden>
+    <div class="section">
+      <div class="sectionHead">
+        <h2><span class="dot" style="background:#B7791F"></span>Admin access requests</h2>
+      </div>
+      <p class="sectionNote">People who signed up on the admin page and asked for access. Approving gives them the Admin role (announcements and calendar events only, no analytics).</p>
+      <div class="annList" id="requestsList"><div class="empty">Loading…</div></div>
+    </div>
+
+    <div class="section">
+      <div class="sectionHead">
+        <h2><span class="dot" style="background:#1E8A4C"></span>Request history</h2>
+      </div>
+      <p class="sectionNote">Admin access requests you have approved or rejected.</p>
+      <div class="annList" id="requestHistory"><div class="empty">Loading…</div></div>
     </div>
     </div>
 
@@ -1197,7 +1208,8 @@ function stopDashboard(){
   document.getElementById("analyticsNav").hidden = true;
   document.getElementById("superOnlySections").hidden = true;
   document.getElementById("auditSection").hidden = true;
-  document.getElementById("requestsSection").hidden = true;
+  document.getElementById("tabBtnRequests").hidden = true;
+  document.getElementById("reqBadge").hidden = true;
   document.getElementById("evAuditSection").hidden = true;
   document.getElementById("tabBtnAnalytics").hidden = true;
   switchTab("announcements");
@@ -1229,6 +1241,7 @@ function switchTab(name){
   document.getElementById("tabPanelAnalytics").hidden = name !== "analytics";
   document.getElementById("tabPanelAnnouncements").hidden = name !== "announcements";
   document.getElementById("tabPanelEvents").hidden = name !== "events";
+  document.getElementById("tabPanelRequests").hidden = name !== "requests";
   [].forEach.call(document.querySelectorAll(".tabBtn"), function(btn){
     btn.classList.toggle("active", btn.dataset.tab === name);
   });
@@ -1236,6 +1249,7 @@ function switchTab(name){
 document.getElementById("tabBtnAnalytics").addEventListener("click", function(){ switchTab("analytics"); });
 document.getElementById("tabBtnAnnouncements").addEventListener("click", function(){ switchTab("announcements"); });
 document.getElementById("tabBtnEvents").addEventListener("click", function(){ switchTab("events"); });
+document.getElementById("tabBtnRequests").addEventListener("click", function(){ switchTab("requests"); });
 
 /* ---------- dashboard data ---------- */
 function startDashboard(isSuper){
@@ -1248,7 +1262,7 @@ function startDashboard(isSuper){
   document.getElementById("analyticsNav").hidden = !isSuper;
   document.getElementById("superOnlySections").hidden = !isSuper;
   document.getElementById("auditSection").hidden = !isSuper;
-  document.getElementById("requestsSection").hidden = !isSuper;
+  document.getElementById("tabBtnRequests").hidden = !isSuper;
   document.getElementById("evAuditSection").hidden = !isSuper;
   document.getElementById("tabBtnAnalytics").hidden = !isSuper;
   switchTab(isSuper ? "analytics" : "announcements");
@@ -1732,14 +1746,17 @@ function startAdminRequests(){
   trackListener(db.ref("adminRequests"), function(snap){
     const rows = [];
     snap.forEach(function(child){ rows.push({ key: child.key, val: child.val() }); });
+    const badge = document.getElementById("reqBadge");
+    badge.textContent = rows.length;
+    badge.hidden = !rows.length;
     if(!rows.length){ list.innerHTML = '<div class="empty">No pending requests.</div>'; return; }
     list.innerHTML = rows.map(function(r){
       return '<div class="annCard">' +
         '<div class="txt"><p><strong>' + esc(r.val.email) + '</strong></p>' +
         '<div class="meta">Requested ' + esc(fmtTime(r.val.ts)) + '</div></div>' +
         '<div class="annActions">' +
-        '<button class="annEdit annDel" data-approve="' + esc(r.key) + '">Approve</button>' +
-        '<button class="annDel" data-reject="' + esc(r.key) + '">Reject</button></div>' +
+        '<button class="annEdit annDel" data-approve="' + esc(r.key) + '" data-email="' + esc(r.val.email) + '">Approve</button>' +
+        '<button class="annDel" data-reject="' + esc(r.key) + '" data-email="' + esc(r.val.email) + '">Reject</button></div>' +
       '</div>';
     }).join("");
   }, function(){ list.innerHTML = '<div class="empty">Could not load requests (check the database rules).</div>'; });
@@ -1747,11 +1764,17 @@ function startAdminRequests(){
     const a = e.target.closest("[data-approve]"), x = e.target.closest("[data-reject]");
     if(a){
       const uid = a.dataset.approve;
+      const email = a.dataset.email;
       a.disabled = true;
       db.ref("roles/" + uid).set("admin").then(function(){ return db.ref("adminRequests/" + uid).remove(); })
+        .then(function(){ logAudit({ kind: "adminRequest", action: "approve", text: email }); })
         .catch(function(err){ a.disabled = false; alert("Could not approve: " + err.message); });
     } else if(x){
-      if(confirm("Reject this request?")) db.ref("adminRequests/" + x.dataset.reject).remove();
+      if(confirm("Reject this request?")){
+        const email = x.dataset.email;
+        db.ref("adminRequests/" + x.dataset.reject).remove()
+          .then(function(){ logAudit({ kind: "adminRequest", action: "reject", text: email }); });
+      }
     }
   };
 }
@@ -1761,14 +1784,27 @@ function startAdminRequests(){
    Calendar events tab. */
 function startAuditLog(){
   const views = [
-    makeAuditView(document.getElementById("auditList"), v => v.kind !== "event", "No announcement activity logged yet."),
+    makeAuditView(document.getElementById("auditList"), v => v.kind !== "event" && v.kind !== "adminRequest", "No announcement activity logged yet."),
     makeAuditView(document.getElementById("evAuditList"), v => v.kind === "event", "No calendar event activity logged yet.")
   ];
   trackListener(db.ref("auditLog").limitToLast(150), function(snap){
     const rows = [];
     snap.forEach(function(child){ rows.unshift({ key: child.key, val: child.val() }); });
     views.forEach(function(view){ view(rows); });
+    renderRequestHistory(rows);
   });
+}
+
+function renderRequestHistory(rows){
+  const list = document.getElementById("requestHistory");
+  const items = rows.filter(function(r){ return r.val.kind === "adminRequest"; });
+  if(!items.length){ list.innerHTML = '<div class="empty">No requests handled yet.</div>'; return; }
+  list.innerHTML = items.map(function(r){
+    const v = r.val;
+    const tag = v.action === "approve" ? '<span class="tag new">Approved</span>' : '<span class="tag del">Rejected</span>';
+    return '<div class="annCard"><div class="txt"><p>' + tag + ' <strong>' + esc(v.text) + '</strong></p>' +
+      '<div class="meta">By ' + esc((v.by && v.by.email) || "Unknown") + ' · ' + esc(fmtTime(v.ts)) + '</div></div></div>';
+  }).join("");
 }
 
 function makeAuditView(list, belongs, emptyText){
