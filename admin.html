@@ -1231,6 +1231,8 @@ auth.onAuthStateChanged(function(user){
             denyAccess("This account doesn't have admin access. Use \"Request admin access\" below.", user.uid);
             return;
           }
+          // lets the Super Admin see names instead of UIDs in "Current admins"
+          db.ref("adminEmails/" + user.uid).set(user.email || "").catch(function(){});
           loginWrap.style.display = "none";
           dash.classList.add("show");
           refreshBtn.hidden = false;
@@ -1879,6 +1881,7 @@ function startAdminAccess(){
   const me = auth.currentUser;
   const PAGE_SIZE = 5;
   let pending = [], roles = {}, history = [];
+  let adminEmails = {};
   let rolesState = "loading";   // loading | ok | error
   let filter = "all", query = "", page = 1;
 
@@ -1892,6 +1895,7 @@ function startAdminAccess(){
   }
   function emailFor(uid){
     if(me && uid === me.uid) return me.email;
+    if(adminEmails[uid]) return adminEmails[uid];
     const p = pending.find(r => r.key === uid);
     if(p) return p.val.email;
     const h = history.find(r => r.val.uid === uid && r.val.text);
@@ -1974,6 +1978,11 @@ function startAdminAccess(){
     renderAdmins();
   }, function(){ pendingEl.innerHTML = '<div class="empty">Could not load requests (check the database rules).</div>'; });
 
+  trackListener(db.ref("adminEmails"), function(snap){
+    adminEmails = snap.val() || {};
+    renderAdmins();
+  }, function(){});
+
   trackListener(db.ref("roles"), function(snap){
     roles = snap.val() || {};
     rolesState = "ok";
@@ -1998,6 +2007,7 @@ function startAdminAccess(){
     if(a){
       a.disabled = true;
       db.ref("roles/" + key).set("admin")
+        .then(function(){ return db.ref("adminEmails/" + key).set(r.val.email); })
         .then(function(){ return db.ref("adminRequests/" + key).remove(); })
         .then(function(){ logDecision({ action: "approve", uid: key, text: r.val.email, reqTs: r.val.ts || null, message: r.val.message || null }); })
         .catch(function(err){ a.disabled = false; alert("Could not approve: " + err.message); });

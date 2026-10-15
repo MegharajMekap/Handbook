@@ -64,6 +64,13 @@
         ".validate": "newData.isNumber()"
       }
     },
+    "adminEmails": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).val() == 'super'",
+      "$uid": {
+        ".write": "auth != null && ((auth.uid == $uid && root.child('roles').child(auth.uid).exists()) || root.child('roles').child(auth.uid).val() == 'super')",
+        ".validate": "newData.isString() && newData.val().length <= 200"
+      }
+    },
     "adminRequests": {
       ".read": "auth != null && root.child('roles').child(auth.uid).val() == 'super'",
       "$uid": {
