@@ -1937,8 +1937,7 @@ function startAdminAccess(){
         '<div class="txt"><p><strong>' + esc(email || ("UID " + uid.slice(0, 8) + "…")) + '</strong> ' +
         '<span class="tag' + (isSuper ? " new" : "") + '">' + (isSuper ? "Super Admin" : "Admin") + '</span>' +
         (me && uid === me.uid ? ' <span class="tag">You</span>' : '') + '</p></div>' +
-        (isSuper ? '' : '<div class="annActions"><button class="annEdit annDel" data-label="' + esc(uid) + '">' + (email ? 'Edit name' : 'Set name') + '</button>' +
-          '<button class="annDel" data-revoke="' + esc(uid) + '">Revoke</button></div>') +
+        (isSuper ? '' : '<div class="annActions"><button class="annDel" data-revoke="' + esc(uid) + '">Revoke</button></div>') +
       '</div>';
     }).join("");
   }
@@ -2022,15 +2021,6 @@ function startAdminAccess(){
   };
 
   adminsEl.onclick = function(e){
-    const l = e.target.closest("[data-label]");
-    if(l){
-      const name = prompt("Email or name to show for this admin:", emailFor(l.dataset.label) || "");
-      if(name !== null && name.trim()){
-        db.ref("adminEmails/" + l.dataset.label).set(name.trim().slice(0, 200))
-          .catch(function(err){ alert("Could not save: " + err.message); });
-      }
-      return;
-    }
     const b = e.target.closest("[data-revoke]");
     if(!b) return;
     const uid = b.dataset.revoke;

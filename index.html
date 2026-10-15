@@ -2138,7 +2138,11 @@
       // admin / super admin accounts get a shortcut to the dashboard
       adminDashLink.hidden = true;
       firebase.database().ref("roles/" + user.uid).once("value")
-        .then(function(snap){ adminDashLink.hidden = !snap.val(); })
+        .then(function(snap){
+          adminDashLink.hidden = !snap.val();
+          // lets the Super Admin see this admin's email in the dashboard's "Current admins"
+          if(snap.val() && user.email) firebase.database().ref("adminEmails/" + user.uid).set(user.email).catch(function(){});
+        })
         .catch(function(err){
           // usually means the live database rules don't let a user read their own roles/<uid>
           console.warn("Admin dashboard link: could not read roles/" + user.uid, err);
