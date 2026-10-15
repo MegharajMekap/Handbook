@@ -1068,16 +1068,34 @@ refreshBtn.addEventListener("click", function(){
   });
 });
 
+function denyAccess(msg){
+  dashboardStarted = false;
+  auth.signOut().then(function(){
+    loginErr.textContent = msg;
+    loginErr.classList.add("show");
+  });
+}
+
 auth.onAuthStateChanged(function(user){
   if(user){
-    loginWrap.style.display = "none";
-    dash.classList.add("show");
-    refreshBtn.hidden = false;
     if(!dashboardStarted){
       dashboardStarted = true;
+      // the dashboard stays hidden until a role is confirmed
       db.ref("roles/" + user.uid).once("value")
-        .then(function(snap){ startDashboard(snap.val() === "super"); })
-        .catch(function(){ startDashboard(false); });
+        .then(function(snap){
+          const role = snap.val();
+          if(!role){
+            denyAccess("This account doesn't have admin access.");
+            return;
+          }
+          loginWrap.style.display = "none";
+          dash.classList.add("show");
+          refreshBtn.hidden = false;
+          startDashboard(role === "super");
+        })
+        .catch(function(){
+          denyAccess("Couldn't verify admin access. Please try again.");
+        });
     }
   } else {
     loginWrap.style.display = "";
