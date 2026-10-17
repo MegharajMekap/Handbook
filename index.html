@@ -2816,11 +2816,14 @@ function calEventRow(e){
 /* faded, non-interactive preview chip for a day that belongs to the previous/next month */
 function calGhostChip(r){
   if(r.isEvent){
-    return '<div class="calChip calChip-ghost calChip-event" style="--ev:' + evType(r).color + '">' +
+    return '<div class="calChip calChip-ghost calChip-event' + (evEndStamp(r) <= Date.now() ? ' calChip-evpast' : '') + '" style="--ev:' + evType(r).color + '">' +
       '<span class="calChipText">' + esc(r.title) + '</span></div>';
   }
   const s = sub(r.subject);
-  return '<div class="calChip calChip-ghost" style="background-color:' + s.color + '">' +
+  const done = endStamp(r) <= Date.now(); // same rule as the main grid: finished classes are grey
+  return '<div class="calChip calChip-ghost' + (done ? ' calChip-done' : '') + (r.campus ? ' calChip-campus' : '') + '"' +
+    (done ? '' : ' style="background-color:' + s.color + '"') + '>' +
+    (r.campus ? CAMPUS_ICO : '') +
     '<span class="calChipText">' + esc(s.code) + '<span class="calChipLecture"> · ' + esc(r.lecture) + '</span></span></div>';
 }
 
