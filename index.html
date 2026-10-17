@@ -101,9 +101,7 @@
   .funfactText.in{opacity:0;transform:translateY(8px);transition:none}
   .ffLabel{font-size:13px;font-weight:500;color:var(--mute)}
   .ffValue{
-    font-size:21px;font-weight:800;letter-spacing:-.01em;line-height:1.1;
-    background:linear-gradient(135deg,var(--navy),#C23A2D);
-    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-size:20px;font-weight:600;letter-spacing:0;line-height:1.1;color:var(--navy);
   }
   .funfactDots{flex:none;display:flex;gap:4px;align-items:center}
   .funfactDots i{width:5px;height:5px;border-radius:99px;background:var(--line);transition:width .3s ease,background-color .3s ease}
@@ -111,7 +109,7 @@
   .funfactBar{position:absolute;left:0;bottom:0;height:3px;width:100%;background:linear-gradient(90deg,#D9503F,var(--navy));transform-origin:left;transform:scaleX(0);opacity:.75}
   .funfactBar.run{animation:ffBar 4.5s linear forwards}
   @keyframes ffBar{to{transform:scaleX(1)}}
-  @media (max-width:560px){.funfactDots{display:none}.ffValue{font-size:19px}}
+  @media (max-width:560px){.funfactDots{display:none}.ffValue{font-size:18px}}
   @media (prefers-reduced-motion:reduce){.funfactText{transition:none}.funfactText.out,.funfactText.in{transform:none}.funfactBar{display:none}}
 
   .headrow{
