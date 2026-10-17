@@ -739,6 +739,11 @@
   .calCell:hover{background:var(--navy-tint);transform:translateY(-2px);box-shadow:0 6px 14px -6px rgba(22,35,58,.25);z-index:1}
   .calCell-blank{background:var(--page)}
   .calCell-blank:hover{background:var(--page)}
+  /* leading/trailing days from adjacent months: muted, preview-only */
+  .calCell-out,.calCell-out:nth-child(7n+1),.calCell-out:nth-child(7n){background:var(--page);animation:none}
+  .calCell-out:hover{background:var(--page);transform:none;box-shadow:none}
+  .calCell-out .calDayNum{color:var(--ink-soft);opacity:.45;font-weight:600}
+  .calChip-ghost{opacity:.4;pointer-events:none;box-shadow:none;user-select:none}
   .calCell:has(.calToday){background:var(--navy-tint);box-shadow:inset 0 0 0 1.5px var(--navy)}
   .calCell:has(.calToday):hover{box-shadow:inset 0 0 0 1.5px var(--navy),0 6px 14px -6px rgba(22,35,58,.25)}
   .calDayNum{font-size:11.5px;font-weight:700;color:var(--ink-soft)}
@@ -2808,7 +2813,26 @@ function calEventRow(e){
   '</tr>';
 }
 
-function calMonthGrid(year, month, items, todayFlag, pastItems, events){
+/* faded, non-interactive preview chip for a day that belongs to the previous/next month */
+function calGhostChip(r){
+  if(r.isEvent){
+    return '<div class="calChip calChip-ghost calChip-event" style="--ev:' + evType(r).color + '">' +
+      '<span class="calChipText">' + esc(r.title) + '</span></div>';
+  }
+  const s = sub(r.subject);
+  return '<div class="calChip calChip-ghost" style="background-color:' + s.color + '">' +
+    '<span class="calChipText">' + esc(s.code) + '<span class="calChipLecture"> · ' + esc(r.lecture) + '</span></span></div>';
+}
+
+function calOutsideCell(date, outsideByDate){
+  const iso = date.getFullYear() + "-" + pad2(date.getMonth() + 1) + "-" + pad2(date.getDate());
+  const chips = (outsideByDate.get(iso) || []).slice().sort((a,b) => stamp(a) - stamp(b)).map(calGhostChip).join("");
+  return '<div class="calCell calCell-out" aria-hidden="true">' +
+    '<span class="calDayNum">' + date.getDate() + '</span>' +
+    '<div class="calChips">' + chips + '</div></div>';
+}
+
+function calMonthGrid(year, month, items, todayFlag, pastItems, events, outsideItems){
   const first = new Date(year, month, 1);
   const startDow = first.getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -2832,7 +2856,12 @@ function calMonthGrid(year, month, items, todayFlag, pastItems, events){
   });
   const today = new Date(); today.setHours(0,0,0,0);
   let cells = DOW.map(d => '<div class="calDow">' + d.slice(0,3) + '</div>').join("");
-  for(let i=0;i<startDow;i++) cells += '<div class="calCell calCell-blank"></div>';
+  const outsideByDate = new Map();
+  (outsideItems || []).forEach(r => {
+    if(!outsideByDate.has(r.date)) outsideByDate.set(r.date, []);
+    outsideByDate.get(r.date).push(r);
+  });
+  for(let i=startDow;i>0;i--) cells += calOutsideCell(new Date(year, month, 1 - i), outsideByDate);
   for(let day=1; day<=daysInMonth; day++){
     const isToday = new Date(year, month, day).getTime() === today.getTime();
     const dayItems = (byDay.get(day) || []).slice().sort((a,b) => stamp(a) - stamp(b));
@@ -2851,16 +2880,16 @@ function calMonthGrid(year, month, items, todayFlag, pastItems, events){
     '</div>';
   }
   const trailing = (7 - ((startDow + daysInMonth) % 7)) % 7;
-  for(let i=0;i<trailing;i++) cells += '<div class="calCell calCell-blank"></div>';
+  for(let i=1;i<=trailing;i++) cells += calOutsideCell(new Date(year, month + 1, i), outsideByDate);
   return '<div class="calGrid">' + cells + '</div>';
 }
 
-function calMonthBlock(year, month, upcoming, past, events, todayFlag, emptyHtml){
+function calMonthBlock(year, month, upcoming, past, events, todayFlag, emptyHtml, outsideItems){
   const all = past.concat(upcoming, events).sort((a,b) => stamp(a) - stamp(b));
   return '<div class="calMonth">' +
     '<div class="calMonthCard">' +
       '<div class="calMonthHeader"><span class="calMonthName">' + MON[month] + '</span><span class="calMonthYear">' + year + '</span></div>' +
-      calMonthGrid(year, month, upcoming, todayFlag, past, events) +
+      calMonthGrid(year, month, upcoming, todayFlag, past, events, outsideItems) +
     '</div>' +
     (all.length
       ? '<div style="overflow-x:auto"><table class="caltable"><thead><tr>' +
@@ -2992,7 +3021,9 @@ function renderCalendar(){
     : '<p class="calNoClass">No classes scheduled in ' + MON[month] + ' ' + year + '.</p>';
 
   calOut.innerHTML = '<p class="calLegend">Tap a class or its “Open link” to view the recording · tinted chips are events and deadlines · <span class="calLegendCampus">' + CAMPUS_ICO + 'striped = offline class on campus</span> · tap + to add any of them to your own calendar.</p>' +
-    calMonthBlock(year, month, upcoming, past, events, todayFlagText(), emptyHtml);
+    calMonthBlock(year, month, upcoming, past, events, todayFlagText(), emptyHtml,
+      RECORDINGS.filter(r => !inMonth(r) && matchesFilter(r, q))
+        .concat(CAL_EVENTS.filter(e => !inMonth(e) && evMatches(e, q))));
 
   caltally.textContent = filtering
     ? list.length + " of " + upcomingAll.length + " upcoming classes"
