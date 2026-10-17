@@ -925,6 +925,8 @@
       font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
       font-size:11.5px;padding:3px 8px;border-radius:20px;
     }
+    .caltable a.calSubjCode{text-decoration:none;cursor:pointer}
+    .caltable a.calSubjCode:active{transform:scale(.95)}
   }
 
 
@@ -2658,7 +2660,11 @@ function calRow(r){
     '<td><span class="calDateDow">' + DOW[d.getDay()].slice(0,3) + '</span>' +
       '<span class="calDateNum">' + d.getDate() + ' ' + MON[d.getMonth()].slice(0,3) + '</span></td>' +
     '<td><span class="calSubjFull" style="color:' + s.color + '">' + esc(r.subject) + '</span>' +
-      '<span class="calSubjCode" style="color:' + s.color + ';background:' + s.color + '1A;border-color:' + s.color + '40">' + esc(s.code) + '</span></td>' +
+      (!r.campus && !isPending(r) && r.url
+        ? '<a class="calSubjCode" href="' + esc(r.url) + '" target="_blank" rel="noopener" title="Open class link"'
+        : '<span class="calSubjCode"') +
+      ' style="color:' + s.color + ';background:' + s.color + '1A;border-color:' + s.color + '40">' + esc(s.code) +
+      (!r.campus && !isPending(r) && r.url ? '</a>' : '</span>') + '</td>' +
     '<td class="calLecture">' + esc(r.lecture) + '</td>' +
     '<td><span class="calSlot">' + slot(r) + '</span>' + (r.brk ? '<br><span class="calBrk">☕ Break: ' + esc(r.brk) + '</span>' : '') + '</td>' +
     '<td>' + calLinkCell(r) + '</td>' +
