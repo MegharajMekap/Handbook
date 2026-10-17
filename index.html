@@ -511,6 +511,11 @@
   }
 
   .cbody{display:flex;flex-direction:column;min-width:0;padding:4px 6px 4px 0}
+  .termHead{
+    display:flex;align-items:center;gap:12px;margin:26px 0 10px;
+    font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);
+  }
+  .termHead::after{content:"";flex:1;height:1px;background:#D5DCE8}
   .subject{
     display:inline-flex;align-items:center;gap:7px;
     font-size:12px;font-weight:700;margin-bottom:7px;
@@ -2381,7 +2386,32 @@ const SUBJECTS = {
   "Corporate Communication Strategy": { code:"CCS",   color:"#B0206B" },
   "Management Accounting":            { code:"MANAC", color:"#1E7A4C" },
   "Business Simulation":              { code:"SIM",   color:"#7A3E8C" },
-  "Marketing Management II":          { code:"MM2",   color:"#B0492E" }
+  "Marketing Management II":          { code:"MM2",   color:"#B0492E" },
+  // Term 3 subjects
+  "Decision Modelling":                          { code:"DM",    color:"#2D5DA8" },
+  "Macro-Economic Analysis and Public Policy":   { code:"MEAPP", color:"#3F7A2E" },
+  "Digital Marketing":                           { code:"DMK",   color:"#C2410C" },
+  "Management Information System":               { code:"MIS",   color:"#0E7490" },
+  "Critical Thinking and Interpersonal Skill":   { code:"CTIS",  color:"#6D3FA0" },
+  "Analytics for Business":                      { code:"AFB",   color:"#9A3412" },
+  // Term 4 subjects
+  "Corporate Finance":                           { code:"CF",    color:"#1D4ED8" },
+  "Operations & Supply Chain Management":        { code:"OSCM",  color:"#4D7C0F" },
+  "Design Thinking and Innovation":              { code:"DTI",   color:"#BE185D" },
+  "Corporate Law":                               { code:"CL",    color:"#7C2D12" },
+  "Managing People in Organizations":            { code:"MPO",   color:"#0F766E" },
+  // Term 5 subjects
+  "Capstone Simulation":                         { code:"CAPSIM",color:"#5B21B6" },
+  "Negotiation, Arbitration, and Conciliation":  { code:"NAC",   color:"#B45309" },
+  "Strategic Management":                        { code:"SM",    color:"#1E40AF" },
+  "Leadership":                                  { code:"LDR",   color:"#9F1239" },
+  "Entrepreneurial Organization and Society":    { code:"EOS",   color:"#166534" },
+  "Formulation and Reporting of Projects":       { code:"FRP",   color:"#475569" },
+  "Artificial Intelligence and Machine Learning":{ code:"AIML",  color:"#6B21A8" },
+  // Term 7 subjects
+  "Bootstrap Marketing":                         { code:"BM",    color:"#B91C1C" },
+  "Contemporary Banking – Practices and Trends": { code:"CB",    color:"#115E59" },
+  "Simulation":                                  { code:"SIMUL", color:"#854D0E" }
 };
 const FALLBACK = { code:"—", color:"#5D6892" };
 const sub = n => SUBJECTS[n] || FALLBACK;
@@ -2515,9 +2545,15 @@ function group(list){
     if(!buckets.has(r.date)) buckets.set(r.date, []);
     buckets.get(r.date).push(r);
   });
+  let lastTerm = null;
   return [...buckets.entries()].map(([date, items]) => {
     const d = d0(date);
-    return '<section class="group">' +
+    const term = items[0].term || "";
+    const head = term && term !== lastTerm
+      ? '<h2 class="termHead"><span>' + esc(term) + '</span></h2>'
+      : "";
+    lastTerm = term;
+    return head + '<section class="group">' +
       '<div class="rail">' +
         '<div class="dow">' + DOW[d.getDay()] + '</div>' +
         '<span class="dnum">' + d.getDate() + '</span>' +
