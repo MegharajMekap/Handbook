@@ -2729,9 +2729,14 @@ function googleCalUrl(r){
 // small campus (building) icon marking offline classes
 const CAMPUS_ICO = '<svg class="calCampusIco" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10l9-6 9 6M5 10v9M19 10v9M9.5 10v9M14.5 10v9M3 21h18"/></svg>';
 
+// a finished class's url is its recording, which only admins may open;
+// everyone else gets the live-class link for sessions that haven't ended
+const canOpenLink = r => !r.campus && !isPending(r) && !!r.url && (window.isSuper || endStamp(r) > Date.now());
+
 function calLinkCell(r){
   if(r.campus) return '<span class="calCampus">' + CAMPUS_ICO + 'On campus</span>';
   if(isPending(r)) return "";
+  if(!canOpenLink(r)) return "";
   return '<a href="' + esc(r.url) + '" target="_blank" rel="noopener">Open link</a>';
 }
 
@@ -2743,11 +2748,11 @@ function calRow(r){
     '<td><span class="calDateDow">' + DOW[d.getDay()].slice(0,3) + '</span>' +
       '<span class="calDateNum">' + d.getDate() + ' ' + MON[d.getMonth()].slice(0,3) + '</span></td>' +
     '<td><span class="calSubjFull" style="color:' + s.color + '">' + esc(r.subject) + '</span>' +
-      (!r.campus && !isPending(r) && r.url
+      (canOpenLink(r)
         ? '<a class="calSubjCode" href="' + esc(r.url) + '" target="_blank" rel="noopener" title="Open class link"'
         : '<span class="calSubjCode"') +
       ' style="color:' + s.color + ';background:' + s.color + '1A;border-color:' + s.color + '40">' + esc(s.code) +
-      (!r.campus && !isPending(r) && r.url ? '</a>' : '</span>') + '</td>' +
+      (canOpenLink(r) ? '</a>' : '</span>') + '</td>' +
     '<td class="calLecture">' + esc(r.lecture) + '</td>' +
     '<td><span class="calSlot">' + slot(r) + '</span>' + (r.brk ? '<br><span class="calBrk">☕ Break: ' + esc(r.brk) + '</span>' : '') + '</td>' +
     '<td>' + calLinkCell(r) + '</td>' +
@@ -3327,7 +3332,7 @@ document.addEventListener("click", e => {
     return;
   }
   const doneChip = e.target.closest(".calChip-done");
-  if(doneChip && doneChip.dataset.recid){
+  if(doneChip && doneChip.dataset.recid && window.isSuper){
     goToRecording(doneChip.dataset.recid);
     return;
   }
