@@ -2150,7 +2150,7 @@
       firebase.database().ref("roles/" + user.uid).once("value")
         .then(function(snap){
           adminDashLink.hidden = !snap.val();
-          if(window.mekapSetSuper) window.mekapSetSuper(snap.val() === "super");
+          if(window.mekapSetSuper) window.mekapSetSuper(snap.val() === "super" || snap.val() === "admin");
           // lets the Super Admin see this admin's email in the dashboard's "Current admins"
           if(snap.val() && user.email) firebase.database().ref("adminEmails/" + user.uid).set(user.email).catch(function(){});
         })
@@ -3254,7 +3254,8 @@ cntNotes.textContent = NOTES.length;
 const startTab = () => location.hash === "#notes" || location.hash === "#calendar" ? location.hash.slice(1) : "recordings";
 setTab(startTab());
 
-/* called once the signed-in user's role is known: only "super" unlocks Recordings and Notes */
+/* called once the signed-in user's role is known: "admin" and "super" unlock Recordings and Notes
+   (the flag is still named isSuper for historical reasons) */
 window.mekapSetSuper = function(isSuper){
   const was = !!window.isSuper;
   window.isSuper = isSuper;
