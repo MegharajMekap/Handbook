@@ -257,6 +257,9 @@
     margin:0 -16px;
     transition:background-color .5s ease;
   }
+  /* only the Super Admin sees Recordings and Notes; everyone else gets the Calendar alone */
+  body.calOnly .tabs,body.calOnly .masthead-foot .controls,body.calOnly .masthead-foot .tallyrow{display:none!important}
+  body.calOnly .masthead-foot{padding:0}
   body[data-activetab="recordings"]{--zone-bg:#FFF7EF}
   body[data-activetab="notes"]{--zone-bg:#EEFBF7}
   body[data-activetab="calendar"]{--zone-bg:#F8F1FD}
@@ -1500,7 +1503,7 @@
   }
 </style>
 </head>
-<body data-activetab="recordings">
+<body data-activetab="recordings" class="calOnly">
 
 <div class="ackOverlay" id="ackOverlay" role="dialog" aria-modal="true" aria-labelledby="ackTitle">
   <div class="ackBox">
@@ -1525,6 +1528,8 @@
      Bump ACK_VERSION when the notice text changes to ask everyone again. */
   window.ACK_KEY = "mekapIpAck";
   window.ACK_VERSION = "1";
+  try { window.isSuper = localStorage.getItem("mekapIsSuper") === "1"; } catch(e) { window.isSuper = false; }
+  if(window.isSuper) document.body.classList.remove("calOnly");
   try { window.ackAccepted = localStorage.getItem(window.ACK_KEY) === window.ACK_VERSION; } catch(e) { window.ackAccepted = false; }
   if(window.ackAccepted) document.getElementById("ackOverlay").hidden = true;
 </script>
@@ -2140,6 +2145,7 @@
       firebase.database().ref("roles/" + user.uid).once("value")
         .then(function(snap){
           adminDashLink.hidden = !snap.val();
+          if(window.mekapSetSuper) window.mekapSetSuper(snap.val() === "super");
           // lets the Super Admin see this admin's email in the dashboard's "Current admins"
           if(snap.val() && user.email) firebase.database().ref("adminEmails/" + user.uid).set(user.email).catch(function(){});
         })
@@ -2147,6 +2153,7 @@
           // usually means the live database rules don't let a user read their own roles/<uid>
           console.warn("Admin dashboard link: could not read roles/" + user.uid, err);
           adminDashLink.hidden = true;
+          if(window.mekapSetSuper) window.mekapSetSuper(false);
         });
       profileBtn.setAttribute("aria-label", "Account: " + (user.displayName || user.email));
     } else {
@@ -2155,6 +2162,7 @@
       profilePhoto.hidden = true;
       profileMenu.hidden = true;
       adminDashLink.hidden = true;
+      if(window.mekapSetSuper) window.mekapSetSuper(false);
       profileBtn.setAttribute("aria-label", "Sign in or create account");
     }
   });
@@ -2965,6 +2973,7 @@ let noticeModalOpen = false; // blocks tab keys/swipes and page scroll while the
 const seenTabs = new Set();
 function setTab(name, userAction){
   if(PANELS.indexOf(name) === -1) name = "recordings";
+  if(!window.isSuper) name = "calendar";
   PANELS.forEach(p => {
     document.getElementById("panel-" + p).hidden = p !== name;
     document.getElementById("tabBtn-" + p).setAttribute("aria-selected", p === name);
@@ -3009,7 +3018,7 @@ window.addEventListener("resize", () => moveTabIndicator(true));
 document.addEventListener("keydown", e => {
   if(e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
   if(e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
-  if(noticeModalOpen) return;
+  if(noticeModalOpen || !window.isSuper) return;
   const t = e.target;
   if(t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
   const current = document.querySelector('.tab[aria-selected="true"]');
@@ -3044,7 +3053,7 @@ document.addEventListener("keydown", e => {
   document.addEventListener("touchend", e => {
     if(!tracking) return;
     tracking = false;
-    if(noticeModalOpen) return;
+    if(noticeModalOpen || !window.isSuper) return;
     if(Date.now() - startT > MAX_TIME) return;
     const t = e.changedTouches[0];
     const dx = t.clientX - startX, dy = t.clientY - startY;
@@ -3237,7 +3246,19 @@ buildChips();
 render();
 cntRecordings.textContent = sorted.filter(function(r){ return r.campus || hasRecordedUrl(r); }).length;
 cntNotes.textContent = NOTES.length;
-setTab(location.hash === "#notes" || location.hash === "#calendar" ? location.hash.slice(1) : "recordings");
+const startTab = () => location.hash === "#notes" || location.hash === "#calendar" ? location.hash.slice(1) : "recordings";
+setTab(startTab());
+
+/* called once the signed-in user's role is known: only "super" unlocks Recordings and Notes */
+window.mekapSetSuper = function(isSuper){
+  const was = !!window.isSuper;
+  window.isSuper = isSuper;
+  try { isSuper ? localStorage.setItem("mekapIsSuper", "1") : localStorage.removeItem("mekapIsSuper"); } catch(e) {}
+  document.body.classList.toggle("calOnly", !isSuper);
+  if(isSuper === was) return;
+  setTab(isSuper ? startTab() : "calendar");
+  moveTabIndicator(true);
+};
 
 /* ── notice marquee — announcements added from the admin dashboard
    (Firebase "announcements" node, public read). Notices with an
