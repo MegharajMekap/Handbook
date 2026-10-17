@@ -78,6 +78,41 @@
   /* ---------- masthead ---------- */
   .masthead{padding:60px 0 0}
   .masthead-foot{padding:0 0 30px}
+  /* rotating fun-fact card: programme fee as cost per unit of time */
+  .funfact{
+    position:relative;display:flex;align-items:center;gap:14px;margin:16px 0 0;padding:12px 16px 14px;
+    background:linear-gradient(120deg,#FFFFFF 0%,var(--navy-tint) 55%,#F6EAF0 100%);
+    border:1px solid var(--line);border-radius:16px;overflow:hidden;
+    box-shadow:0 1px 2px rgba(22,35,58,.05),0 8px 22px -12px rgba(22,35,58,.22);
+  }
+  .funfactIcon{
+    flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;
+    background:linear-gradient(135deg,#D9503F,#C23A2D);color:#fff;
+    box-shadow:0 4px 10px -3px rgba(194,58,45,.55);
+  }
+  .funfactIcon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .funfactBody{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+  .funfactTag{font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#C23A2D}
+  .funfactText{
+    display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;
+    transition:opacity .45s ease,transform .45s ease;
+  }
+  .funfactText.out{opacity:0;transform:translateY(-8px)}
+  .funfactText.in{opacity:0;transform:translateY(8px);transition:none}
+  .ffLabel{font-size:13px;font-weight:500;color:var(--mute)}
+  .ffValue{
+    font-size:21px;font-weight:800;letter-spacing:-.01em;line-height:1.1;
+    background:linear-gradient(135deg,var(--navy),#C23A2D);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .funfactDots{flex:none;display:flex;gap:4px;align-items:center}
+  .funfactDots i{width:5px;height:5px;border-radius:99px;background:var(--line);transition:width .3s ease,background-color .3s ease}
+  .funfactDots i.on{width:16px;background:#C23A2D}
+  .funfactBar{position:absolute;left:0;bottom:0;height:3px;width:100%;background:linear-gradient(90deg,#D9503F,var(--navy));transform-origin:left;transform:scaleX(0);opacity:.75}
+  .funfactBar.run{animation:ffBar 4.5s linear forwards}
+  @keyframes ffBar{to{transform:scaleX(1)}}
+  @media (max-width:560px){.funfactDots{display:none}.ffValue{font-size:19px}}
+  @media (prefers-reduced-motion:reduce){.funfactText{transition:none}.funfactText.out,.funfactText.in{transform:none}.funfactBar{display:none}}
 
   .headrow{
     display:flex;align-items:center;justify-content:space-between;
@@ -1691,6 +1726,15 @@
     <h1><span id="h1Text"></span><span id="h1Caret" class="typecaret done"></span></h1>
     <p class="standfirst" id="standfirst"><span id="greetLine" class="greetline"><span id="greetText"></span><span id="greetCaret" class="typecaret done"></span></span><span id="festivalLine" class="festivalline" hidden><span id="festivalText"></span><span id="festivalCaret" class="typecaret done"></span></span></p>
     <p class="quoteline" id="quoteLine" hidden><span id="quoteText"></span><span id="quoteCaret" class="typecaret done"></span></p>
+    <div class="funfact" id="funFact" aria-live="off">
+      <span class="funfactIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></span>
+      <span class="funfactBody">
+        <span class="funfactTag">Fun fact · your programme fee</span>
+        <span class="funfactText" id="funFactText"></span>
+      </span>
+      <span class="funfactDots" id="funFactDots" aria-hidden="true"></span>
+      <span class="funfactBar" id="funFactBar" aria-hidden="true"></span>
+    </div>
   </header>
 
   <div class="tabThemeZone" id="tabThemeZone">
@@ -4108,6 +4152,45 @@ window.mekapSetSuper = function(isSuper){
   });
   window.addEventListener("pageshow", check);
   check();
+})();
+
+/* ── fun-fact card: ₹12,00,000 programme fee over 2 years, as cost per unit of time ── */
+(function(){
+  const el = document.getElementById("funFactText");
+  const dotsEl = document.getElementById("funFactDots");
+  const bar = document.getElementById("funFactBar");
+  if(!el) return;
+  const FACTS = [
+    ["Every 3 seconds of this program", "≈ ₹1"],
+    ["Every hour", "≈ ₹1,250"],
+    ["Every class session", "≈ ₹3,125"],
+    ["Every day (2 sessions)", "≈ ₹6,250"],
+    ["Every week (4 sessions)", "≈ ₹12,500"],
+    ["Every month", "≈ ₹50,000"],
+    ["Every year", "≈ ₹6,00,000"],
+    ["Total program (2 years)", "₹12,00,000"]
+  ];
+  dotsEl.innerHTML = FACTS.map(function(){ return "<i></i>"; }).join("");
+  const dots = dotsEl.children;
+  let i = 0;
+  function show(n){
+    el.innerHTML = '<span class="ffLabel">' + FACTS[n][0] + '</span><span class="ffValue">' + FACTS[n][1] + '</span>';
+    for(let k = 0; k < dots.length; k++) dots[k].classList.toggle("on", k === n);
+    bar.classList.remove("run"); void bar.offsetWidth; bar.classList.add("run");
+  }
+  show(0);
+  setInterval(function(){
+    if(document.hidden) return;
+    el.classList.add("out");
+    setTimeout(function(){
+      i = (i + 1) % FACTS.length;
+      show(i);
+      el.classList.remove("out");
+      el.classList.add("in");
+      void el.offsetWidth; // restart the transition from the offset position
+      el.classList.remove("in");
+    }, 450);
+  }, 4500);
 })();
 
 </script>
