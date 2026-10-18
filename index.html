@@ -1076,6 +1076,11 @@
   .livebar .lb-progress::after{ /* glowing head */
     content:"";position:absolute;right:-1px;top:50%;width:10px;height:10px;border-radius:50%;
     background:#fff;transform:translate(50%,-50%);box-shadow:0 0 0 3px rgba(255,255,255,.35),0 0 10px rgba(255,255,255,.9);
+    animation:livebarHead 1.8s ease-in-out infinite;
+  }
+  @keyframes livebarHead{
+    0%,100%{box-shadow:0 0 0 3px rgba(255,255,255,.35),0 0 10px rgba(255,255,255,.9)}
+    50%{box-shadow:0 0 0 8px rgba(255,255,255,0),0 0 14px rgba(255,255,255,1)}
   }
   @media (max-width:640px){
     .livebar{gap:10px;padding:10px 12px 15px}
@@ -1083,7 +1088,7 @@
     .livebar .lb-title{font-size:13.5px}
     .livebar .lb-join{padding:7px 12px 7px 10px}
   }
-  @media (prefers-reduced-motion:reduce){.livebar::after,.livebar .lb-dot{animation:none}}
+  @media (prefers-reduced-motion:reduce){.livebar::after,.livebar .lb-dot,.livebar .lb-progress::after{animation:none}}
 
   /* ---------- install banner ---------- */
   .installbar{
