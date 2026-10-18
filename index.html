@@ -3600,6 +3600,13 @@ window.mekapSetSuper = function(isSuper){
   const progEl = document.getElementById("livebarProg");
   if(!bar) return;
 
+  // " of 10" — how many numbered sessions this subject has in its term (blank for quizzes etc.)
+  function sessionOf(r){
+    if(!/^Session \d+$/.test(r.lecture)) return "";
+    const n = RECORDINGS.filter(x => x.subject === r.subject && x.term === r.term && /^Session \d+$/.test(x.lecture)).length;
+    return n > 1 ? " of " + n : "";
+  }
+
   function currentClass(){
     return RECORDINGS.find(isLive);
   }
@@ -3620,7 +3627,7 @@ window.mekapSetSuper = function(isSuper){
     labelEl.textContent = onBreak ? "☕ Break" : "Live now";
     bar.classList.toggle("onbreak", !!onBreak);
     textEl.innerHTML = '<span class="lb-title">' + esc(s.code) + ' · ' + esc(r.subject) + '</span>' +
-      '<span class="lb-meta">' + esc(r.lecture) +
+      '<span class="lb-meta">' + esc(r.lecture) + sessionOf(r) +
       (onBreak ? ' · resumes ' + esc(brk.end) : brk && now < brk.from ? ' · ☕ break ' + esc(r.brk) : '') +
       ' · ends ' + esc(r.ends || r.time) + '</span>';
     progEl.style.setProperty("--p", Math.max(0, Math.min(100, (now - stamp(r)) / (endStamp(r) - stamp(r)) * 100)) + "%");
