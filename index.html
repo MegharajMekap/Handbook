@@ -85,6 +85,7 @@
     border:1px solid var(--line);border-radius:16px;overflow:hidden;
     box-shadow:0 1px 2px rgba(22,35,58,.05),0 8px 22px -12px rgba(22,35,58,.22);
   }
+  .funfact[hidden]{display:none}
   .funfactIcon{
     flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;
     background:linear-gradient(135deg,#D9503F,#C23A2D);color:#fff;
@@ -1724,7 +1725,7 @@
     <h1><span id="h1Text"></span><span id="h1Caret" class="typecaret done"></span></h1>
     <p class="standfirst" id="standfirst"><span id="greetLine" class="greetline"><span id="greetText"></span><span id="greetCaret" class="typecaret done"></span></span><span id="festivalLine" class="festivalline" hidden><span id="festivalText"></span><span id="festivalCaret" class="typecaret done"></span></span></p>
     <p class="quoteline" id="quoteLine" hidden><span id="quoteText"></span><span id="quoteCaret" class="typecaret done"></span></p>
-    <div class="funfact" id="funFact" aria-live="off">
+    <div class="funfact" id="funFact" aria-live="off" hidden>
       <span class="funfactIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></span>
       <span class="funfactBody">
         <span class="funfactTag">Fun fact · your programme fee</span>
@@ -4182,8 +4183,19 @@ window.mekapSetSuper = function(isSuper){
     bar.classList.remove("run"); void bar.offsetWidth; bar.classList.add("run");
   }
   show(0);
+  // motivation only: the card appears while a class session (online or on campus) is in progress
+  const card = document.getElementById("funFact");
+  const inSession = () => RECORDINGS.some(r => stamp(r) <= Date.now() && Date.now() < endStamp(r));
+  function syncCard(){
+    const on = inSession();
+    if(card.hidden === !on) return;
+    card.hidden = !on;
+    if(on) show(i);
+  }
+  syncCard();
+  setInterval(syncCard, 15000);
   setInterval(function(){
-    if(document.hidden) return;
+    if(document.hidden || card.hidden) return;
     el.classList.add("out");
     setTimeout(function(){
       i = (i + 1) % FACTS.length;
