@@ -2251,6 +2251,11 @@
            https://img.youtube.com/vi/VIDEO_ID/hqdefault.jpg
    ══════════════════════════════════════════════════════════════ */
 
+/* TODO (PRIORITY — security): the recording URLs below (Google Drive links on finished sessions) are
+   readable by anyone via View Source. Hiding them in the UI (canOpenLink) is cosmetic only.
+   Plan: move recording links to a Firebase node (e.g. "recordingLinks") whose rules allow read only for
+   admin/super, drop them from this file, and fetch them after sign-in. Keep live-class join links of
+   upcoming sessions public (separate node or stay here). Do this before sharing the site widely. */
 const RECORDINGS = [
   // ---- Term 1 Phase 1 ----
   { date:"2026-07-18", time:"3:45 PM", ends:"6:30 PM", subject:"Marketing Management I", faculty:"Prof. Utkarsh",
