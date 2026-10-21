@@ -8,6 +8,14 @@
 <link rel="apple-touch-icon" href="logo.jpg">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1B4B8F">
+<script>
+(function(){
+  var t=null;
+  try{ t=localStorage.getItem("theme"); }catch(e){}
+  if(!t && window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches) t="dark";
+  if(t==="dark") document.documentElement.setAttribute("data-theme","dark");
+})();
+</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Recordings">
@@ -1126,19 +1134,20 @@
     .ib-text{flex:none;max-width:360px}
   }
 
-  /* ---------- PWA manual refresh buttons ---------- */
-  .pwa-refresh{
+  /* ---------- Floating action button ---------- */
+  .action-btn{
     position:fixed;z-index:60;
     width:44px;height:44px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;
     background:var(--navy);color:#fff;border:none;
     box-shadow:0 3px 10px rgba(0,0,0,.25);
-    cursor:pointer;
+    cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
   }
-  .pwa-refresh[hidden]{display:none}
-  .pwa-refresh svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .pwa-refresh:active{transform:scale(.94)}
-  .pwa-refresh-top{
+  .action-btn.dragging{cursor:grabbing;transform:scale(1.08)}
+  .action-btn[hidden]{display:none}
+  .action-btn svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .action-btn:active{transform:scale(.94)}
+  .action-btn-top{
     bottom:calc(env(safe-area-inset-bottom,0px) + 16px);
     right:calc(env(safe-area-inset-right,0px) + 16px);
   }
@@ -1578,7 +1587,7 @@
   .profileMenuItem{border-radius:var(--r-sm)}
 
   /* floating refresh button */
-  .pwa-refresh{
+  .action-btn{
     background:linear-gradient(160deg,#2A5CA6,var(--navy-deep));
     box-shadow:0 10px 24px -8px rgba(18,53,104,.6),inset 0 1px 0 rgba(255,255,255,.2);
   }
@@ -1587,6 +1596,55 @@
     .card,.subjectDD-menu,.profileMenu{animation:none}
     .card:hover{transform:none}
   }
+
+  /* ---------- action menu ---------- */
+  .action-menu{
+    position:fixed;z-index:61;min-width:200px;padding:6px;
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    box-shadow:0 12px 32px -8px rgba(18,53,104,.35);
+  }
+  .action-menu[hidden]{display:none}
+  .action-item{
+    display:flex;align-items:center;gap:10px;width:100%;padding:11px 12px;
+    background:none;border:none;border-radius:9px;cursor:pointer;
+    font-size:14.5px;font-weight:500;color:var(--ink);text-align:left;
+  }
+  .action-item:hover{background:var(--navy-tint)}
+  .action-item svg{width:18px;height:18px;flex:none;stroke:var(--navy);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .action-item .ic-sun{display:none}
+  :root[data-theme="dark"] .action-item .ic-sun{display:block}
+  :root[data-theme="dark"] .action-item .ic-moon{display:none}
+
+  /* ---------- dark theme ---------- */
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --page:#0E1421;--card:#161E31;--line:#2A3552;--line-soft:#212B44;
+    --ink:#E6EBF5;--ink-soft:#BAC4D9;--mute:#8E9BB6;
+    --navy:#6FA0E6;--navy-tint:#1B2742;
+    --zone-bg:#0E1421;
+  }
+  :root[data-theme="dark"] body[data-activetab]{--zone-bg:#0E1421}
+  :root[data-theme="dark"] html{scrollbar-color:#3A4766 transparent}
+  :root[data-theme="dark"] body::before{
+    background-image:
+      radial-gradient(60rem 32rem at 8% -6%,rgba(78,134,216,.16),transparent 62%),
+      radial-gradient(48rem 28rem at 96% 2%,rgba(168,120,232,.12),transparent 60%),
+      linear-gradient(to right, rgba(140,170,230,.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(140,170,230,.05) 1px, transparent 1px);
+    background-size:auto,auto,36px 36px,36px 36px;
+  }
+  :root[data-theme="dark"] .funfact{background:linear-gradient(120deg,#161E31 0%,#1B2742 55%,#2A1E33 100%)}
+  :root[data-theme="dark"] .tabs::after{background:linear-gradient(180deg,#1A2338,#141C2E)}
+  :root[data-theme="dark"] .tabIndicator{background:rgba(255,255,255,.1);border-color:rgba(140,170,230,.25)}
+  :root[data-theme="dark"] .tab:hover:not([aria-selected="true"]){background:rgba(255,255,255,.07)}
+  :root[data-theme="dark"] .term{background:linear-gradient(180deg,#1B2742,#16203A)}
+  :root[data-theme="dark"] .subjectDD-menu,
+  :root[data-theme="dark"] .profileMenu,
+  :root[data-theme="dark"] .thumb .play{background:rgba(22,30,49,.96);color:var(--ink)}
+  :root[data-theme="dark"] .card.pending,
+  :root[data-theme="dark"] .waiting,
+  :root[data-theme="dark"] .empty{background:rgba(22,30,49,.7);border-color:var(--line)}
+  :root[data-theme="dark"] .card{background:var(--card);border-color:var(--line)}
 </style>
 </head>
 <body data-activetab="recordings" class="calOnly">
@@ -1714,9 +1772,20 @@
   <button class="ib-close" id="ubClose" aria-label="Dismiss">&times;</button>
 </div>
 
-<button class="pwa-refresh pwa-refresh-top" id="pwaRefreshTop" hidden aria-label="Refresh page">
-  <svg viewBox="0 0 24 24"><path d="M4 4v6h6M20 20v-6h-6M4.5 9a8 8 0 0113.9-3.5L20 9M4 15l1.6 3.5A8 8 0 0019.5 15"/></svg>
+<button class="action-btn action-btn-top" id="actionBtn" hidden aria-label="Actions" aria-haspopup="menu" aria-expanded="false">
+  <svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg>
 </button>
+<div class="action-menu" id="actionMenu" role="menu" hidden>
+  <button class="action-item" id="actRefresh" role="menuitem">
+    <svg viewBox="0 0 24 24"><path d="M4 4v6h6M20 20v-6h-6M4.5 9a8 8 0 0113.9-3.5L20 9M4 15l1.6 3.5A8 8 0 0019.5 15"/></svg>
+    <span>Refresh page</span>
+  </button>
+  <button class="action-item" id="actTheme" role="menuitem">
+    <svg class="ic-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>
+    <svg class="ic-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    <span id="actThemeLabel">Dark mode</span>
+  </button>
+</div>
 
 <div class="wrap">
 
@@ -4174,12 +4243,123 @@ window.mekapSetSuper = function(isSuper){
   }
 })();
 
-/* ── manual refresh button (shown in every view — browser tab or installed PWA) ── */
+/* ── floating action button (shown in every view — browser tab or installed PWA) ── */
 (function(){
-  var top = document.getElementById("pwaRefreshTop");
+  var top = document.getElementById("actionBtn");
   top.hidden = false;
 
-  top.addEventListener("click", function(){ location.href = location.pathname; });
+  var KEY = "actionBtnPos";
+  var moved = false, drag = null;
+
+  function clamp(x, y){
+    var m = 8;
+    return {
+      x: Math.min(Math.max(x, m), document.documentElement.clientWidth - top.offsetWidth - m),
+      y: Math.min(Math.max(y, m), document.documentElement.clientHeight - top.offsetHeight - m)
+    };
+  }
+  function place(x, y){
+    var p = clamp(x, y);
+    top.style.left = p.x + "px";
+    top.style.top = p.y + "px";
+    top.style.right = "auto";
+    top.style.bottom = "auto";
+    return p;
+  }
+
+  try{
+    var saved = JSON.parse(localStorage.getItem(KEY));
+    if(saved && isFinite(saved.x) && isFinite(saved.y)) place(saved.x, saved.y);
+  }catch(e){}
+
+  window.addEventListener("resize", function(){
+    if(top.style.left){
+      var r = top.getBoundingClientRect();
+      place(r.left, r.top);
+    }
+  });
+
+  top.addEventListener("pointerdown", function(e){
+    var r = top.getBoundingClientRect();
+    drag = { id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top, sx: e.clientX, sy: e.clientY };
+    moved = false;
+    top.setPointerCapture(e.pointerId);
+  });
+  top.addEventListener("pointermove", function(e){
+    if(!drag || e.pointerId !== drag.id) return;
+    if(!moved && Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy) < 6) return;
+    moved = true;
+    top.classList.add("dragging");
+    place(e.clientX - drag.dx, e.clientY - drag.dy);
+  });
+  function end(e){
+    if(!drag || e.pointerId !== drag.id) return;
+    drag = null;
+    top.classList.remove("dragging");
+    if(moved){
+      var r = top.getBoundingClientRect();
+      var m = 8;
+      var snapX = (r.left + r.width / 2 < document.documentElement.clientWidth / 2) ? m : document.documentElement.clientWidth - r.width - m;
+      top.style.transition = "left .25s cubic-bezier(.2,.8,.2,1)";
+      place(snapX, r.top);
+      setTimeout(function(){ top.style.transition = ""; }, 300);
+      r = { left: snapX, top: clamp(snapX, r.top).y };
+      try{ localStorage.setItem(KEY, JSON.stringify({ x: r.left, y: r.top })); }catch(err){}
+    }
+  }
+  top.addEventListener("pointerup", end);
+  top.addEventListener("pointercancel", end);
+
+  var menu = document.getElementById("actionMenu");
+  var themeLabel = document.getElementById("actThemeLabel");
+  var root = document.documentElement;
+
+  function isDark(){ return root.getAttribute("data-theme") === "dark"; }
+  function syncTheme(){
+    themeLabel.textContent = isDark() ? "Light mode" : "Dark mode";
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if(meta) meta.setAttribute("content", isDark() ? "#0E1421" : "#1B4B8F");
+  }
+  syncTheme();
+
+  function closeMenu(){
+    menu.hidden = true;
+    top.setAttribute("aria-expanded", "false");
+  }
+  function openMenu(){
+    menu.hidden = false;
+    var r = top.getBoundingClientRect();
+    var cw = document.documentElement.clientWidth, ch = document.documentElement.clientHeight;
+    var w = menu.offsetWidth, h = menu.offsetHeight, gap = 10;
+    var left = (r.left + r.width / 2 < cw / 2) ? r.left : r.right - w;
+    left = Math.min(Math.max(left, 8), cw - w - 8);
+    var above = r.top - h - gap >= 8;
+    menu.style.left = left + "px";
+    menu.style.top = (above ? r.top - h - gap : Math.min(r.bottom + gap, ch - h - 8)) + "px";
+    top.setAttribute("aria-expanded", "true");
+  }
+
+  top.addEventListener("click", function(e){
+    if(moved){ moved = false; e.preventDefault(); return; }
+    if(menu.hidden) openMenu(); else closeMenu();
+  });
+  top.addEventListener("pointerdown", closeMenu);
+  document.addEventListener("pointerdown", function(e){
+    if(!menu.hidden && !menu.contains(e.target) && e.target !== top && !top.contains(e.target)) closeMenu();
+  });
+  document.addEventListener("keydown", function(e){ if(e.key === "Escape") closeMenu(); });
+  window.addEventListener("resize", closeMenu);
+
+  document.getElementById("actRefresh").addEventListener("click", function(){
+    location.href = location.pathname;
+  });
+  document.getElementById("actTheme").addEventListener("click", function(){
+    var next = isDark() ? "light" : "dark";
+    if(next === "dark") root.setAttribute("data-theme", "dark"); else root.removeAttribute("data-theme");
+    try{ localStorage.setItem("theme", next); }catch(err){}
+    syncTheme();
+    closeMenu();
+  });
 })();
 
 /* ── detect a newer version when the PWA is reopened from the background ──
