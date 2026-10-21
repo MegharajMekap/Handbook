@@ -931,8 +931,6 @@
     font-size:13.5px;color:var(--mute);
     display:flex;flex-wrap:wrap;gap:10px 26px;justify-content:space-between;
   }
-  .adminLink{color:var(--mute);text-decoration:none;font-size:12px;align-self:center}
-  .adminLink:hover{color:var(--navy);text-decoration:underline}
 
   /* ---------- responsive ---------- */
   @media (max-width:700px){
@@ -1805,16 +1803,20 @@
       <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg>
       <span>Your profile</span>
     </a>
-    <a class="action-item" id="actAdmin" href="admin.html" role="menuitem" hidden>
-      <svg viewBox="0 0 24 24"><path d="M12 3l7 3.5v5c0 4.5-3 7.5-7 9.5-4-2-7-5-7-9.5v-5z"/></svg>
-      <span>Admin dashboard</span>
-    </a>
     <button class="action-item" id="actSignOut" role="menuitem" hidden>
       <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
       <span>Sign out</span>
     </button>
     <div class="action-sep"></div>
   </div>
+  <a class="action-item" id="actAdmin" href="admin.html" role="menuitem" hidden>
+      <svg viewBox="0 0 24 24"><path d="M12 3l7 3.5v5c0 4.5-3 7.5-7 9.5-4-2-7-5-7-9.5v-5z"/></svg>
+      <span>Admin</span>
+    </a>
+  <a class="action-item" id="actRequestAdmin" href="admin.html#request" role="menuitem" hidden>
+    <svg viewBox="0 0 24 24"><path d="M12 3l7 3.5v5c0 4.5-3 7.5-7 9.5-4-2-7-5-7-9.5v-5z"/><path d="M12 9v5M12 17h.01"/></svg>
+    <span>Request admin access</span>
+  </a>
   <button class="action-item" id="actRefresh" role="menuitem">
     <svg viewBox="0 0 24 24"><path d="M4 4v6h6M20 20v-6h-6M4.5 9a8 8 0 0113.9-3.5L20 9M4 15l1.6 3.5A8 8 0 0019.5 15"/></svg>
     <span>Refresh page</span>
@@ -1959,7 +1961,6 @@
       <span class="clabel">Contact Megharaj for the site maintenance</span>
       <a class="cmail" href="#">loading…</a>
     </span>
-    <a href="admin.html" class="adminLink">Admin</a>
   </footer>
   </div>
 </div>
@@ -2332,8 +2333,9 @@
     profileMenu.hidden = true;
   });
 
+  let roleKnown = false;   // true once roles/<uid> has been read (so "Request admin access" doesn't flash for admins)
   function emitAuth(user){
-    window.mekapAuthState = { user: user ? { email: user.email } : null, admin: !adminDashLink.hidden };
+    window.mekapAuthState = { user: user ? { email: user.email } : null, admin: !adminDashLink.hidden, roleKnown: roleKnown };
     window.dispatchEvent(new CustomEvent("mekap-auth", { detail: window.mekapAuthState }));
   }
 
@@ -2351,9 +2353,11 @@
       profileMenuEmail.textContent = user.email || "";
       // admin / super admin accounts get a shortcut to the dashboard
       adminDashLink.hidden = true;
+      roleKnown = false;
       firebase.database().ref("roles/" + user.uid).once("value")
         .then(function(snap){
           adminDashLink.hidden = !snap.val();
+          roleKnown = true;
           emitAuth(user);
           if(window.mekapSetSuper) window.mekapSetSuper(snap.val() === "super" || snap.val() === "admin");
           // lets the Super Admin see this admin's email in the dashboard's "Current admins"
@@ -2364,6 +2368,8 @@
           console.warn("Admin dashboard link: could not read roles/" + user.uid, err);
           adminDashLink.hidden = true;
           if(window.mekapSetSuper) window.mekapSetSuper(false);
+          roleKnown = false;
+          emitAuth(user);
         });
       profileBtn.setAttribute("aria-label", "Account: " + (user.displayName || user.email));
       emitAuth(user);
@@ -2375,6 +2381,7 @@
       adminDashLink.hidden = true;
       if(window.mekapSetSuper) window.mekapSetSuper(false);
       profileBtn.setAttribute("aria-label", "Sign in or create account");
+      roleKnown = false;
       emitAuth(null);
     }
   });
@@ -4401,6 +4408,7 @@ window.mekapSetSuper = function(isSuper){
   var actSignIn = document.getElementById("actSignIn");
   var actProfile = document.getElementById("actProfile");
   var actAdmin = document.getElementById("actAdmin");
+  var actRequestAdmin = document.getElementById("actRequestAdmin");
   var actSignOut = document.getElementById("actSignOut");
   function syncAccount(st){
     var user = st && st.user;
@@ -4409,6 +4417,7 @@ window.mekapSetSuper = function(isSuper){
     actSignIn.hidden = !!user;
     actProfile.hidden = !user;
     actAdmin.hidden = !(user && st.admin);
+    actRequestAdmin.hidden = !(user && st.roleKnown && !st.admin);
     actSignOut.hidden = !user;
   }
   window.addEventListener("mekap-auth", function(e){ syncAccount(e.detail); });

@@ -1115,6 +1115,9 @@ document.getElementById("loginSwitchBtn").addEventListener("click", function(){
   loginOk.classList.remove("show");
 });
 
+// opened from the main site's "Request admin access" link
+if(location.hash === "#request") document.getElementById("loginSwitchBtn").click();
+
 // creates the account (or signs in to an existing one), files a request, then signs out
 function requestAdminAccess(email, password, message){
   let user;
