@@ -1652,6 +1652,17 @@
   :root[data-theme="dark"] .waiting,
   :root[data-theme="dark"] .empty{background:rgba(22,30,49,.7);border-color:var(--line)}
   :root[data-theme="dark"] .card{background:var(--card);border-color:var(--line)}
+  :root[data-theme="dark"] .calCell:nth-child(7n+1),
+  :root[data-theme="dark"] .calCell:nth-child(7n){background:#1A2338}
+  :root[data-theme="dark"] .calCell:hover{background:var(--navy-tint)}
+  :root[data-theme="dark"] .calCell:has(.calToday){background:var(--navy-tint)}
+  :root[data-theme="dark"] .calCell-out,
+  :root[data-theme="dark"] .calCell-out:nth-child(7n+1),
+  :root[data-theme="dark"] .calCell-out:nth-child(7n){background:var(--page)}
+  :root[data-theme="dark"] .calDow{background:#1B2640}
+  :root[data-theme="dark"] .calDow:nth-child(7n+1),
+  :root[data-theme="dark"] .calDow:nth-child(7n){color:#E58A9E}
+  :root[data-theme="dark"] .calChip-done{background:#2A3550;color:#8E9BB6}
 </style>
 </head>
 <body data-activetab="recordings" class="calOnly">
