@@ -42,7 +42,9 @@
   #loginWrap.booting{visibility:hidden}
   #bootLoader{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--mute,#6B778F);font-size:14px;pointer-events:none}
   #bootLoader[hidden]{display:none}
-  #bootLoader .spin{width:38px;height:38px;border-radius:50%;border:3px solid rgba(27,75,143,.18);border-top-color:#1B4B8F;animation:bootSpin .8s linear infinite}
+  .logoLoad{width:84px;height:84px;object-fit:contain;background:#fff;border-radius:20px;padding:6px;box-shadow:0 0 0 0 rgba(27,75,143,.35),0 8px 24px -8px rgba(18,53,104,.35);animation:logoPulse 1.6s ease-in-out infinite}
+  @keyframes logoPulse{0%,100%{transform:scale(.94);box-shadow:0 0 0 0 rgba(27,75,143,.32),0 8px 24px -8px rgba(18,53,104,.35)}50%{transform:scale(1.04);box-shadow:0 0 0 16px rgba(27,75,143,0),0 12px 28px -8px rgba(18,53,104,.4)}}
+  @media (prefers-reduced-motion:reduce){.logoLoad{animation:none}}
   @keyframes bootSpin{to{transform:rotate(360deg)}}
   #loginWrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
   .loginOuter{width:100%;max-width:380px}
@@ -609,7 +611,7 @@
 </button>
 
 <div class="wrap">
-  <div id="bootLoader" role="status" aria-live="polite"><div class="spin"></div><span>Loading…</span></div>
+  <div id="bootLoader" role="status" aria-live="polite"><img class="logoLoad" src="logo.jpg" alt="IIM Kashipur"><span>Loading…</span></div>
 
   <div id="loginWrap" class="booting">
     <div class="loginOuter">
