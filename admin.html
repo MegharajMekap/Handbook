@@ -593,6 +593,13 @@
   #dash.show .stat,#dash.show .chartCard{animation:panelIn .5s var(--ease-out) backwards}
   @keyframes panelIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   @media (prefers-reduced-motion:reduce){#dash.show .stat,#dash.show .chartCard{animation:none}}
+  /* spinner shown on any button while it waits for the server (see busy-buttons script) */
+  .is-busy::before{
+    content:"";display:inline-block;width:1em;height:1em;margin-right:.55em;
+    border:2px solid currentColor;border-right-color:transparent;border-radius:50%;
+    animation:busySpin .7s linear infinite;vertical-align:-.15em;
+  }
+  @keyframes busySpin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -1280,7 +1287,15 @@ function denyAccess(msg, uid){
 
 // the sign-in form stays invisible until we know whether someone is already signed in,
 // so it never flashes an empty email/password that gets replaced a moment later
+const bootStart = Date.now();
+let revealTimer = null;
 function revealLogin(){
+  // keep the loader up for at least 600ms so it never just flickers past
+  const wait = 600 - (Date.now() - bootStart);
+  if(wait > 0){
+    if(!revealTimer) revealTimer = setTimeout(revealLogin, wait);
+    return;
+  }
   loginWrap.classList.remove("booting");
   document.getElementById("bootLoader").hidden = true;
 }
@@ -2868,6 +2883,18 @@ function startAnalytics(){
     return loadVisits();
   };
 }
+</script>
+<script>
+/* busy-buttons: a button that gets disabled by script (i.e. while a server call is in flight)
+   shows a spinner until it is enabled again */
+(function(){
+  new MutationObserver(function(list){
+    list.forEach(function(m){
+      var b = m.target;
+      if(b.tagName === "BUTTON") b.classList.toggle("is-busy", b.disabled && m.oldValue === null);
+    });
+  }).observe(document.documentElement, { attributes: true, attributeFilter: ["disabled"], attributeOldValue: true, subtree: true });
+})();
 </script>
 </body>
 </html>

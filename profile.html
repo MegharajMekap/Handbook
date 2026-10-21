@@ -200,6 +200,16 @@
   .photoBtn{border-radius:var(--r-sm)}
   .msg{border-radius:var(--r-sm)}
   @media (prefers-reduced-motion:reduce){.card{animation:none}}
+  /* spinner shown on any button while it waits for the server (see busy-buttons script) */
+  .is-busy::before{
+    content:"";display:inline-block;width:1em;height:1em;margin-right:.55em;
+    border:2px solid currentColor;border-right-color:transparent;border-radius:50%;
+    animation:busySpin .7s linear infinite;vertical-align:-.15em;
+  }
+  @keyframes busySpin{to{transform:rotate(360deg)}}
+  #pageLoader{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:60vh;color:var(--mute,#6B778F);font-size:14px}
+  #pageLoader[hidden]{display:none}
+  #pageLoader .spin{width:38px;height:38px;border-radius:50%;border:3px solid rgba(27,75,143,.18);border-top-color:#1B4B8F;animation:busySpin .8s linear infinite}
 </style>
 </head>
 <body>
@@ -211,6 +221,8 @@
       Back to recordings
     </a>
   </div>
+
+  <div id="pageLoader" role="status" aria-live="polite"><div class="spin"></div><span>Loading…</span></div>
 
   <div id="signedOutGate" class="gate" hidden>
     <h2>You're not signed in</h2>
@@ -354,7 +366,9 @@
     nameInput.value = user.displayName || "";
   }
 
+  const pageLoader = document.getElementById("pageLoader");
   auth.onAuthStateChanged(function(user){
+    pageLoader.hidden = true;
     if(user){
       signedOutGate.hidden = true;
       profileContent.hidden = false;
@@ -481,6 +495,18 @@
       window.location.href = "index.html";
     });
   });
+})();
+</script>
+<script>
+/* busy-buttons: a button that gets disabled by script (i.e. while a server call is in flight)
+   shows a spinner until it is enabled again */
+(function(){
+  new MutationObserver(function(list){
+    list.forEach(function(m){
+      var b = m.target;
+      if(b.tagName === "BUTTON") b.classList.toggle("is-busy", b.disabled && m.oldValue === null);
+    });
+  }).observe(document.documentElement, { attributes: true, attributeFilter: ["disabled"], attributeOldValue: true, subtree: true });
 })();
 </script>
 </body>

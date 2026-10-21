@@ -1662,6 +1662,20 @@
   :root[data-theme="dark"] .calDow:nth-child(7n+1),
   :root[data-theme="dark"] .calDow:nth-child(7n){color:#E58A9E}
   :root[data-theme="dark"] .calChip-done{background:#2A3550;color:#8E9BB6}
+  /* spinner shown on any button while it waits for the server (see busy-buttons script) */
+  .is-busy::before{
+    content:"";display:inline-block;width:1em;height:1em;margin-right:.55em;
+    border:2px solid currentColor;border-right-color:transparent;border-radius:50%;
+    animation:busySpin .7s linear infinite;vertical-align:-.15em;
+  }
+  @keyframes busySpin{to{transform:rotate(360deg)}}
+  /* three bouncing dots: shown where a menu item is still waiting on the server (admin role check) */
+  .menuDots{display:flex;align-items:center;gap:5px;padding:12px 12px}
+  .menuDots[hidden]{display:none}
+  .menuDots span{width:6px;height:6px;border-radius:50%;background:var(--mute);animation:dotBounce 1s ease-in-out infinite}
+  .menuDots span:nth-child(2){animation-delay:.15s}
+  .menuDots span:nth-child(3){animation-delay:.3s}
+  @keyframes dotBounce{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-5px);opacity:1}}
 </style>
 </head>
 <body data-activetab="recordings" class="calOnly">
@@ -1809,6 +1823,7 @@
     </button>
     <div class="action-sep"></div>
   </div>
+  <div class="menuDots" id="actRoleLoading" role="status" aria-label="Checking access" hidden><span></span><span></span><span></span></div>
   <a class="action-item" id="actAdmin" href="admin.html" role="menuitem" hidden>
       <svg viewBox="0 0 24 24"><path d="M12 3l7 3.5v5c0 4.5-3 7.5-7 9.5-4-2-7-5-7-9.5v-5z"/></svg>
       <span>Admin</span>
@@ -1852,6 +1867,7 @@
       <div class="profileMenu" id="profileMenu" hidden>
         <div class="profileMenuEmail" id="profileMenuEmail"></div>
         <a class="profileMenuItem" href="profile.html" id="profileLink">Your profile</a>
+        <div class="menuDots" id="roleLoading" role="status" aria-label="Checking access" hidden><span></span><span></span><span></span></div>
         <a class="profileMenuItem" href="admin.html" id="adminDashLink" hidden>Admin dashboard</a>
         <button class="profileMenuItem" id="signOutBtn">Sign out</button>
       </div>
@@ -2195,6 +2211,7 @@
   const profileMenuEmail = document.getElementById("profileMenuEmail");
   const signOutBtn = document.getElementById("signOutBtn");
   const adminDashLink = document.getElementById("adminDashLink");
+  const roleLoading = document.getElementById("roleLoading");
 
   const authOverlay = document.getElementById("authOverlay");
   const authClose = document.getElementById("authClose");
@@ -2333,9 +2350,10 @@
     profileMenu.hidden = true;
   });
 
+  let roleFailed = false;
   let roleKnown = false;   // true once roles/<uid> has been read (so "Request admin access" doesn't flash for admins)
   function emitAuth(user){
-    window.mekapAuthState = { user: user ? { email: user.email } : null, admin: !adminDashLink.hidden, roleKnown: roleKnown };
+    window.mekapAuthState = { user: user ? { email: user.email } : null, admin: !adminDashLink.hidden, roleKnown: roleKnown, roleFailed: roleFailed };
     window.dispatchEvent(new CustomEvent("mekap-auth", { detail: window.mekapAuthState }));
   }
 
@@ -2354,9 +2372,12 @@
       // admin / super admin accounts get a shortcut to the dashboard
       adminDashLink.hidden = true;
       roleKnown = false;
+      roleFailed = false;
+      roleLoading.hidden = false;
       firebase.database().ref("roles/" + user.uid).once("value")
         .then(function(snap){
           adminDashLink.hidden = !snap.val();
+          roleLoading.hidden = true;
           roleKnown = true;
           emitAuth(user);
           if(window.mekapSetSuper) window.mekapSetSuper(snap.val() === "super" || snap.val() === "admin");
@@ -2367,8 +2388,10 @@
           // usually means the live database rules don't let a user read their own roles/<uid>
           console.warn("Admin dashboard link: could not read roles/" + user.uid, err);
           adminDashLink.hidden = true;
+          roleLoading.hidden = true;
           if(window.mekapSetSuper) window.mekapSetSuper(false);
           roleKnown = false;
+          roleFailed = true;
           emitAuth(user);
         });
       profileBtn.setAttribute("aria-label", "Account: " + (user.displayName || user.email));
@@ -2382,6 +2405,7 @@
       if(window.mekapSetSuper) window.mekapSetSuper(false);
       profileBtn.setAttribute("aria-label", "Sign in or create account");
       roleKnown = false;
+      roleLoading.hidden = true;
       emitAuth(null);
     }
   });
@@ -4409,6 +4433,7 @@ window.mekapSetSuper = function(isSuper){
   var actProfile = document.getElementById("actProfile");
   var actAdmin = document.getElementById("actAdmin");
   var actRequestAdmin = document.getElementById("actRequestAdmin");
+  var actRoleLoading = document.getElementById("actRoleLoading");
   var actSignOut = document.getElementById("actSignOut");
   function syncAccount(st){
     var user = st && st.user;
@@ -4418,6 +4443,7 @@ window.mekapSetSuper = function(isSuper){
     actProfile.hidden = !user;
     actAdmin.hidden = !(user && st.admin);
     actRequestAdmin.hidden = !(user && st.roleKnown && !st.admin);
+    actRoleLoading.hidden = !(user && !st.roleKnown && !st.roleFailed);
     actSignOut.hidden = !user;
   }
   window.addEventListener("mekap-auth", function(e){ syncAccount(e.detail); });
@@ -4527,6 +4553,18 @@ window.mekapSetSuper = function(isSuper){
   }, 4500);
 })();
 
+</script>
+<script>
+/* busy-buttons: a button that gets disabled by script (i.e. while a server call is in flight)
+   shows a spinner until it is enabled again */
+(function(){
+  new MutationObserver(function(list){
+    list.forEach(function(m){
+      var b = m.target;
+      if(b.tagName === "BUTTON") b.classList.toggle("is-busy", b.disabled && m.oldValue === null);
+    });
+  }).observe(document.documentElement, { attributes: true, attributeFilter: ["disabled"], attributeOldValue: true, subtree: true });
+})();
 </script>
 </body>
 </html>
