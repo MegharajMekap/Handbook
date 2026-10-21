@@ -130,7 +130,12 @@
   @media (max-width:560px){
     .headrow{flex-wrap:nowrap;align-items:flex-start;gap:12px}
     .lockup{flex:1;min-width:0;gap:11px}
-    .profileWrap{flex:none}
+    .profileWrap{display:none}
+  }
+  .action-mobile{display:none}
+  @media (max-width:560px){
+    .action-mobile{display:block}
+    .action-mobile[hidden]{display:none}
   }
 
   .contact{margin:0;text-align:left;font-size:13px;line-height:1.55}
@@ -1608,6 +1613,9 @@
     background:none;border:none;border-radius:9px;cursor:pointer;
     font-size:14.5px;font-weight:500;color:var(--ink);text-align:left;
   }
+  .action-email{padding:8px 12px;font-size:12.5px;color:var(--mute);word-break:break-all}
+  .action-sep{height:1px;background:var(--line-soft);margin:6px 4px}
+  a.action-item{text-decoration:none}
   .action-item:hover{background:var(--navy-tint)}
   .action-item svg{width:18px;height:18px;flex:none;stroke:var(--navy);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .action-item .ic-sun{display:none}
@@ -1775,6 +1783,26 @@
   <svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg>
 </button>
 <div class="action-menu" id="actionMenu" role="menu" hidden>
+  <div class="action-mobile" id="actAccount">
+    <div class="action-email" id="actEmail" hidden></div>
+    <button class="action-item" id="actSignIn" role="menuitem">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg>
+      <span>Sign in / Sign up</span>
+    </button>
+    <a class="action-item" id="actProfile" href="profile.html" role="menuitem" hidden>
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg>
+      <span>Your profile</span>
+    </a>
+    <a class="action-item" id="actAdmin" href="admin.html" role="menuitem" hidden>
+      <svg viewBox="0 0 24 24"><path d="M12 3l7 3.5v5c0 4.5-3 7.5-7 9.5-4-2-7-5-7-9.5v-5z"/></svg>
+      <span>Admin dashboard</span>
+    </a>
+    <button class="action-item" id="actSignOut" role="menuitem" hidden>
+      <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      <span>Sign out</span>
+    </button>
+    <div class="action-sep"></div>
+  </div>
   <button class="action-item" id="actRefresh" role="menuitem">
     <svg viewBox="0 0 24 24"><path d="M4 4v6h6M20 20v-6h-6M4.5 9a8 8 0 0113.9-3.5L20 9M4 15l1.6 3.5A8 8 0 0019.5 15"/></svg>
     <span>Refresh page</span>
@@ -2292,6 +2320,11 @@
     profileMenu.hidden = true;
   });
 
+  function emitAuth(user){
+    window.mekapAuthState = { user: user ? { email: user.email } : null, admin: !adminDashLink.hidden };
+    window.dispatchEvent(new CustomEvent("mekap-auth", { detail: window.mekapAuthState }));
+  }
+
   auth.onAuthStateChanged(function(user){
     if(user){
       profileBtn.classList.add("signedIn");
@@ -2309,6 +2342,7 @@
       firebase.database().ref("roles/" + user.uid).once("value")
         .then(function(snap){
           adminDashLink.hidden = !snap.val();
+          emitAuth(user);
           if(window.mekapSetSuper) window.mekapSetSuper(snap.val() === "super" || snap.val() === "admin");
           // lets the Super Admin see this admin's email in the dashboard's "Current admins"
           if(snap.val() && user.email) firebase.database().ref("adminEmails/" + user.uid).set(user.email).catch(function(){});
@@ -2320,6 +2354,7 @@
           if(window.mekapSetSuper) window.mekapSetSuper(false);
         });
       profileBtn.setAttribute("aria-label", "Account: " + (user.displayName || user.email));
+      emitAuth(user);
     } else {
       profileBtn.classList.remove("signedIn");
       profileIcon.hidden = false;
@@ -2328,6 +2363,7 @@
       adminDashLink.hidden = true;
       if(window.mekapSetSuper) window.mekapSetSuper(false);
       profileBtn.setAttribute("aria-label", "Sign in or create account");
+      emitAuth(null);
     }
   });
 })();
@@ -4348,6 +4384,25 @@ window.mekapSetSuper = function(isSuper){
   });
   document.addEventListener("keydown", function(e){ if(e.key === "Escape") closeMenu(); });
   window.addEventListener("resize", closeMenu);
+
+  var actEmail = document.getElementById("actEmail");
+  var actSignIn = document.getElementById("actSignIn");
+  var actProfile = document.getElementById("actProfile");
+  var actAdmin = document.getElementById("actAdmin");
+  var actSignOut = document.getElementById("actSignOut");
+  function syncAccount(st){
+    var user = st && st.user;
+    actEmail.hidden = !user;
+    actEmail.textContent = user ? (user.email || "") : "";
+    actSignIn.hidden = !!user;
+    actProfile.hidden = !user;
+    actAdmin.hidden = !(user && st.admin);
+    actSignOut.hidden = !user;
+  }
+  window.addEventListener("mekap-auth", function(e){ syncAccount(e.detail); });
+  if(window.mekapAuthState) syncAccount(window.mekapAuthState);
+  actSignIn.addEventListener("click", function(){ closeMenu(); document.getElementById("profileBtn").click(); });
+  actSignOut.addEventListener("click", function(){ closeMenu(); document.getElementById("signOutBtn").click(); });
 
   document.getElementById("actRefresh").addEventListener("click", function(){
     location.href = location.pathname;
