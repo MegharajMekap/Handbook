@@ -39,6 +39,7 @@
   ::selection{background:rgba(27,75,143,.18)}
 
   /* ---------- login ---------- */
+  #loginWrap.booting{visibility:hidden}
   #loginWrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
   .loginOuter{width:100%;max-width:380px}
   .backLink{
@@ -597,7 +598,7 @@
 </button>
 
 <div class="wrap">
-  <div id="loginWrap">
+  <div id="loginWrap" class="booting">
     <div class="loginOuter">
       <a href="index.html" class="backLink"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Back to site</a>
       <div class="loginBox">
@@ -1271,6 +1272,11 @@ function denyAccess(msg, uid){
   });
 }
 
+// the sign-in form stays invisible until we know whether someone is already signed in,
+// so it never flashes an empty email/password that gets replaced a moment later
+function revealLogin(){ loginWrap.classList.remove("booting"); }
+setTimeout(revealLogin, 5000);   // safety net if Firebase never answers
+
 auth.onAuthStateChanged(function(user){
   if(user){
     if(requestMode) return;   // the request flow signs itself out
@@ -1283,21 +1289,25 @@ auth.onAuthStateChanged(function(user){
           if(!role){
             dashboardStarted = false;
             setSessionRequestUI(user);
+            revealLogin();
             return;
           }
           // lets the Super Admin see names instead of UIDs in "Current admins"
           db.ref("adminEmails/" + user.uid).set(user.email || "").catch(function(){});
           loginWrap.style.display = "none";
+          revealLogin();
           dash.classList.add("show");
           refreshBtn.hidden = false;
           startDashboard(role === "super");
         })
         .catch(function(){
           denyAccess("Couldn't verify admin access. Please try again.");
+          revealLogin();
         });
     }
   } else {
     if(sessionRequestUser) setSessionRequestUI(null);
+    revealLogin();
     loginWrap.style.display = "";
     dash.classList.remove("show");
     dashboardStarted = false;
