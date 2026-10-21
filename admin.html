@@ -40,6 +40,10 @@
 
   /* ---------- login ---------- */
   #loginWrap.booting{visibility:hidden}
+  #bootLoader{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--mute,#6B778F);font-size:14px;pointer-events:none}
+  #bootLoader[hidden]{display:none}
+  #bootLoader .spin{width:38px;height:38px;border-radius:50%;border:3px solid rgba(27,75,143,.18);border-top-color:#1B4B8F;animation:bootSpin .8s linear infinite}
+  @keyframes bootSpin{to{transform:rotate(360deg)}}
   #loginWrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
   .loginOuter{width:100%;max-width:380px}
   .backLink{
@@ -598,6 +602,8 @@
 </button>
 
 <div class="wrap">
+  <div id="bootLoader" role="status" aria-live="polite"><div class="spin"></div><span>Loading…</span></div>
+
   <div id="loginWrap" class="booting">
     <div class="loginOuter">
       <a href="index.html" class="backLink"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Back to site</a>
@@ -1274,7 +1280,10 @@ function denyAccess(msg, uid){
 
 // the sign-in form stays invisible until we know whether someone is already signed in,
 // so it never flashes an empty email/password that gets replaced a moment later
-function revealLogin(){ loginWrap.classList.remove("booting"); }
+function revealLogin(){
+  loginWrap.classList.remove("booting");
+  document.getElementById("bootLoader").hidden = true;
+}
 setTimeout(revealLogin, 5000);   // safety net if Firebase never answers
 
 auth.onAuthStateChanged(function(user){
