@@ -609,7 +609,7 @@
           <label for="email">Email</label>
           <input type="email" id="email" autocomplete="username" required>
         </div>
-        <div class="field">
+        <div class="field" id="passwordField">
           <label for="password">Password</label>
           <input type="password" id="password" autocomplete="current-password" required>
         </div>
@@ -1104,6 +1104,7 @@ const loginOk = document.getElementById("loginOk");
 let requestMode = false;   // true while the form is used to request admin access
 
 document.getElementById("loginSwitchBtn").addEventListener("click", function(){
+  if(sessionRequestUser){ auth.signOut(); return; }
   requestMode = !requestMode;
   document.querySelector("#loginWrap h2").textContent = requestMode ? "Request admin access" : "Admin sign-in";
   loginBtn.textContent = requestMode ? "Request access" : "Sign in";
@@ -1118,30 +1119,63 @@ document.getElementById("loginSwitchBtn").addEventListener("click", function(){
 // opened from the main site's "Request admin access" link
 if(location.hash === "#request") document.getElementById("loginSwitchBtn").click();
 
-// creates the account (or signs in to an existing one), files a request, then signs out
+// files a request for an existing account. Never creates accounts, so requests always come
+// from the same email the person already uses on the main site.
+function fileAdminRequest(user, message){
+  const req = { email: user.email, ts: firebase.database.ServerValue.TIMESTAMP };
+  if(message) req.message = message;
+  return db.ref("adminRequests/" + user.uid).set(req).then(function(){
+    // one notification per requester (fixed key), shown to the Super Admin
+    const n = { type: "request", action: "request", text: user.email, by: { uid: user.uid, email: user.email }, ts: firebase.database.ServerValue.TIMESTAMP };
+    if(message) n.message = message;
+    return db.ref("notifications/req_" + user.uid).set(n).catch(function(){});
+  });
+}
+
+// guest on the admin page: sign in with their existing account, file the request, sign out
 function requestAdminAccess(email, password, message){
   let user;
-  return auth.createUserWithEmailAndPassword(email, password)
-    .catch(function(err){
-      if(err.code === "auth/email-already-in-use") return auth.signInWithEmailAndPassword(email, password);
-      throw err;
-    })
+  return auth.signInWithEmailAndPassword(email, password)
     .then(function(cred){
       user = cred.user;
       return db.ref("roles/" + user.uid).once("value");
     })
     .then(function(snap){
       if(snap.val()) throw { code: "app/already-admin" };
-      const req = { email: user.email, ts: firebase.database.ServerValue.TIMESTAMP };
-      if(message) req.message = message;
-      return db.ref("adminRequests/" + user.uid).set(req).then(function(){
-        // one notification per requester (fixed key), shown to the Super Admin
-        const n = { type: "request", action: "request", text: user.email, by: { uid: user.uid, email: user.email }, ts: firebase.database.ServerValue.TIMESTAMP };
-        if(message) n.message = message;
-        return db.ref("notifications/req_" + user.uid).set(n).catch(function(){});
-      });
+      return fileAdminRequest(user, message);
     })
     .then(function(){ return auth.signOut(); });
+}
+
+// already signed in (e.g. from the main site) but not an admin: request with that same account,
+// no email or password to re-enter
+let sessionRequestUser = null;
+function setSessionRequestUI(user){
+  sessionRequestUser = user;
+  const on = !!user;
+  const emailEl = document.getElementById("email");
+  document.querySelector("#loginWrap h2").textContent = on ? "Request admin access" : (requestMode ? "Request admin access" : "Admin sign-in");
+  document.getElementById("passwordField").style.display = on ? "none" : "";
+  document.getElementById("password").required = !on;
+  emailEl.readOnly = on;
+  emailEl.value = on ? (user.email || "") : "";
+  document.getElementById("reqMessageField").classList.toggle("show", on || requestMode);
+  loginBtn.textContent = on ? "Send request" : (requestMode ? "Request access" : "Sign in");
+  loginBtn.disabled = false;
+  document.getElementById("loginSwitchText").textContent = on ? "Not you?" : (requestMode ? "Already approved?" : "Need access?");
+  document.getElementById("loginSwitchBtn").textContent = on ? "Sign out" : (requestMode ? "Sign in" : "Request admin access");
+  loginErr.classList.remove("show");
+  loginOk.classList.remove("show");
+  if(on){
+    loginWrap.style.display = "";
+    db.ref("adminRequests/" + user.uid).once("value").then(function(snap){
+      if(snap.exists() && sessionRequestUser === user){
+        loginOk.textContent = "Your admin request is waiting for the Super Admin's approval.";
+        loginOk.classList.add("show");
+        loginBtn.disabled = true;
+      }
+    }).catch(function(){});
+  }
 }
 
 loginForm.addEventListener("submit", function(e){
@@ -1150,6 +1184,23 @@ loginForm.addEventListener("submit", function(e){
   loginOk.classList.remove("show");
   loginBtn.disabled = true;
   loginBtn.textContent = requestMode ? "Sending…" : "Signing in…";
+  if(sessionRequestUser){
+    loginBtn.textContent = "Sending…";
+    fileAdminRequest(sessionRequestUser, document.getElementById("reqMessage").value.trim())
+      .then(function(){
+        loginOk.textContent = "Request sent. You can open the dashboard once the Super Admin approves it.";
+        loginOk.classList.add("show");
+        loginBtn.textContent = "Send request";
+        loginBtn.disabled = true;
+      })
+      .catch(function(err){
+        loginErr.textContent = "Couldn't send the request: " + (err.message || err.code);
+        loginErr.classList.add("show");
+        loginBtn.textContent = "Send request";
+        loginBtn.disabled = false;
+      });
+    return;
+  }
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
   if(requestMode){
@@ -1160,8 +1211,7 @@ loginForm.addEventListener("submit", function(e){
       })
       .catch(function(err){
         loginErr.textContent = err.code === "app/already-admin" ? "This account already has admin access. Use Sign in."
-          : err.code === "auth/invalid-credential" || err.code === "auth/wrong-password" ? "That email is already registered. Enter its existing password."
-          : err.code === "auth/weak-password" ? "Password should be at least 6 characters."
+          : err.code === "auth/invalid-credential" || err.code === "auth/wrong-password" || err.code === "auth/user-not-found" ? "Incorrect email or password. Use the account you already sign in with on the main site."
           : err.code === "auth/invalid-email" ? "Enter a valid email address."
           : "Couldn't send the request: " + (err.message || err.code);
         loginErr.classList.add("show");
@@ -1231,7 +1281,8 @@ auth.onAuthStateChanged(function(user){
         .then(function(snap){
           const role = snap.val();
           if(!role){
-            denyAccess("This account doesn't have admin access. Use \"Request admin access\" below.", user.uid);
+            dashboardStarted = false;
+            setSessionRequestUI(user);
             return;
           }
           // lets the Super Admin see names instead of UIDs in "Current admins"
@@ -1246,6 +1297,7 @@ auth.onAuthStateChanged(function(user){
         });
     }
   } else {
+    if(sessionRequestUser) setSessionRequestUI(null);
     loginWrap.style.display = "";
     dash.classList.remove("show");
     dashboardStarted = false;
