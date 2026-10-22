@@ -198,6 +198,8 @@
     animation:livePulse 1.8s ease-in-out infinite;
   }
   .visitorPill .sep{color:var(--line)}
+  /* page title kept for screen readers / SEO, but not shown */
+  .srOnly{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
   h1{
     font-family:var(--serif);
     font-weight:700;
@@ -690,73 +692,24 @@
   /* ---------- calendar ---------- */
   .timetable{margin-top:6px;scroll-margin-top:20px}
   .calLegend{font-size:12.5px;color:var(--mute);margin:0 0 16px}
-  .calFilter{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:16px 0 14px}
-  .calPicker{
-    position:relative;display:flex;align-items:stretch;height:44px;
-    background:var(--card);border:1px solid var(--line);border-radius:14px;
-    box-shadow:0 1px 2px rgba(22,35,58,.05),0 6px 18px -10px rgba(22,35,58,.22);
-  }
-  .calPicker button{font:inherit;background:none;border:0;cursor:pointer;color:var(--navy);-webkit-tap-highlight-color:transparent}
-  .calPicker svg,.calNow svg{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-  .calNav{width:42px;display:flex;align-items:center;justify-content:center;transition:background .15s}
-  .calNav svg{width:17px;height:17px}
-  .calNav:first-child{border-radius:13px 0 0 13px}
-  .calNav:last-of-type{border-radius:0 13px 13px 0}
-  .calNav:hover:not(:disabled){background:var(--navy-tint)}
-  .calNav:disabled{color:var(--mute);opacity:.35;cursor:default}
-  .calMonthBtn{
-    display:flex;align-items:center;gap:9px;padding:0 16px;min-width:190px;justify-content:center;
-    border-left:1px solid var(--line-soft) !important;border-right:1px solid var(--line-soft) !important;
-    font-size:15px;font-weight:700;color:var(--ink) !important;letter-spacing:.005em;transition:background .15s;
-  }
-  .calMonthBtn:hover,.calMonthBtn[aria-expanded="true"]{background:var(--navy-tint)}
-  .calMonthIco{width:17px;height:17px;color:var(--navy)}
-  .calCaret{width:15px;height:15px;color:var(--mute);transition:transform .2s}
-  .calMonthBtn[aria-expanded="true"] .calCaret{transform:rotate(180deg)}
-  .calNow{
-    display:inline-flex;align-items:center;gap:7px;height:44px;padding:0 16px;
-    font:inherit;font-size:14px;font-weight:600;color:#fff;cursor:pointer;
-    background:linear-gradient(135deg,var(--navy),var(--navy-deep));border:0;border-radius:14px;
-    box-shadow:0 6px 16px -6px rgba(27,75,143,.55);transition:transform .15s,box-shadow .15s,opacity .15s;
-  }
-  .calNow svg{width:15px;height:15px}
-  .calNow:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 10px 20px -8px rgba(27,75,143,.6)}
-  .calNow:disabled{opacity:0;pointer-events:none;transform:translateX(-6px)}
-  .calPop{
-    position:absolute;top:calc(100% + 8px);left:0;z-index:30;width:min(340px,calc(100vw - 32px));
-    background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;
-    box-shadow:0 18px 40px -12px rgba(22,35,58,.35);animation:calPopIn .18s ease;
-    max-height:min(420px,70vh);overflow-y:auto;
-  }
-  .calPop[hidden]{display:none}
-  @keyframes calPopIn{from{opacity:0;transform:translateY(-6px) scale(.98)}to{opacity:1;transform:none}}
-  .calPopYear{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--mute);margin:6px 4px 8px}
-  .calPopYear:first-child{margin-top:2px}
-  .calPopGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
-  .calPopGrid button{
-    position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 4px 8px;
-    border-radius:10px;border:1px solid transparent;font-size:14px;font-weight:600;color:var(--ink);
-    transition:background .12s,border-color .12s;
-  }
-  .calPopGrid button small{font-size:10.5px;font-weight:500;color:var(--mute)}
-  .calPopGrid button:hover:not(:disabled){background:var(--navy-tint)}
-  .calPopGrid button:disabled{opacity:.3;cursor:default}
-  .calPopGrid button.is-now{border-color:var(--navy)}
-  .calPopGrid button.is-now::after{
-    content:"";position:absolute;top:6px;right:7px;width:6px;height:6px;border-radius:50%;background:#D9503F;
-  }
-  .calPopGrid button.is-sel{background:var(--navy);color:#fff}
-  .calPopGrid button.is-sel small{color:rgba(255,255,255,.75)}
-  .calPopGrid button small.calPopEv{color:#7C3AED;font-weight:600}
-  .calPopGrid button.is-sel small.calPopEv{color:#E9D5FF}
-  @media (max-width:480px){
-    .calFilter{gap:8px}
-    .calPicker{flex:1 1 100%}
-    .calMonthBtn{flex:1;min-width:0}
-    .calNow{flex:1 1 100%;justify-content:center}
-    .calNow:disabled{display:none}
-  }
   .caltable tr.calRow-done td{opacity:.55}
+  /* past sessions are tucked away behind a toggle row until the viewer asks for them */
+  .caltable.pastCollapsed tr.calRow-done{display:none}
+  .caltable tbody tr.calPastToggle,.caltable tbody tr.calPastToggle:hover{background:var(--card)}
+  .calPastToggle td{padding:7px 14px;border-top:none;border-bottom:1px solid var(--line-soft);text-align:center}
+  .calPastToggle td::before{display:none!important}
+  .calPastBtn{
+    display:inline-flex;align-items:center;gap:7px;padding:5px 13px 5px 11px;
+    background:var(--card);border:1px solid var(--line);border-radius:999px;cursor:pointer;
+    font-size:12.5px;font-weight:600;color:var(--ink-soft);
+    transition:background .15s,border-color .15s,color .15s;
+  }
+  .calPastBtn:hover{background:var(--navy-tint);border-color:var(--navy);color:var(--navy)}
+  .calPastBtn .ic{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .calPastBtn .chev{transition:transform .2s}
+  .caltable:not(.pastCollapsed) .calPastBtn .chev{transform:rotate(180deg)}
+  .caltable:not(.pastCollapsed) tr.calRow-done{animation:pastIn .25s ease backwards}
+  @keyframes pastIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
   .calNoClass{padding:18px;text-align:center;color:var(--mute);font-size:14px}
   .calMonth{margin-bottom:30px}
   .calMonth:last-child{margin-bottom:0}
@@ -765,7 +718,26 @@
   }
   .calMonthHeader{
     background:linear-gradient(135deg,#D9503F,#C23A2D);color:#fff;padding:13px 18px;
+    display:flex;align-items:center;
   }
+  .calMonthHeader .calMonthTitle{flex:1;min-width:0}
+  .calHeadNav{display:flex;gap:6px;flex:none}
+  .calHeadBtn{
+    width:30px;height:30px;border-radius:50%;border:none;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.2);color:#fff;transition:background .15s,transform .15s;
+  }
+  .calHeadBtn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  .calHeadBtn:hover:not(:disabled){background:rgba(255,255,255,.36)}
+  .calHeadBtn:active:not(:disabled){transform:scale(.92)}
+  .calHeadBtn:disabled{opacity:.35;cursor:default}
+  .caltable th.calTblHead{
+    text-transform:none;letter-spacing:.01em;font-size:14px;font-weight:700;color:#fff;
+    padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.18);
+  }
+  .calTblHead .calTblHeadIn{display:flex;align-items:center;gap:10px}
+  .calTblHead .calTblTitle{flex:1;min-width:0}
+  .calTblHead .calTblYear{font-weight:600;font-size:12px;opacity:.8;margin-left:5px}
   .calMonthHeader .calMonthName{font-weight:700;font-size:17px;letter-spacing:.01em}
   .calMonthHeader .calMonthYear{font-weight:600;font-size:13px;opacity:.8;margin-left:5px}
   .calGrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--line)}
@@ -1005,6 +977,25 @@
     mix-blend-mode:soft-light;
   }
   .noticebar[hidden]{display:none}
+  /* placeholder shown until the announcements arrive from the server */
+  .noticebar.isLoading{cursor:default}
+  .noticebar.isLoading::before{display:none}
+  /* same font-size / line-height as .notice-item so the bar is exactly as tall as the real marquee */
+  /* the placeholder is built from the same elements as the real marquee, so both are exactly the same height */
+  .noticebar.isLoading #noticeTrack{display:none}
+  .notice-skel{animation:none}
+  .skelItem{position:relative}
+  .skelItem::after{
+    content:"";position:absolute;left:0;right:0;top:50%;height:11px;margin-top:-5px;border-radius:6px;
+    background:linear-gradient(90deg,rgba(138,66,10,.10) 0%,rgba(138,66,10,.24) 50%,rgba(138,66,10,.10) 100%);
+    background-size:200% 100%;animation:skelShimmer 1.3s linear infinite;
+  }
+  .skelItem:nth-child(1){width:210px}
+  .skelItem:nth-child(3){width:150px}
+  .skelItem:nth-child(5){width:260px}
+  .skelItem:nth-child(7){width:180px}
+  .skelItem:nth-child(9){width:230px}
+  @keyframes skelShimmer{from{background-position:200% 0}to{background-position:-200% 0}}
   .notice-track{
     display:inline-flex;width:max-content;
     animation:noticeScroll 28s linear infinite;
@@ -1017,6 +1008,7 @@
     color:#fff;background:#C22C2C;
     border-radius:3px;padding:1px 4px;margin-left:6px;
     animation:newFlash 1.2s ease-in-out infinite;
+    line-height:0;   /* the raised flag must not make the marquee line taller than the loading placeholder */
   }
   .notice-dot{margin:0 22px;opacity:.5}
   @keyframes noticeScroll{
@@ -1775,7 +1767,8 @@
   <span class="lb-progress" id="livebarProg" aria-hidden="true"></span>
 </a>
 
-<div class="noticebar" id="noticebar" hidden role="status">
+<div class="noticebar isLoading" id="noticebar" role="status" aria-busy="true" aria-label="Loading announcements">
+  <div class="notice-track notice-skel" id="noticeSkel" aria-hidden="true"><span class="notice-half"><span class="notice-item skelItem">&#8203;</span><span class="notice-dot" style="visibility:hidden">•</span><span class="notice-item skelItem">&#8203;</span><span class="notice-dot" style="visibility:hidden">•</span><span class="notice-item skelItem">&#8203;</span><span class="notice-dot" style="visibility:hidden">•</span><span class="notice-item skelItem">&#8203;</span><span class="notice-dot" style="visibility:hidden">•</span><span class="notice-item skelItem">&#8203;</span></span></div>
   <div class="notice-track" id="noticeTrack"></div>
 </div>
 
@@ -1884,7 +1877,7 @@
         <span id="visitorTotal"></span>
       </div>
     </div>
-    <h1><span id="h1Text"></span><span id="h1Caret" class="typecaret done"></span></h1>
+    <h1 class="srOnly"><span id="h1Text"></span><span id="h1Caret" class="typecaret done"></span></h1>
     <p class="standfirst" id="standfirst"><span id="greetLine" class="greetline"><span id="greetText"></span><span id="greetCaret" class="typecaret done"></span></span><span id="festivalLine" class="festivalline" hidden><span id="festivalText"></span><span id="festivalCaret" class="typecaret done"></span></span></p>
     <p class="quoteline" id="quoteLine" hidden><span id="quoteText"></span><span id="quoteCaret" class="typecaret done"></span></p>
     <div class="funfact" id="funFact" aria-live="off" hidden>
@@ -1946,26 +1939,6 @@
       <div class="nhead">
         <h2>Calendar</h2>
         <span class="ntally" id="caltally"></span>
-      </div>
-      <div class="calFilter" role="group" aria-label="Choose month">
-        <div class="calPicker">
-          <button type="button" class="calNav" id="calPrev" aria-label="Previous month">
-            <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
-          </button>
-          <button type="button" class="calMonthBtn" id="calMonthBtn" aria-haspopup="true" aria-expanded="false">
-            <svg class="calMonthIco" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
-            <span id="calMonthLabel"></span>
-            <svg class="calCaret" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
-          </button>
-          <button type="button" class="calNav" id="calNext" aria-label="Next month">
-            <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
-          </button>
-          <div class="calPop" id="calPop" hidden></div>
-        </div>
-        <button type="button" class="calNow" id="calNow">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/></svg>
-          This month
-        </button>
       </div>
       <div id="calOut"></div>
     </section>
@@ -3123,30 +3096,47 @@ function calMonthGrid(year, month, items, todayFlag, pastItems, events, outsideI
   return '<div class="calGrid">' + cells + '</div>';
 }
 
+let calShowPast = false;
+function pastLabel(n, show){
+  return show ? "Hide past" : n + " past " + (n === 1 ? "entry" : "entries");
+}
+
+function calStepBtns(){
+  return '<span class="calHeadNav">' +
+    '<button type="button" class="calHeadBtn" data-calstep="-1" aria-label="Previous month"' + (calPrev.disabled ? ' disabled' : '') + '><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>' +
+    '<button type="button" class="calHeadBtn" data-calstep="1" aria-label="Next month"' + (calNext.disabled ? ' disabled' : '') + '><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>' +
+  '</span>';
+}
+
 function calMonthBlock(year, month, upcoming, past, events, todayFlag, emptyHtml, outsideItems){
   const all = past.concat(upcoming, events).sort((a,b) => stamp(a) - stamp(b));
+  const pastCount = all.filter(r => (r.isEvent ? evEndStamp(r) : endStamp(r)) <= Date.now()).length;
+  const toggleRow = pastCount
+    ? '<tr class="calPastToggle"><td colspan="6"><button type="button" class="calPastBtn" data-n="' + pastCount + '" aria-expanded="' + calShowPast + '">' +
+        '<svg class="ic" viewBox="0 0 24 24"><path d="M3 12a9 9 0 109-9 9 9 0 00-6.4 2.6L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>' +
+        '<span>' + pastLabel(pastCount, calShowPast) + '</span><svg class="ic chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button></td></tr>'
+    : '';
   return '<div class="calMonth">' +
     '<div class="calMonthCard">' +
-      '<div class="calMonthHeader"><span class="calMonthName">' + MON[month] + '</span><span class="calMonthYear">' + year + '</span></div>' +
+      '<div class="calMonthHeader"><span class="calMonthTitle"><span class="calMonthName">' + MON[month] + '</span><span class="calMonthYear">' + year + '</span></span>' +
+        calStepBtns() + '</div>' +
       calMonthGrid(year, month, upcoming, todayFlag, past, events, outsideItems) +
     '</div>' +
     (all.length
-      ? '<div style="overflow-x:auto"><table class="caltable"><thead><tr>' +
+      ? '<div style="overflow-x:auto"><table class="caltable' + (pastCount && !calShowPast ? ' pastCollapsed' : '') + '"><thead><tr>' +
+          '<th class="calTblHead" colspan="6"><div class="calTblHeadIn"><span class="calTblTitle">' + MON[month] + '<span class="calTblYear">' + year + '</span></span>' + calStepBtns() + '</div></th></tr><tr>' +
           '<th>Date</th><th>Subject</th><th>Session</th><th>Time</th><th>Link</th><th>Add</th>' +
-        '</tr></thead><tbody>' + all.map(r => r.isEvent ? calEventRow(r) : calRow(r)).join("") + '</tbody></table></div>'
+        '</tr></thead><tbody>' + toggleRow + all.map(r => r.isEvent ? calEventRow(r) : calRow(r)).join("") + '</tbody></table></div>'
       : emptyHtml) +
   '</div>';
 }
 
+
 /* month filter — null means "the current month" */
 let calView = null;
 let calSel = null; // month index currently shown
-const calMonthBtn = document.getElementById("calMonthBtn");
-const calMonthLabel = document.getElementById("calMonthLabel");
-const calPop = document.getElementById("calPop");
-const calPrev = document.getElementById("calPrev");
-const calNext = document.getElementById("calNext");
-const calNow = document.getElementById("calNow");
+const calPrev = { disabled: false };   // first / last month reached (drives the header arrows)
+const calNext = { disabled: false };
 const monthIdx = (y, m) => y * 12 + m;
 const nowMonthIdx = () => { const n = new Date(); return monthIdx(n.getFullYear(), n.getMonth()); };
 
@@ -3163,62 +3153,29 @@ function calMonthRange(){
 }
 
 function syncCalFilter(sel, lo, hi){
-  const cur = nowMonthIdx();
   calSel = sel;
-  calMonthLabel.textContent = MON[sel % 12] + " " + Math.floor(sel / 12);
   calPrev.disabled = sel <= lo;
   calNext.disabled = sel >= hi;
-  calNow.disabled = sel === cur;
 
-  const counts = new Map(), evCounts = new Map();
-  const tallyInto = map => r => {
-    const d = d0(r.date);
-    const i = monthIdx(d.getFullYear(), d.getMonth());
-    map.set(i, (map.get(i) || 0) + 1);
-  };
-  RECORDINGS.forEach(tallyInto(counts));
-  CAL_EVENTS.forEach(tallyInto(evCounts));
-  let html = "";
-  for(let y = Math.floor(lo / 12); y <= Math.floor(hi / 12); y++){
-    html += '<div class="calPopYear">' + y + '</div><div class="calPopGrid">';
-    for(let m = 0; m < 12; m++){
-      const i = monthIdx(y, m);
-      const n = counts.get(i) || 0, ne = evCounts.get(i) || 0;
-      const cls = (i === cur ? "is-now " : "") + (i === sel ? "is-sel" : "");
-      html += '<button type="button" data-month="' + i + '"' + (cls ? ' class="' + cls.trim() + '"' : '') +
-        (i < lo || i > hi ? ' disabled' : '') + '>' + MON[m].slice(0,3) +
-        '<small>' + (n ? n + (n === 1 ? ' class' : ' classes') : (ne ? '' : '—')) + '</small>' +
-        (ne ? '<small class="calPopEv">' + ne + (ne === 1 ? ' event' : ' events') + '</small>' : '') + '</button>';
-    }
-    html += '</div>';
-  }
-  calPop.innerHTML = html;
 }
 
-function toggleCalPop(open){
-  calPop.hidden = !open;
-  calMonthBtn.setAttribute("aria-expanded", open);
-  if(open){
-    const s = calPop.querySelector(".is-sel");
-    if(s) s.scrollIntoView({ block:"nearest" });
-  }
-}
 function setCalView(i){
   calView = i === nowMonthIdx() ? null : i;
-  toggleCalPop(false);
   renderCalendar();
 }
-calMonthBtn.addEventListener("click", e => { e.stopPropagation(); toggleCalPop(calPop.hidden); });
-calPop.addEventListener("click", e => {
-  e.stopPropagation();
-  const b = e.target.closest("button[data-month]");
-  if(b && !b.disabled) setCalView(+b.dataset.month);
+document.addEventListener("click", e => {
+  const t = e.target.closest(".calPastBtn");
+  if(t){
+    const table = t.closest("table");
+    calShowPast = table.classList.contains("pastCollapsed");
+    table.classList.toggle("pastCollapsed", !calShowPast);
+    t.setAttribute("aria-expanded", calShowPast);
+    t.querySelector("span").textContent = pastLabel(+t.dataset.n, calShowPast);
+    return;
+  }
+  const b = e.target.closest("[data-calstep]");
+  if(b && !b.disabled) setCalView(calSel + +b.dataset.calstep);
 });
-document.addEventListener("click", () => { if(!calPop.hidden) toggleCalPop(false); });
-document.addEventListener("keydown", e => { if(e.key === "Escape" && !calPop.hidden){ toggleCalPop(false); calMonthBtn.focus(); } });
-calPrev.addEventListener("click", () => setCalView(calSel - 1));
-calNext.addEventListener("click", () => setCalView(calSel + 1));
-calNow.addEventListener("click", () => setCalView(nowMonthIdx()));
 
 function matchesFilter(r, q){
   if(active !== "All" && r.subject !== active) return false;
@@ -3584,11 +3541,24 @@ window.mekapSetSuper = function(isSuper){
 (function(){
   const bar = document.getElementById("noticebar");
   const track = document.getElementById("noticeTrack");
+  const skel = document.getElementById("noticeSkel");
   let shownKey = null;
   let dynamicNotices = [];
+  let loaded = false;   // true once the announcements have arrived (or we know they won't)
+
+  function finishLoading(){
+    if(loaded) return;
+    loaded = true;
+    bar.classList.remove("isLoading");
+    bar.removeAttribute("aria-busy");
+    bar.removeAttribute("aria-label");
+    skel.remove();
+  }
 
   if(typeof firebase !== "undefined" && firebase.apps && firebase.apps.length){
+    setTimeout(function(){ finishLoading(); tick(); }, 8000);   // offline / blocked: stop showing the placeholder
     firebase.database().ref("announcements").on("value", function(snap){
+      finishLoading();
       const items = [];
       snap.forEach(function(child){
         const v = child.val();
@@ -3605,6 +3575,7 @@ window.mekapSetSuper = function(isSuper){
   }
 
   function tick(){
+    if(!loaded) return;   // still showing the placeholder
     const active = activeNotices();
     if(!active.length){ bar.hidden = true; return; }
     const key = active.map(n => n.text + (n.isNew ? "*" : "")).join("|");
@@ -3618,6 +3589,7 @@ window.mekapSetSuper = function(isSuper){
     bar.hidden = false;
   }
 
+  if(!(typeof firebase !== "undefined" && firebase.apps && firebase.apps.length)){ finishLoading(); bar.hidden = true; }
   tick();
   setInterval(tick, 60000);
 
@@ -4142,9 +4114,9 @@ window.mekapSetSuper = function(isSuper){
     festivalEl.hidden = true;
     quoteTextEl.textContent = "";
     quoteEl.hidden = true;
-    h1CaretEl.classList.remove("done");
-    typeInto(h1TextEl, H1_TEXT, function(){
-      h1CaretEl.classList.add("done");
+    // the "Executive MBA" headline is no longer shown, so skip straight to the greeting
+    h1TextEl.textContent = H1_TEXT;
+    (function(next){ next(); })(function(){
       greetCaretEl.classList.remove("done");
       typeInto(greetTextEl, greeting(), function(){
         greetCaretEl.classList.add("done");
@@ -4175,7 +4147,7 @@ window.mekapSetSuper = function(isSuper){
           afterFestival();
         }
       });
-    }, 120);
+    });
   }
 
   window.playStandfirstTyping = type;
