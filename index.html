@@ -303,8 +303,8 @@
   .tabThemeZone{
     background:var(--zone-bg,transparent);
     border-radius:26px;
-    padding:14px 16px 26px;
-    margin:0 -16px;
+    padding:18px 20px 28px;
+    margin:0 -20px;
     transition:background-color .5s ease;
   }
   /* only the Super Admin sees Recordings and Notes; everyone else gets the Calendar alone */
@@ -314,7 +314,8 @@
   body[data-activetab="notes"]{--zone-bg:#EEFBF7}
   body[data-activetab="calendar"]{--zone-bg:#F8F1FD}
   @media (max-width:520px){
-    .tabThemeZone{padding:10px 10px 20px;margin:0 -10px;border-radius:20px}
+    /* a little more breathing room inside the tinted panel, so the calendar and table don't hug its edges */
+    .tabThemeZone{padding:14px 14px 22px;margin:0 -8px;border-radius:22px}
   }
 
   /* ---------- tabs ---------- */
@@ -332,7 +333,7 @@
      never shows through), and the bar's own gradient/border on top of it */
   .tabs::before{
     content:"";position:absolute;z-index:-1;pointer-events:none;
-    top:-13px;bottom:-1px;left:-16px;right:-16px;
+    top:-13px;bottom:-1px;left:-20px;right:-20px;
     background:var(--zone-bg,var(--page));
     transition:background-color .5s ease;
   }
@@ -343,7 +344,7 @@
     box-shadow:inset 0 1px 2px rgba(22,35,58,.05);
   }
   @media (max-width:520px){
-    .tabs::before{left:-10px;right:-10px}
+    .tabs::before{left:-14px;right:-14px}
   }
   /* while stuck, the cover keeps going below the bar and fades smoothly to
      fully transparent, in place of a hard drop shadow */
@@ -728,12 +729,13 @@
   .calHeadBtn:active:not(:disabled){transform:scale(.92)}
   .calHeadBtn:disabled{opacity:.35;cursor:default}
   .caltable th.calTblHead{
-    text-transform:none;letter-spacing:.01em;font-size:14px;font-weight:700;color:#fff;
-    padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.18);
+    /* identical to .calMonthHeader above the grid: same padding, title size and arrow buttons */
+    text-transform:none;letter-spacing:.01em;font-size:17px;font-weight:700;color:#fff;line-height:inherit;
+    padding:13px 18px;border-bottom:0;
   }
   .calTblHead .calTblHeadIn{display:flex;align-items:center;gap:10px}
-  .calTblHead .calTblTitle{flex:1;min-width:0}
-  .calTblHead .calTblYear{font-weight:600;font-size:12px;opacity:.8;margin-left:5px}
+  .calTblHead .calTblTitle{flex:1;min-width:0;font-weight:700;font-size:17px;letter-spacing:.01em}
+  .calTblHead .calTblYear{font-weight:600;font-size:13px;opacity:.8;margin-left:5px}
   .calMonthHeader .calMonthName{font-weight:700;font-size:17px;letter-spacing:.01em}
   .calMonthHeader .calMonthYear{font-weight:600;font-size:13px;opacity:.8;margin-left:5px}
   .calGrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--line)}
@@ -955,7 +957,7 @@
     .caltable thead,.caltable tbody{display:block}
     .caltable thead tr:nth-child(2){display:none}   /* column labels aren't needed once rows are stacked */
     .caltable thead tr{display:block}
-    .caltable th.calTblHead{display:block;padding:7px 10px}
+    .caltable th.calTblHead{display:block}
     .caltable tbody tr{
       display:grid;grid-template-columns:50px minmax(0,1fr) auto;
       grid-template-areas:"date subj link" "date time add";
