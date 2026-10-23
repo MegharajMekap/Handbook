@@ -1169,6 +1169,22 @@
     box-shadow:0 3px 10px rgba(0,0,0,.25);
     cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
   }
+  /* landing nudge: the button flashes with a ripple and hops up twice, then settles back */
+  .action-btn.attn{animation:actionHop 1.5s cubic-bezier(.3,.7,.4,1) .9s 2,actionFlash 1.5s ease-out .9s 2}
+  @keyframes actionHop{
+    0%,100%{transform:translateY(0)}
+    25%{transform:translateY(-22px)}
+    45%{transform:translateY(0)}
+    60%{transform:translateY(-9px)}
+    75%{transform:translateY(0)}
+  }
+  @keyframes actionFlash{
+    0%{filter:brightness(1);box-shadow:0 10px 24px -8px rgba(18,53,104,.6),inset 0 1px 0 rgba(255,255,255,.2),0 0 0 0 rgba(66,122,210,.7)}
+    25%{filter:brightness(1.5)}
+    70%{filter:brightness(1);box-shadow:0 10px 24px -8px rgba(18,53,104,.6),inset 0 1px 0 rgba(255,255,255,.2),0 0 0 20px rgba(66,122,210,0)}
+    100%{filter:brightness(1);box-shadow:0 10px 24px -8px rgba(18,53,104,.6),inset 0 1px 0 rgba(255,255,255,.2),0 0 0 0 rgba(66,122,210,0)}
+  }
+  @media (prefers-reduced-motion:reduce){.action-btn.attn{animation:none}}
   .action-btn.dragging{cursor:grabbing;transform:scale(1.08)}
   .action-btn[hidden]{display:none}
   .action-btn svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -4330,6 +4346,11 @@ window.mekapSetSuper = function(isSuper){
 (function(){
   var top = document.getElementById("actionBtn");
   top.hidden = false;
+
+  // draw the eye to it once on landing
+  top.classList.add("attn");
+  setTimeout(function(){ top.classList.remove("attn"); }, 4200);
+  top.addEventListener("pointerdown", function(){ top.classList.remove("attn"); });
 
   var KEY = "actionBtnPos";
   var moved = false, drag = null;
