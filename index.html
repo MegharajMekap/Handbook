@@ -126,16 +126,12 @@
     gap:16px 28px;flex-wrap:wrap;margin-bottom:30px;
   }
   .lockup{display:flex;align-items:center;gap:15px}
-  /* keep the profile button top-right on phones so its menu opens on-screen */
+  /* the round profile icon is gone: account actions live in the floating action menu instead.
+     The button stays in the DOM (hidden) because the sign-in dialog and sign-out are driven through it. */
+  .profileWrap{display:none}
   @media (max-width:560px){
     .headrow{flex-wrap:nowrap;align-items:flex-start;gap:12px}
     .lockup{flex:1;min-width:0;gap:11px}
-    .profileWrap{display:none}
-  }
-  .action-mobile{display:none}
-  @media (max-width:560px){
-    .action-mobile{display:block}
-    .action-mobile[hidden]{display:none}
   }
 
   .contact{margin:0;text-align:left;font-size:13px;line-height:1.55}
@@ -1191,7 +1187,7 @@
   .action-btn:active{transform:scale(.94)}
   .action-btn-top{
     /* sits clear of the rounded screen corners on phones */
-    bottom:calc(env(safe-area-inset-bottom,0px) + 36px);
+    bottom:calc(env(safe-area-inset-bottom,0px) + 56px);
     right:calc(env(safe-area-inset-right,0px) + 18px);
   }
 
@@ -4356,7 +4352,7 @@ window.mekapSetSuper = function(isSuper){
   var moved = false, drag = null;
 
   // keep clear of the rounded corners: a wider margin on the sides and the bottom than the top
-  var MX = 14, MT = 10, MB = 34;
+  var MX = 14, MT = 10, MB = 54;
   function clamp(x, y){
     return {
       x: Math.min(Math.max(x, MX), document.documentElement.clientWidth - top.offsetWidth - MX),
