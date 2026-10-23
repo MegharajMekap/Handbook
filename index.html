@@ -4317,8 +4317,11 @@ window.mekapSetSuper = function(isSuper){
     return p;
   }
 
+  // always start in the lower-right corner on a new visit; a dragged position is only kept for the
+  // current browser session (so tapping Refresh doesn't snap it back mid-use)
+  try{ localStorage.removeItem(KEY); }catch(e){}
   try{
-    var saved = JSON.parse(localStorage.getItem(KEY));
+    var saved = JSON.parse(sessionStorage.getItem(KEY));
     if(saved && isFinite(saved.x) && isFinite(saved.y)) place(saved.x, saved.y);
   }catch(e){}
 
@@ -4354,7 +4357,7 @@ window.mekapSetSuper = function(isSuper){
       place(snapX, r.top);
       setTimeout(function(){ top.style.transition = ""; }, 300);
       r = { left: snapX, top: clamp(snapX, r.top).y };
-      try{ localStorage.setItem(KEY, JSON.stringify({ x: r.left, y: r.top })); }catch(err){}
+      try{ sessionStorage.setItem(KEY, JSON.stringify({ x: r.left, y: r.top })); }catch(err){}
     }
   }
   top.addEventListener("pointerup", end);
