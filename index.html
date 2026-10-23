@@ -954,6 +954,38 @@
     }
     .caltable a.calSubjCode{text-decoration:none;cursor:pointer}
     .caltable a.calSubjCode:active{transform:scale(.95)}
+    /* each row becomes a compact two-line card so the table is exactly as wide as the calendar */
+    .caltable{font-size:12px;display:block;border-radius:12px}
+    .caltable thead,.caltable tbody{display:block}
+    .caltable thead tr:nth-child(2){display:none}   /* column labels aren't needed once rows are stacked */
+    .caltable thead tr{display:block}
+    .caltable th.calTblHead{display:block;padding:7px 10px}
+    .caltable tbody tr{
+      display:grid;grid-template-columns:50px minmax(0,1fr) auto;
+      grid-template-areas:"date subj link" "date time add";
+      column-gap:8px;row-gap:5px;align-items:center;padding:9px 10px 9px 0;
+      border-top:1px solid var(--line-soft);
+    }
+    .caltable tbody tr:first-child{border-top:none}
+    .caltable tbody tr.calPastToggle{display:block;padding:0}
+    .caltable tbody tr.calPastToggle td{display:block;padding:7px 14px;text-align:center}
+    .caltable td{padding:0;border:0}
+    .caltable td:nth-child(1){grid-area:date;padding-left:12px}
+    .caltable td:nth-child(2){grid-area:subj;min-width:0}
+    .caltable td:nth-child(4){grid-area:time;min-width:0}
+    .caltable td:nth-child(5){grid-area:link;justify-self:end}
+    .caltable td:nth-child(6){grid-area:add;justify-self:end}
+    .caltable td:nth-child(5):empty,.caltable td:nth-child(6):empty{display:none}
+    .calDateNum{font-size:12px;white-space:nowrap}
+    .calDateDow{font-size:9px}
+    .caltable .calSlot{white-space:nowrap;font-size:11.5px;padding:3px 8px}
+    .caltable .calBrk{display:block;width:max-content;max-width:100%;margin-top:4px;white-space:nowrap;font-size:10px;padding:2px 7px}
+    .caltable .calSubjCode{font-size:11px;padding:3px 8px}
+    .caltable .calEvType{font-size:9px;padding:1px 5px}
+    .caltable td strong{font-size:12.5px}
+    /* Google Calendar becomes an icon-only button */
+    .caltable .calBtn{font-size:0;gap:0;padding:7px}
+    .caltable .calBtn svg{width:16px;height:16px}
   }
 
 
