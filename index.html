@@ -1174,8 +1174,9 @@
   .action-btn svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .action-btn:active{transform:scale(.94)}
   .action-btn-top{
-    bottom:calc(env(safe-area-inset-bottom,0px) + 16px);
-    right:calc(env(safe-area-inset-right,0px) + 16px);
+    /* sits clear of the rounded screen corners on phones */
+    bottom:calc(env(safe-area-inset-bottom,0px) + 36px);
+    right:calc(env(safe-area-inset-right,0px) + 18px);
   }
 
   @media (prefers-reduced-motion:reduce){
@@ -4333,11 +4334,12 @@ window.mekapSetSuper = function(isSuper){
   var KEY = "actionBtnPos";
   var moved = false, drag = null;
 
+  // keep clear of the rounded corners: a wider margin on the sides and the bottom than the top
+  var MX = 14, MT = 10, MB = 34;
   function clamp(x, y){
-    var m = 8;
     return {
-      x: Math.min(Math.max(x, m), document.documentElement.clientWidth - top.offsetWidth - m),
-      y: Math.min(Math.max(y, m), document.documentElement.clientHeight - top.offsetHeight - m)
+      x: Math.min(Math.max(x, MX), document.documentElement.clientWidth - top.offsetWidth - MX),
+      y: Math.min(Math.max(y, MT), document.documentElement.clientHeight - top.offsetHeight - MB)
     };
   }
   function place(x, y){
@@ -4383,8 +4385,7 @@ window.mekapSetSuper = function(isSuper){
     top.classList.remove("dragging");
     if(moved){
       var r = top.getBoundingClientRect();
-      var m = 8;
-      var snapX = (r.left + r.width / 2 < document.documentElement.clientWidth / 2) ? m : document.documentElement.clientWidth - r.width - m;
+      var snapX = (r.left + r.width / 2 < document.documentElement.clientWidth / 2) ? MX : document.documentElement.clientWidth - r.width - MX;
       top.style.transition = "left .25s cubic-bezier(.2,.8,.2,1)";
       place(snapX, r.top);
       setTimeout(function(){ top.style.transition = ""; }, 300);
