@@ -1166,7 +1166,7 @@
     cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;
   }
   /* landing nudge: the button flashes with a ripple and hops up twice, then settles back */
-  .action-btn.attn{animation:actionHop 1.5s cubic-bezier(.3,.7,.4,1) .9s 2,actionFlash 1.5s ease-out .9s 2}
+  .action-btn.attn{animation:actionHop 1.5s cubic-bezier(.3,.7,.4,1) .9s 4,actionFlash 1.5s ease-out .9s 4}
   @keyframes actionHop{
     0%,100%{transform:translateY(0)}
     25%{transform:translateY(-22px)}
@@ -4345,7 +4345,7 @@ window.mekapSetSuper = function(isSuper){
 
   // draw the eye to it once on landing
   top.classList.add("attn");
-  setTimeout(function(){ top.classList.remove("attn"); }, 4200);
+  setTimeout(function(){ top.classList.remove("attn"); }, 7200);
   top.addEventListener("pointerdown", function(){ top.classList.remove("attn"); });
 
   var KEY = "actionBtnPos";
