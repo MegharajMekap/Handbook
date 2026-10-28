@@ -602,6 +602,43 @@
     animation:busySpin .7s linear infinite;vertical-align:-.15em;
   }
   @keyframes busySpin{to{transform:rotate(360deg)}}
+
+  /* ---------- LMS-style navigation: section bar on top, sub-sections in a left rail ---------- */
+  .secBar{display:flex;align-items:stretch;gap:2px;margin:0 0 22px;padding:0 8px;overflow-x:auto;scrollbar-width:none;
+    background:linear-gradient(180deg,#1F4F96,var(--navy-deep));border-radius:14px;
+    box-shadow:0 10px 22px -12px rgba(18,53,104,.6),inset 0 1px 0 rgba(255,255,255,.14)}
+  .secBar::-webkit-scrollbar{display:none}
+  .secBtn{position:relative;flex:none;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;
+    background:none;border:0;padding:15px 18px;font:600 14px var(--sans);color:rgba(255,255,255,.76);cursor:pointer;
+    transition:color .15s ease,background .15s ease}
+  .secBtn:hover{color:#fff;background:rgba(255,255,255,.08)}
+  .secBtn.active{color:#fff}
+  .secBtn.active::after{content:"";position:absolute;left:14px;right:14px;bottom:0;height:3px;border-radius:3px 3px 0 0;background:#fff}
+  .secBtn[hidden]{display:none}
+  .secBtn .reqBadge{margin-left:0}
+  .adminLayout{display:grid;grid-template-columns:232px minmax(0,1fr);gap:26px;align-items:start}
+  .adminLayout.noSide{grid-template-columns:minmax(0,1fr)}
+  .sideNav{position:sticky;top:14px;display:flex;flex-direction:column;gap:2px;padding:10px;
+    background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--lift)}
+  .sideNav[hidden]{display:none}
+  .sideTitle{padding:8px 12px 6px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
+  .sideItem{position:relative;display:block;width:100%;text-align:left;background:none;border:0;border-radius:9px;
+    padding:10px 12px;font:600 13.5px var(--sans);color:var(--ink-soft);cursor:pointer;
+    transition:background .15s ease,color .15s ease}
+  .sideItem:hover,.sideItem.active{background:var(--navy-tint);color:var(--navy)}
+  .sideItem.active::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:3px;background:var(--navy)}
+  .adminMain{min-width:0}
+  .navHide{display:none!important}
+  @media (max-width:820px){
+    .adminLayout{grid-template-columns:minmax(0,1fr);gap:14px}
+    .sideNav{position:static;flex-direction:row;overflow-x:auto;scrollbar-width:none;padding:6px}
+    .sideNav::-webkit-scrollbar{display:none}
+    .sideTitle{display:none}
+    .sideItem{width:auto;flex:none;white-space:nowrap}
+    .sideItem.active{background:var(--navy);color:#fff}
+    .sideItem.active::before{display:none}
+    .secBtn{padding:14px 14px}
+  }
 </style>
 </head>
 <body>
@@ -657,21 +694,18 @@
       </div>
     </div>
 
-    <div class="tabBar" id="tabBar">
-      <button class="tabBtn" id="tabBtnAnalytics" data-tab="analytics">Analytics</button>
-      <button class="tabBtn" id="tabBtnAnnouncements" data-tab="announcements">Announcements</button>
-      <button class="tabBtn" id="tabBtnEvents" data-tab="events">Calendar events</button>
-      <button class="tabBtn" id="tabBtnRequests" data-tab="requests" hidden>Admin requests <span class="reqBadge" id="reqBadge" hidden></span></button>
-      <button class="tabBtn" id="tabBtnNotifs" data-tab="notifs">Notifications <span class="reqBadge" id="notifBadge" hidden></span></button>
-    </div>
+    <nav class="secBar" id="tabBar" aria-label="Sections">
+      <button class="secBtn" id="tabBtnAnalytics" data-sec="analytics">Analytics</button>
+      <button class="secBtn" id="tabBtnContent" data-sec="content">Content</button>
+      <button class="secBtn" id="tabBtnRequests" data-sec="access" hidden>Admin access <span class="reqBadge" id="reqBadge" hidden></span></button>
+      <button class="secBtn" id="tabBtnNotifs" data-sec="notifs">Notifications <span class="reqBadge" id="notifBadge" hidden></span></button>
+    </nav>
+
+    <div class="adminLayout" id="adminLayout">
+    <aside class="sideNav" id="sideNav" aria-label="Subsections"></aside>
+    <div class="adminMain">
 
     <div id="tabPanelAnalytics" class="tabPanel">
-    <nav class="jumpNav" id="analyticsNav" aria-label="Analytics sections" hidden>
-      <a href="#secOverview" data-target="secOverview" class="on">Overview</a>
-      <a href="#secTrends" data-target="secTrends">Trends</a>
-      <a href="#secInstalls" data-target="secInstalls">PWA installs</a>
-      <a href="#secVisits" data-target="secVisits">Visitor log</a>
-    </nav>
     <div id="superOnly" hidden>
     <div id="secOverview">
     <p class="updatedAt" id="updatedAt"></p>
@@ -868,7 +902,7 @@
     <div id="tabPanelAnnouncements" class="tabPanel">
     <p class="limitedNote" id="limitedNote" hidden>You're signed in as <strong>Admin</strong> — you can post announcements below. Full site analytics (visitor IPs, locations, device data) are only visible to the Super Admin.</p>
 
-    <div class="section">
+    <div class="section" id="blkAnnouncements">
       <div class="sectionHead"><h2><span class="dot" style="background:var(--navy)"></span><span id="annFormTitle">Add announcement</span></h2></div>
       <p class="sectionNote">Shows in the scrolling banner at the top of the main site, publicly. Leave "Expires" blank for no auto-expiry.</p>
       <form class="annForm" id="annForm">
@@ -908,7 +942,7 @@
     </div>
 
     <div id="tabPanelRequests" class="tabPanel" hidden>
-    <div class="section">
+    <div class="section" id="blkReqs">
       <div class="sectionHead">
         <h2><span class="dot" style="background:#B7791F"></span>Admin access requests</h2>
       </div>
@@ -916,7 +950,7 @@
       <div class="annList" id="requestsList"><div class="empty">Loading…</div></div>
     </div>
 
-    <div class="section">
+    <div class="section" id="blkAdmins">
       <div class="sectionHead">
         <h2><span class="dot" style="background:var(--navy)"></span>Current admins</h2>
       </div>
@@ -924,7 +958,7 @@
       <div class="annList" id="adminsList"><div class="empty">Loading…</div></div>
     </div>
 
-    <div class="section">
+    <div class="section" id="blkHist">
       <div class="sectionHead">
         <h2><span class="dot" style="background:#1E8A4C"></span>Request history</h2>
       </div>
@@ -943,7 +977,7 @@
     </div>
 
     <div id="tabPanelNotifs" class="tabPanel" hidden>
-    <div class="section">
+    <div class="section" id="blkNotifs">
       <div class="sectionHead">
         <h2><span class="dot" style="background:var(--navy)"></span>Notifications</h2>
       </div>
@@ -957,7 +991,7 @@
     </div>
 
     <div id="tabPanelEvents" class="tabPanel" hidden>
-    <div class="section">
+    <div class="section" id="blkEvents">
       <div class="sectionHead"><h2><span class="dot" style="background:#7C3AED"></span><span id="evFormTitle">Add calendar event</span></h2></div>
       <p class="sectionNote">Shows on the Calendar tab of the main site, publicly — on the month grid and in the timetable below it. Leave the times blank for an all-day event.</p>
       <form class="annForm" id="evForm">
@@ -1028,6 +1062,8 @@
         <p class="sectionNote">Every calendar event added, edited, deleted, or restored, by whichever admin made the change. "Remove"/"Restore"/"Undo edit" undoes that specific action.</p>
         <div class="annList" id="evAuditList"><div class="empty">Loading…</div></div>
       </div>
+    </div>
+    </div>
     </div>
     </div>
   </div>
@@ -1350,7 +1386,6 @@ function stopDashboard(){
   document.getElementById("roleBadge").hidden = true;
   document.getElementById("limitedNote").hidden = true;
   document.getElementById("superOnly").hidden = true;
-  document.getElementById("analyticsNav").hidden = true;
   document.getElementById("superOnlySections").hidden = true;
   document.getElementById("auditSection").hidden = true;
   document.getElementById("tabBtnRequests").hidden = true;
@@ -1358,6 +1393,7 @@ function stopDashboard(){
   document.getElementById("notifBadge").hidden = true;
   document.getElementById("evAuditSection").hidden = true;
   document.getElementById("tabBtnAnalytics").hidden = true;
+  navSuper = false;
   switchTab("announcements");
 
   document.getElementById("annList").innerHTML = '<div class="empty">Loading…</div>';
@@ -1382,22 +1418,64 @@ function stopDashboard(){
   });
 }
 
-/* ---------- tabs ---------- */
-function switchTab(name){
-  document.getElementById("tabPanelAnalytics").hidden = name !== "analytics";
-  document.getElementById("tabPanelAnnouncements").hidden = name !== "announcements";
-  document.getElementById("tabPanelEvents").hidden = name !== "events";
-  document.getElementById("tabPanelRequests").hidden = name !== "requests";
-  document.getElementById("tabPanelNotifs").hidden = name !== "notifs";
-  [].forEach.call(document.querySelectorAll(".tabBtn"), function(btn){
-    btn.classList.toggle("active", btn.dataset.tab === name);
-  });
+/* ---------- navigation: section bar (top) + sub-section rail (left) ---------- */
+let navSuper = false;
+const NAV_PANELS = { analytics: "tabPanelAnalytics", announcements: "tabPanelAnnouncements", events: "tabPanelEvents", requests: "tabPanelRequests", notifs: "tabPanelNotifs" };
+const NAV = [
+  { id: "analytics", btn: "tabBtnAnalytics", title: "Analytics", items: [
+    { id: "overview", label: "Overview", panel: "analytics", block: "secOverview" },
+    { id: "trends", label: "Trends", panel: "analytics", block: "secTrends" },
+    { id: "installs", label: "PWA installs", panel: "analytics", block: "secInstalls" },
+    { id: "visits", label: "Visitor log", panel: "analytics", block: "secVisits" }
+  ]},
+  { id: "content", btn: "tabBtnContent", title: "Content", items: [
+    { id: "announcements", label: "Announcements", panel: "announcements", block: "blkAnnouncements" },
+    { id: "annActivity", label: "Announcement activity", panel: "announcements", block: "auditSection", superOnly: true },
+    { id: "events", label: "Calendar events", panel: "events", block: "blkEvents" },
+    { id: "evActivity", label: "Calendar activity", panel: "events", block: "evAuditSection", superOnly: true }
+  ]},
+  { id: "access", btn: "tabBtnRequests", title: "Admin access", items: [
+    { id: "requests", label: "Access requests", panel: "requests", block: "blkReqs" },
+    { id: "admins", label: "Current admins", panel: "requests", block: "blkAdmins" },
+    { id: "history", label: "Request history", panel: "requests", block: "blkHist" }
+  ]},
+  { id: "notifs", btn: "tabBtnNotifs", title: "Notifications", items: [
+    { id: "notifs", label: "Notifications", panel: "notifs", block: "blkNotifs" }
+  ]}
+];
+function showView(secId, itemId){
+  const sec = NAV.filter(function(s){ return s.id === secId; })[0] || NAV[1];
+  const items = sec.items.filter(function(i){ return !i.superOnly || navSuper; });
+  const item = items.filter(function(i){ return i.id === itemId; })[0] || items[0];
+
+  Object.keys(NAV_PANELS).forEach(function(p){ document.getElementById(NAV_PANELS[p]).hidden = p !== item.panel; });
+  NAV.forEach(function(s){ s.items.forEach(function(i){
+    const el = document.getElementById(i.block);
+    if(el) el.classList.toggle("navHide", i !== item);
+  }); });
+  NAV.forEach(function(s){ document.getElementById(s.btn).classList.toggle("active", s === sec); });
+
+  const side = document.getElementById("sideNav");
+  side.innerHTML = '<div class="sideTitle"></div>' + items.map(function(i){
+    return '<button type="button" class="sideItem' + (i === item ? ' active' : '') + '" data-sec="' + sec.id + '" data-item="' + i.id + '">' + i.label + '</button>';
+  }).join("");
+  side.firstChild.textContent = sec.title;
+  side.hidden = items.length < 2;
+  document.getElementById("adminLayout").classList.toggle("noSide", items.length < 2);
 }
-document.getElementById("tabBtnAnalytics").addEventListener("click", function(){ switchTab("analytics"); });
-document.getElementById("tabBtnAnnouncements").addEventListener("click", function(){ switchTab("announcements"); });
-document.getElementById("tabBtnEvents").addEventListener("click", function(){ switchTab("events"); });
-document.getElementById("tabBtnRequests").addEventListener("click", function(){ switchTab("requests"); });
-document.getElementById("tabBtnNotifs").addEventListener("click", function(){ switchTab("notifs"); });
+/* legacy tab names still used by the rest of the page */
+function switchTab(name){
+  const map = { analytics: ["analytics", "overview"], announcements: ["content", "announcements"], events: ["content", "events"], requests: ["access", "requests"], notifs: ["notifs", "notifs"] };
+  const t = map[name] || map.announcements;
+  showView(t[0], t[1]);
+}
+NAV.forEach(function(s){
+  document.getElementById(s.btn).addEventListener("click", function(){ showView(s.id); });
+});
+document.getElementById("sideNav").addEventListener("click", function(e){
+  const b = e.target.closest(".sideItem");
+  if(b) showView(b.dataset.sec, b.dataset.item);
+});
 
 /* ---------- dashboard data ---------- */
 function startDashboard(isSuper){
@@ -1407,12 +1485,12 @@ function startDashboard(isSuper){
   roleBadge.classList.toggle("admin", !isSuper);
   document.getElementById("limitedNote").hidden = isSuper;
   document.getElementById("superOnly").hidden = !isSuper;
-  document.getElementById("analyticsNav").hidden = !isSuper;
   document.getElementById("superOnlySections").hidden = !isSuper;
   document.getElementById("auditSection").hidden = !isSuper;
   document.getElementById("tabBtnRequests").hidden = !isSuper;
   document.getElementById("evAuditSection").hidden = !isSuper;
   document.getElementById("tabBtnAnalytics").hidden = !isSuper;
+  navSuper = isSuper;
   switchTab(isSuper ? "analytics" : "announcements");
 
   startAnnouncements();
@@ -2858,25 +2936,6 @@ function startAnalytics(){
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
   };
-
-  /* ---- jump nav: smooth scroll + highlight the section in view ---- */
-  const jumpNav = document.getElementById("analyticsNav");
-  jumpNav.onclick = function(e){
-    const a = e.target.closest("a[data-target]");
-    if(!a) return;
-    e.preventDefault();
-    document.getElementById(a.dataset.target).scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-  function updateJumpNavActive(){
-    const ids = ["secOverview", "secTrends", "secInstalls", "secVisits"];
-    let current = ids[0];
-    ids.forEach(function(id){
-      const el = document.getElementById(id);
-      if(el && !el.closest("[hidden]") && el.getBoundingClientRect().top <= 140) current = id;
-    });
-    [].forEach.call(jumpNav.querySelectorAll("a"), function(a){ a.classList.toggle("on", a.dataset.target === current); });
-  }
-  window.onscroll = updateJumpNavActive;
 
   rangeMode = { days: 14, from: "", to: "" };
   syncRangeUI();
