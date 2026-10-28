@@ -1058,8 +1058,8 @@
     </div>
 
     <div class="section" id="blkRecSubjects">
-      <div class="sectionHead"><h2><span class="dot" style="background:#B0206B"></span>Subjects</h2></div>
-      <p class="sectionNote">Create a subject section for the Recordings tab: the name, a short code and a colour. Saving a name that already exists updates it.</p>
+      <div class="sectionHead"><h2><span class="dot" style="background:#B0206B"></span><span id="rbFormTitle">Subjects</span></h2></div>
+      <p class="sectionNote">Create a subject section for the Recordings tab: the name, a short code and a colour. Use Edit on any subject to change its code or colour.</p>
       <form class="annForm" id="rbForm">
         <div class="evGrid">
           <div class="field">
@@ -1077,8 +1077,9 @@
         </div>
         <button type="submit" class="annSubmit" id="rbSubmit">
           <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-          <span>Save subject</span>
+          <span id="rbSubmitLabel">Save subject</span>
         </button>
+        <button type="button" class="annCancel" id="rbCancel" hidden>Cancel</button>
         <div class="annMsg" id="rbMsg"></div>
       </form>
       <div class="annList" id="rbList"><div class="empty">Loading…</div></div>
@@ -1823,7 +1824,9 @@ function startRecordings(){
     Object.keys(base.subs).forEach(function(n){ out[n] = { code: base.subs[n].code, color: base.subs[n].color, builtin: true }; });
     Object.keys(subs).forEach(function(k){
       const s = subs[k];
-      if(s && s.name && !out[s.name]) out[s.name] = { code: s.code, color: s.color, key: k };
+      if(!s || !s.name) return;
+      // a saved entry for a built-in subject overrides its code and colour
+      out[s.name] = { code: s.code, color: s.color, key: k, builtin: !!out[s.name] };
     });
     return out;
   }
@@ -2037,17 +2040,37 @@ function startRecordings(){
   }
 
   /* ---------- 3. subjects ---------- */
+  let editingSubject = null;
+  function setSubjectEdit(name){
+    editingSubject = name || null;
+    const s = name && allSubjects()[name];
+    $("rbFormTitle").textContent = s ? "Edit subject" : "Subjects";
+    $("rbSubmitLabel").textContent = s ? "Save changes" : "Save subject";
+    $("rbCancel").hidden = !s;
+    $("rbName").readOnly = !!s;
+    clearMsg($("rbMsg"));
+    if(s){
+      $("rbName").value = name; $("rbCode").value = s.code || ""; $("rbColor").value = /^#[0-9a-f]{6}$/i.test(s.color || "") ? s.color : "#1B4B8F";
+      $("rbForm").scrollIntoView({ behavior: "smooth", block: "center" });
+      $("rbCode").focus({ preventScroll: true });
+    } else {
+      $("rbForm").reset(); $("rbColor").value = "#1B4B8F";
+    }
+    renderSubjects();
+  }
+  $("rbCancel").addEventListener("click", function(){ setSubjectEdit(null); });
   $("rbForm").addEventListener("submit", function(e){
     e.preventDefault();
     const name = $("rbName").value.trim(), code = $("rbCode").value.trim().toUpperCase(), color = $("rbColor").value;
     const key = subjKey(name);
     if(!key){ say($("rbMsg"), "Enter a subject name.", false); return; }
-    if(base.subs[name]){ say($("rbMsg"), "That subject already exists on the site.", false); return; }
+    if(!editingSubject && allSubjects()[name]){ say($("rbMsg"), "That subject already exists. Use Edit on it instead.", false); return; }
     $("rbSubmit").disabled = true;
     db.ref("recordingSubjects/" + key).set({ name: name, code: code, color: color, by: currentActor() }).then(function(){
-      notifyRecording("add", "Subject: " + name);
-      $("rbForm").reset(); $("rbColor").value = "#1B4B8F";
-      say($("rbMsg"), "Subject saved — you can pick it when adding a session.", true);
+      notifyRecording(editingSubject ? "edit" : "add", "Subject: " + name);
+      const was = editingSubject;
+      setSubjectEdit(null);
+      say($("rbMsg"), was ? "Subject updated." : "Subject saved — you can pick it when adding a session.", true);
     }).catch(function(err){ say($("rbMsg"), "Failed to save: " + err.message, false); })
       .finally(function(){ $("rbSubmit").disabled = false; });
   });
@@ -2058,12 +2081,22 @@ function startRecordings(){
     if(!names.length){ el.innerHTML = '<div class="empty">No subjects yet.</div>'; return; }
     el.innerHTML = names.map(function(n){
       const s = all[n];
-      return '<div class="annCard"><div class="txt"><p><span class="recSwatch" style="background:' + esc(s.color) + '"></span>' + esc(n) + ' <span class="tag">' + esc(s.code) + '</span></p>' +
-        '<div class="meta">' + (s.builtin ? 'Built in' : 'Added from the dashboard') + '</div></div>' +
-        (s.builtin ? '' : '<div class="annActions"><button class="annDel annRemove" data-sub="' + esc(s.key) + '" data-name="' + esc(n) + '">Delete</button></div>') + '</div>';
+      const note = s.builtin ? (s.key ? 'Built in · customised' : 'Built in') : 'Added from the dashboard';
+      return '<div class="annCard' + (n === editingSubject ? ' editing' : '') + '"><div class="txt"><p><span class="recSwatch" style="background:' + esc(s.color) + '"></span>' + esc(n) + ' <span class="tag">' + esc(s.code) + '</span></p>' +
+        '<div class="meta">' + note + '</div></div>' +
+        '<div class="annActions"><button class="annDel annEdit" data-editsub="' + esc(n) + '">Edit</button>' +
+        (s.key ? '<button class="annDel annRemove" data-sub="' + esc(s.key) + '" data-name="' + esc(n) + '" data-builtin="' + (s.builtin ? 1 : 0) + '">' + (s.builtin ? 'Reset' : 'Delete') + '</button>' : '') +
+        '</div></div>';
     }).join("");
+    [].forEach.call(el.querySelectorAll("[data-editsub]"), function(b){
+      b.addEventListener("click", function(){ setSubjectEdit(b.dataset.editsub); });
+    });
     [].forEach.call(el.querySelectorAll("[data-sub]"), function(b){
       b.addEventListener("click", function(){
+        if(b.dataset.builtin === "1"){
+          if(confirm("Reset this subject to its original code and colour?")) db.ref("recordingSubjects/" + b.dataset.sub).remove();
+          return;
+        }
         const used = sessions().some(function(s){ return s.r.subject === b.dataset.name; });
         if(!confirm(used ? "Sessions still use this subject; they will show with a grey tag. Delete anyway?" : "Delete this subject?")) return;
         db.ref("recordingSubjects/" + b.dataset.sub).remove();

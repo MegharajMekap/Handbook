@@ -3577,15 +3577,16 @@ setTab(startTab());
    recordings        → extra classes added by admins
    recordingSubjects → extra subjects (name, code, colour) ── */
 const BASE_RECORDINGS = RECORDINGS.slice();
-const BASE_SUBJECT_NAMES = Object.keys(SUBJECTS);
+const BASE_SUBJECTS = JSON.parse(JSON.stringify(SUBJECTS));
 const recKey = r => [r.date, r.time || "", r.subject].map(s => String(s).replace(/[^A-Za-z0-9]+/g, "")).join("_");
 const remoteRec = { urls:{}, extra:[], subs:{}, refs:[] };
 
 function applyRemoteRecordings(){
-  Object.keys(SUBJECTS).forEach(n => { if(BASE_SUBJECT_NAMES.indexOf(n) < 0) delete SUBJECTS[n]; });
+  Object.keys(SUBJECTS).forEach(n => { delete SUBJECTS[n]; });
+  Object.keys(BASE_SUBJECTS).forEach(n => { SUBJECTS[n] = { code: BASE_SUBJECTS[n].code, color: BASE_SUBJECTS[n].color }; });
   Object.keys(remoteRec.subs).forEach(k => {
     const s = remoteRec.subs[k];
-    if(s && s.name && !SUBJECTS[s.name]) SUBJECTS[s.name] = { code: s.code || "—", color: /^#[0-9a-f]{6}$/i.test(s.color || "") ? s.color : "#5D6892" };
+    if(s && s.name) SUBJECTS[s.name] = { code: s.code || "—", color: /^#[0-9a-f]{6}$/i.test(s.color || "") ? s.color : "#5D6892" };
   });
   BASE_RECORDINGS.forEach(r => {
     if(!("_u0" in r)){ r._u0 = r.url || ""; r._p0 = r.passcode || ""; }
