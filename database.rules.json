@@ -85,6 +85,27 @@
         ".read": "auth != null && auth.uid == $uid",
         ".write": "auth != null && root.child('roles').child(auth.uid).val() == 'super' && (newData.val() == 'admin' || (!newData.exists() && data.val() == 'admin'))"
       }
+    },
+    "recordingUrls": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).exists()",
+      ".write": "auth != null && root.child('roles').child(auth.uid).exists()",
+      "$k": {
+        ".validate": "!newData.exists() || (newData.child('url').isString() && newData.child('url').val().length <= 500 && newData.child('url').val().matches(/^https:\\/\\//))"
+      }
+    },
+    "recordings": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).exists()",
+      ".write": "auth != null && root.child('roles').child(auth.uid).exists()",
+      "$id": {
+        ".validate": "!newData.exists() || (newData.child('subject').isString() && newData.child('lecture').isString() && newData.child('date').val().matches(/^\\d{4}-\\d{2}-\\d{2}$/) && (!newData.child('url').exists() || (newData.child('url').isString() && newData.child('url').val().length <= 500 && newData.child('url').val().matches(/^https:\\/\\//))))"
+      }
+    },
+    "recordingSubjects": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).exists()",
+      ".write": "auth != null && root.child('roles').child(auth.uid).exists()",
+      "$k": {
+        ".validate": "!newData.exists() || (newData.child('name').isString() && newData.child('name').val().length <= 80 && newData.child('code').isString() && newData.child('code').val().length <= 8 && newData.child('color').val().matches(/^#[0-9a-fA-F]{6}$/))"
+      }
     }
   }
 }

@@ -501,25 +501,6 @@
   .mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
   .empty{padding:34px 20px;text-align:center;color:var(--mute);font-size:13.5px}
 
-  /* ---------- floating refresh button ---------- */
-  .pwa-refresh{
-    position:fixed;z-index:60;
-    width:44px;height:44px;border-radius:50%;
-    display:flex;align-items:center;justify-content:center;
-    background:var(--navy);color:#fff;border:none;
-    box-shadow:0 3px 10px rgba(0,0,0,.25);
-    cursor:pointer;
-  }
-  .pwa-refresh[hidden]{display:none}
-  .pwa-refresh svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .pwa-refresh:active{transform:scale(.94)}
-  .pwa-refresh:disabled{opacity:.6;cursor:default}
-  .pwa-refresh.spinning svg{animation:pwaSpin .8s linear infinite}
-  @keyframes pwaSpin{to{transform:rotate(360deg)}}
-  .pwa-refresh-top{
-    bottom:calc(env(safe-area-inset-bottom,0px) + 16px);
-    right:calc(env(safe-area-inset-right,0px) + 16px);
-  }
 
   /* ══════════════════════════════════════════════════════════════
      UI POLISH LAYER — visual refinements only (radii, depth, motion).
@@ -590,8 +571,6 @@
   .barTrack,.barFill{border-radius:999px}
   .vbar .vbarFill{border-radius:6px 6px 0 0}
   .pageBtn{border-radius:var(--r-sm)}
-  .pwa-refresh{background:linear-gradient(160deg,#2A5CA6,var(--navy-deep));
-    box-shadow:0 10px 24px -8px rgba(18,53,104,.6),inset 0 1px 0 rgba(255,255,255,.2)}
   #dash.show .stat,#dash.show .chartCard{animation:panelIn .5s var(--ease-out) backwards}
   @keyframes panelIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   @media (prefers-reduced-motion:reduce){#dash.show .stat,#dash.show .chartCard{animation:none}}
@@ -603,49 +582,55 @@
   }
   @keyframes busySpin{to{transform:rotate(360deg)}}
 
-  /* ---------- LMS-style navigation: section bar on top, sub-sections in a left rail ---------- */
-  .secBar{display:flex;align-items:stretch;gap:2px;margin:0 0 22px;padding:0 8px;overflow-x:auto;scrollbar-width:none;
-    background:linear-gradient(180deg,#1F4F96,var(--navy-deep));border-radius:14px;
-    box-shadow:0 10px 22px -12px rgba(18,53,104,.6),inset 0 1px 0 rgba(255,255,255,.14)}
+  /* ---------- LMS-style navigation (Cornerstone/Saba look): white section bar, flat grey left rail ---------- */
+  .secBar{display:flex;align-items:stretch;gap:0;margin:0 0 0;padding:0 4px;overflow-x:auto;scrollbar-width:none;
+    background:#fff;border:1px solid var(--line);border-bottom:0;border-radius:6px 6px 0 0}
   .secBar::-webkit-scrollbar{display:none}
   .secBtn{position:relative;flex:none;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;
-    background:none;border:0;padding:15px 18px;font:600 14px var(--sans);color:rgba(255,255,255,.76);cursor:pointer;
+    background:none;border:0;padding:16px 22px;font:600 14px var(--sans);color:#44546A;cursor:pointer;
     transition:color .15s ease,background .15s ease}
-  .secBtn:hover{color:#fff;background:rgba(255,255,255,.08)}
-  .secBtn.active{color:#fff}
-  .secBtn.active::after{content:"";position:absolute;left:14px;right:14px;bottom:0;height:3px;border-radius:3px 3px 0 0;background:#fff}
+  .secBtn:hover{color:var(--navy);background:#F3F6FA}
+  .secBtn.active{color:var(--navy)}
+  .secBtn.active::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--navy)}
   .secBtn[hidden]{display:none}
   .secBtn .reqBadge{margin-left:0}
-  .adminLayout{display:grid;grid-template-columns:232px minmax(0,1fr);gap:26px;align-items:start}
+  .adminLayout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:0;align-items:stretch;
+    background:#fff;border:1px solid var(--line);border-radius:0 0 6px 6px;box-shadow:0 1px 2px rgba(22,35,58,.06)}
   .adminLayout.noSide{grid-template-columns:minmax(0,1fr)}
-  .sideNav{position:sticky;top:14px;display:flex;flex-direction:column;gap:2px;padding:10px;
-    background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--lift)}
+  .sideNav{display:flex;flex-direction:column;gap:0;padding:12px 0;background:#F4F6F9;border-right:1px solid var(--line)}
   .sideNav[hidden]{display:none}
-  .sideTitle{padding:8px 12px 6px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}
-  .sideItem{position:relative;display:block;width:100%;text-align:left;background:none;border:0;border-radius:9px;
-    padding:10px 12px;font:600 13.5px var(--sans);color:var(--ink-soft);cursor:pointer;
+  .sideTitle{padding:8px 20px 10px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6B778F}
+  .sideItem{position:relative;display:block;width:100%;text-align:left;background:none;border:0;border-radius:0;
+    padding:12px 20px;font:500 14px var(--sans);color:#33445C;cursor:pointer;
     transition:background .15s ease,color .15s ease}
-  .sideItem:hover,.sideItem.active{background:var(--navy-tint);color:var(--navy)}
-  .sideItem.active::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:3px;background:var(--navy)}
-  .adminMain{min-width:0}
+  .sideItem:hover{background:#E9EEF5;color:var(--navy)}
+  .sideItem.active{background:#fff;color:var(--navy);font-weight:700;box-shadow:inset 0 1px 0 var(--line),inset 0 -1px 0 var(--line)}
+  .sideItem.active::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--navy)}
+  .adminMain{min-width:0;padding:26px 28px 10px}
   .navHide{display:none!important}
+  .recPicked{padding:11px 13px;border:1px dashed var(--line);border-radius:9px;background:var(--page);font-size:14px;color:var(--mute)}
+  .recPicked.on{border-style:solid;border-color:var(--navy);color:var(--ink);background:var(--navy-tint)}
+  .recUrl{max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:bottom}
+  .recMore{align-self:center;margin-top:4px}
+  #rsForm .evRow3{grid-template-columns:1fr 1fr}
+  .recColor{height:42px;padding:3px;cursor:pointer}
+  .recSwatch{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:8px;vertical-align:-1px}
+  #rlList{display:flex;flex-direction:column;gap:10px}
+  #rlSubject{max-width:260px}
   @media (max-width:820px){
-    .adminLayout{grid-template-columns:minmax(0,1fr);gap:14px}
-    .sideNav{position:static;flex-direction:row;overflow-x:auto;scrollbar-width:none;padding:6px}
+    .adminLayout{grid-template-columns:minmax(0,1fr)}
+    .sideNav{flex-direction:row;overflow-x:auto;scrollbar-width:none;padding:0;border-right:0;border-bottom:1px solid var(--line)}
     .sideNav::-webkit-scrollbar{display:none}
     .sideTitle{display:none}
-    .sideItem{width:auto;flex:none;white-space:nowrap}
-    .sideItem.active{background:var(--navy);color:#fff}
-    .sideItem.active::before{display:none}
+    .sideItem{width:auto;flex:none;white-space:nowrap;padding:13px 16px}
+    .sideItem.active{box-shadow:none}
+    .sideItem.active::before{top:auto;left:0;right:0;width:auto;height:3px}
+    .adminMain{padding:18px 14px 6px}
     .secBtn{padding:14px 14px}
   }
 </style>
 </head>
 <body>
-
-<button class="pwa-refresh pwa-refresh-top" id="refreshBtn" hidden aria-label="Refresh dashboard data">
-  <svg viewBox="0 0 24 24"><path d="M4 4v6h6M20 20v-6h-6M4.5 9a8 8 0 0113.9-3.5L20 9M4 15l1.6 3.5A8 8 0 0019.5 15"/></svg>
-</button>
 
 <div class="wrap">
   <div id="bootLoader" role="status" aria-live="polite"><img class="logoLoad" src="logo.jpg" alt="IIM Kashipur"><span>Loading…</span></div>
@@ -697,6 +682,7 @@
     <nav class="secBar" id="tabBar" aria-label="Sections">
       <button class="secBtn" id="tabBtnAnalytics" data-sec="analytics">Analytics</button>
       <button class="secBtn" id="tabBtnContent" data-sec="content">Content</button>
+      <button class="secBtn" id="tabBtnRecordings" data-sec="recordings">Recordings</button>
       <button class="secBtn" id="tabBtnRequests" data-sec="access" hidden>Admin access <span class="reqBadge" id="reqBadge" hidden></span></button>
       <button class="secBtn" id="tabBtnNotifs" data-sec="notifs">Notifications <span class="reqBadge" id="notifBadge" hidden></span></button>
     </nav>
@@ -973,6 +959,129 @@
         <input type="search" class="histSearch" id="histSearch" placeholder="Search by email" aria-label="Search history by email">
       </div>
       <div class="annList" id="requestHistory"><div class="empty">Loading…</div></div>
+    </div>
+    </div>
+
+    <div id="tabPanelRecordings" class="tabPanel" hidden>
+    <div class="section" id="blkRecLinks">
+      <div class="sectionHead"><h2><span class="dot" style="background:#0E7490"></span>Recording links</h2></div>
+      <p class="sectionNote">Pick a class below, paste its recording URL and save. It shows on the Recordings tab straight away (admins only).</p>
+      <form class="annForm" id="rlForm">
+        <div class="evGrid">
+          <div class="field wide">
+            <label>Selected class</label>
+            <div class="recPicked" id="rlPicked">Choose a class from the list below.</div>
+          </div>
+          <div class="field">
+            <label for="rlUrl">Recording URL</label>
+            <input type="url" id="rlUrl" placeholder="https://drive.google.com/file/d/…" maxlength="500" required>
+          </div>
+          <div class="field">
+            <label for="rlPass">Passcode (optional)</label>
+            <input type="text" id="rlPass" maxlength="60" autocomplete="off">
+          </div>
+        </div>
+        <button type="submit" class="annSubmit" id="rlSave" disabled><span>Save link</span></button>
+        <button type="button" class="annCancel" id="rlClear" hidden>Remove link</button>
+        <button type="button" class="annCancel" id="rlCancel" hidden>Cancel</button>
+        <div class="annMsg" id="rlMsg"></div>
+      </form>
+      <div class="histBar">
+        <select class="histSearch" id="rlSubject" aria-label="Filter by subject"></select>
+        <div class="rangeChips" id="rlStatus" role="group" aria-label="Filter by status">
+          <button type="button" class="rangeChip active" data-f="need">Needs link</button>
+          <button type="button" class="rangeChip" data-f="linked">Linked</button>
+          <button type="button" class="rangeChip" data-f="all">All</button>
+        </div>
+      </div>
+      <div class="annList" id="rlList"><div class="empty">Loading…</div></div>
+    </div>
+
+    <div class="section" id="blkRecSessions">
+      <div class="sectionHead"><h2><span class="dot" style="background:#7C3AED"></span><span id="rsFormTitle">Add class session</span></h2></div>
+      <p class="sectionNote">Creates a new class on the Recordings tab and the Calendar. Classes already on the site stay as they are.</p>
+      <form class="annForm" id="rsForm">
+        <div class="evGrid">
+          <div class="field">
+            <label for="rsSubject">Subject</label>
+            <select id="rsSubject" required></select>
+          </div>
+          <div class="field">
+            <label for="rsLecture">Session name</label>
+            <input type="text" id="rsLecture" placeholder="e.g. Session 4" required maxlength="60">
+          </div>
+          <div class="field">
+            <label for="rsFaculty">Faculty (optional)</label>
+            <input type="text" id="rsFaculty" placeholder="e.g. Prof. Utkarsh" maxlength="80">
+          </div>
+          <div class="field">
+            <label for="rsTerm">Term (optional)</label>
+            <input type="text" id="rsTerm" list="rsTermList" placeholder="e.g. Term 3 Phase 1" maxlength="60">
+            <datalist id="rsTermList"></datalist>
+          </div>
+          <div class="wide evRow3">
+            <div class="field">
+              <label for="rsDate">Date</label>
+              <input type="date" id="rsDate" required>
+            </div>
+            <div class="field">
+              <label>Start time</label>
+              <div class="time12" id="rsStart" data-label="Start time"></div>
+            </div>
+            <div class="field">
+              <label>End time</label>
+              <div class="time12" id="rsEnd" data-label="End time"></div>
+            </div>
+            <div class="field">
+              <label for="rsDur">Duration</label>
+              <input type="text" id="rsDur" readonly placeholder="Worked out from times">
+            </div>
+          </div>
+          <div class="field">
+            <label for="rsUrl">Recording / live link (optional)</label>
+            <input type="url" id="rsUrl" placeholder="https://…" maxlength="500">
+          </div>
+          <div class="field">
+            <label for="rsPass">Passcode (optional)</label>
+            <input type="text" id="rsPass" maxlength="60" autocomplete="off">
+          </div>
+        </div>
+        <label class="annCheck"><input type="checkbox" id="rsCampus"> On-campus class (no recording)</label>
+        <button type="submit" class="annSubmit" id="rsSubmit">
+          <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          <span id="rsSubmitLabel">Add session</span>
+        </button>
+        <button type="button" class="annCancel" id="rsCancel" hidden>Cancel</button>
+        <div class="annMsg" id="rsMsg"></div>
+      </form>
+      <div class="annList" id="rsList"><div class="empty">Loading…</div></div>
+    </div>
+
+    <div class="section" id="blkRecSubjects">
+      <div class="sectionHead"><h2><span class="dot" style="background:#B0206B"></span>Subjects</h2></div>
+      <p class="sectionNote">Create a subject section for the Recordings tab: the name, a short code and a colour. Saving a name that already exists updates it.</p>
+      <form class="annForm" id="rbForm">
+        <div class="evGrid">
+          <div class="field">
+            <label for="rbName">Subject name</label>
+            <input type="text" id="rbName" placeholder="e.g. Business Law" required maxlength="80">
+          </div>
+          <div class="field">
+            <label for="rbCode">Short code</label>
+            <input type="text" id="rbCode" placeholder="e.g. BL" required maxlength="8">
+          </div>
+          <div class="field">
+            <label for="rbColor">Colour</label>
+            <input type="color" id="rbColor" value="#1B4B8F" class="recColor">
+          </div>
+        </div>
+        <button type="submit" class="annSubmit" id="rbSubmit">
+          <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          <span>Save subject</span>
+        </button>
+        <div class="annMsg" id="rbMsg"></div>
+      </form>
+      <div class="annList" id="rbList"><div class="empty">Loading…</div></div>
     </div>
     </div>
 
@@ -1294,21 +1403,10 @@ document.getElementById("signOutBtn").addEventListener("click", function(){
 
 let dashboardStarted = false;
 let activeListeners = [];
-let refreshVisitsFn = null;
 function trackListener(ref, cb, errCb){
   ref.on("value", cb, errCb);
   activeListeners.push({ ref: ref, cb: cb });
 }
-
-const refreshBtn = document.getElementById("refreshBtn");
-refreshBtn.addEventListener("click", function(){
-  refreshBtn.disabled = true;
-  refreshBtn.classList.add("spinning");
-  Promise.resolve(refreshVisitsFn ? refreshVisitsFn() : null).finally(function(){
-    refreshBtn.disabled = false;
-    refreshBtn.classList.remove("spinning");
-  });
-});
 
 function denyAccess(msg, uid){
   dashboardStarted = false;
@@ -1359,7 +1457,6 @@ auth.onAuthStateChanged(function(user){
           loginWrap.style.display = "none";
           revealLogin();
           dash.classList.add("show");
-          refreshBtn.hidden = false;
           startDashboard(role === "super");
         })
         .catch(function(){
@@ -1373,7 +1470,6 @@ auth.onAuthStateChanged(function(user){
     loginWrap.style.display = "";
     dash.classList.remove("show");
     dashboardStarted = false;
-    refreshBtn.hidden = true;
     stopDashboard();
   }
 });
@@ -1381,7 +1477,6 @@ auth.onAuthStateChanged(function(user){
 function stopDashboard(){
   activeListeners.forEach(function(l){ l.ref.off("value", l.cb); });
   activeListeners = [];
-  refreshVisitsFn = null;
 
   document.getElementById("roleBadge").hidden = true;
   document.getElementById("limitedNote").hidden = true;
@@ -1420,7 +1515,7 @@ function stopDashboard(){
 
 /* ---------- navigation: section bar (top) + sub-section rail (left) ---------- */
 let navSuper = false;
-const NAV_PANELS = { analytics: "tabPanelAnalytics", announcements: "tabPanelAnnouncements", events: "tabPanelEvents", requests: "tabPanelRequests", notifs: "tabPanelNotifs" };
+const NAV_PANELS = { analytics: "tabPanelAnalytics", announcements: "tabPanelAnnouncements", events: "tabPanelEvents", requests: "tabPanelRequests", notifs: "tabPanelNotifs", recordings: "tabPanelRecordings" };
 const NAV = [
   { id: "analytics", btn: "tabBtnAnalytics", title: "Analytics", items: [
     { id: "overview", label: "Overview", panel: "analytics", block: "secOverview" },
@@ -1433,6 +1528,11 @@ const NAV = [
     { id: "annActivity", label: "Announcement activity", panel: "announcements", block: "auditSection", superOnly: true },
     { id: "events", label: "Calendar events", panel: "events", block: "blkEvents" },
     { id: "evActivity", label: "Calendar activity", panel: "events", block: "evAuditSection", superOnly: true }
+  ]},
+  { id: "recordings", btn: "tabBtnRecordings", title: "Recordings", items: [
+    { id: "recLinks", label: "Recording links", panel: "recordings", block: "blkRecLinks" },
+    { id: "recSessions", label: "Add class session", panel: "recordings", block: "blkRecSessions" },
+    { id: "recSubjects", label: "Subjects", panel: "recordings", block: "blkRecSubjects" }
   ]},
   { id: "access", btn: "tabBtnRequests", title: "Admin access", items: [
     { id: "requests", label: "Access requests", panel: "requests", block: "blkReqs" },
@@ -1465,7 +1565,7 @@ function showView(secId, itemId){
 }
 /* legacy tab names still used by the rest of the page */
 function switchTab(name){
-  const map = { analytics: ["analytics", "overview"], announcements: ["content", "announcements"], events: ["content", "events"], requests: ["access", "requests"], notifs: ["notifs", "notifs"] };
+  const map = { analytics: ["analytics", "overview"], announcements: ["content", "announcements"], events: ["content", "events"], requests: ["access", "requests"], notifs: ["notifs", "notifs"], recordings: ["recordings", "recLinks"] };
   const t = map[name] || map.announcements;
   showView(t[0], t[1]);
 }
@@ -1496,6 +1596,7 @@ function startDashboard(isSuper){
   startAnnouncements();
   startNotifications(isSuper);
   startEvents();
+  startRecordings();
   if(isSuper){ startAnalytics(); startAuditLog(); startAdminAccess(); }
 }
 
@@ -1662,6 +1763,327 @@ function startAnnouncements(){
         });
       });
     });
+  });
+}
+
+/* ---- recordings (Firebase "recordingUrls", "recordings", "recordingSubjects"; merged into the site's Recordings tab) ---- */
+const recKey = r => [r.date, r.time || "", r.subject].map(function(s){ return String(s).replace(/[^A-Za-z0-9]+/g, ""); }).join("_");
+const subjKey = name => String(name).replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 60);
+let recBasePromise = null;
+// the classes and subjects hardcoded in index.html, read from the page itself so there is one source of truth
+function loadRecBase(){
+  if(!recBasePromise){
+    recBasePromise = fetch("index.html", { cache: "no-store" }).then(function(r){ return r.text(); }).then(function(t){
+      function grab(name, closer){
+        const head = "const " + name + " = ";
+        const a = t.indexOf(head), b = t.indexOf(closer, a);
+        if(a < 0 || b < 0) throw new Error(name + " not found");
+        return new Function("return " + t.slice(a + head.length, b + closer.length - 1))();
+      }
+      return { recs: grab("RECORDINGS", "\n];"), subs: grab("SUBJECTS", "\n};") };
+    }).catch(function(){ return { recs: [], subs: {}, failed: true }; });
+  }
+  return recBasePromise;
+}
+function recMins(t){
+  const m = (t || "").match(/^(\d{1,2}):(\d{2})/);
+  return m ? +m[1] * 60 + +m[2] : null;
+}
+function recDuration(start, end){
+  const a = recMins(start), b = recMins(end);
+  if(a == null || b == null || b <= a) return "";
+  const d = b - a, h = Math.floor(d / 60), m = d % 60;
+  return (h ? h + "h" : "") + (h && m ? " " : "") + (m ? m + "m" : "");
+}
+const recStamp = r => new Date(r.date + "T" + (from12(r.time) || "00:00")).getTime();
+const recPending = u => !u || u.indexOf("PASTE_LINK_HERE") > -1;
+const isHttps = u => /^https:\/\/\S+$/i.test(u);
+
+function notifyRecording(action, text){
+  db.ref("notifications").push({
+    type: "recording", action: action, text: String(text).slice(0, 200),
+    by: currentActor(), ts: firebase.database.ServerValue.TIMESTAMP
+  }).catch(function(){});
+}
+
+function startRecordings(){
+  let base = { recs: [], subs: {} };
+  let urls = {}, extra = [], subs = {};
+  let picked = null;        // { kind: "base"|"custom", key }
+  let editingSession = null;
+  let shown = 20;
+  let statusFilter = "need";
+
+  const $ = function(id){ return document.getElementById(id); };
+  function say(el, text, ok){ el.textContent = text; el.className = "annMsg " + (ok ? "ok" : "err"); }
+  function clearMsg(el){ el.className = "annMsg"; }
+
+  function allSubjects(){
+    const out = {};
+    Object.keys(base.subs).forEach(function(n){ out[n] = { code: base.subs[n].code, color: base.subs[n].color, builtin: true }; });
+    Object.keys(subs).forEach(function(k){
+      const s = subs[k];
+      if(s && s.name && !out[s.name]) out[s.name] = { code: s.code, color: s.color, key: k };
+    });
+    return out;
+  }
+  function sessions(){
+    const fromBase = base.recs.map(function(r){
+      const key = recKey(r), o = urls[key];
+      return { kind: "base", key: key, r: r, url: (o && o.url) || r.url || "", pass: o ? (o.passcode || "") : (r.passcode || ""), overridden: !!o };
+    });
+    const fromAdmins = extra.map(function(e){
+      return { kind: "custom", key: e.key, r: e.val, url: e.val.url || "", pass: e.val.passcode || "" };
+    });
+    return fromBase.concat(fromAdmins).sort(function(a, b){ return recStamp(b.r) - recStamp(a.r); });
+  }
+
+  /* ---------- subject pickers ---------- */
+  function fillSubjectSelects(){
+    const names = Object.keys(allSubjects()).sort();
+    const rl = $("rlSubject"), rs = $("rsSubject");
+    const rlPrev = rl.value, rsPrev = rs.value;
+    rl.innerHTML = '<option value="">All subjects</option>' + names.map(function(n){ return '<option>' + esc(n) + '</option>'; }).join("");
+    rs.innerHTML = '<option value="">Choose a subject…</option>' + names.map(function(n){ return '<option>' + esc(n) + '</option>'; }).join("");
+    if(names.indexOf(rlPrev) > -1) rl.value = rlPrev;
+    if(names.indexOf(rsPrev) > -1) rs.value = rsPrev;
+    const terms = {};
+    base.recs.concat(extra.map(function(e){ return e.val; })).forEach(function(r){ if(r.term) terms[r.term] = 1; });
+    $("rsTermList").innerHTML = Object.keys(terms).map(function(t){ return '<option value="' + esc(t) + '">'; }).join("");
+  }
+
+  /* ---------- 1. recording links ---------- */
+  function sessionLabel(s){
+    return esc(s.r.subject) + ' · ' + esc(s.r.lecture) + ' · ' + esc(s.r.date) + (s.r.time ? ' ' + esc(s.r.time) : '');
+  }
+  function setPicked(p){
+    picked = p;
+    const s = p && sessions().filter(function(x){ return x.key === p.key; })[0];
+    $("rlPicked").innerHTML = s ? sessionLabel(s) : "Choose a class from the list below.";
+    $("rlPicked").classList.toggle("on", !!s);
+    $("rlSave").disabled = !s;
+    $("rlCancel").hidden = !s;
+    $("rlClear").hidden = !s || !(s.overridden || s.kind === "custom" && s.url);
+    $("rlClear").textContent = s && s.kind === "base" ? "Remove override" : "Remove link";
+    $("rlUrl").value = s ? s.url : "";
+    $("rlPass").value = s ? s.pass : "";
+    clearMsg($("rlMsg"));
+    if(s){
+      $("rlForm").scrollIntoView({ behavior: "smooth", block: "center" });
+      $("rlUrl").focus({ preventScroll: true });
+    }
+    renderLinks();
+  }
+  function renderLinks(){
+    const sub = $("rlSubject").value;
+    let list = sessions().filter(function(s){
+      if(s.r.campus) return false;
+      if(sub && s.r.subject !== sub) return false;
+      const has = !recPending(s.url);
+      if(statusFilter === "need") return !has;
+      if(statusFilter === "linked") return has;
+      return true;
+    });
+    const el = $("rlList");
+    if(base.failed && !base.recs.length && !extra.length){
+      el.innerHTML = '<div class="empty">Could not read the class list from the site. Reload the page and try again.</div>';
+      return;
+    }
+    if(!list.length){
+      el.innerHTML = '<div class="empty">' + (statusFilter === "need" ? "Every class here already has a link." : "No classes match.") + '</div>';
+      return;
+    }
+    const total = list.length;
+    list = list.slice(0, shown);
+    el.innerHTML = list.map(function(s){
+      const has = !recPending(s.url);
+      const meta = [esc(s.r.date) + (s.r.time ? " · " + esc(s.r.time) : ""), esc(s.r.faculty || ""), esc(s.r.term || "")].filter(Boolean);
+      meta.push(has ? '<span class="tag new">Linked</span>' : '<span class="tag">Needs link</span>');
+      if(has) meta.push('<span class="recUrl">' + esc(s.url) + '</span>');
+      return '<div class="annCard' + (picked && picked.key === s.key ? ' editing' : '') + '">' +
+        '<div class="txt"><p>' + esc(s.r.subject) + ' — ' + esc(s.r.lecture) + '</p><div class="meta">' + meta.join(" · ") + '</div></div>' +
+        '<div class="annActions"><button class="annDel annEdit" data-pick="' + esc(s.key) + '" data-kind="' + s.kind + '">' + (has ? "Edit link" : "Add link") + '</button></div>' +
+      '</div>';
+    }).join("") + (total > list.length ? '<button type="button" class="annDel recMore" id="rlMore">Show more (' + (total - list.length) + ' left)</button>' : "");
+    [].forEach.call(el.querySelectorAll("[data-pick]"), function(b){
+      b.addEventListener("click", function(){ setPicked({ kind: b.dataset.kind, key: b.dataset.pick }); });
+    });
+    const more = $("rlMore");
+    if(more) more.addEventListener("click", function(){ shown += 20; renderLinks(); });
+  }
+  $("rlSubject").addEventListener("change", function(){ shown = 20; renderLinks(); });
+  $("rlStatus").addEventListener("click", function(e){
+    const b = e.target.closest("[data-f]");
+    if(!b) return;
+    statusFilter = b.dataset.f; shown = 20;
+    [].forEach.call($("rlStatus").children, function(c){ c.classList.toggle("active", c === b); });
+    renderLinks();
+  });
+  $("rlCancel").addEventListener("click", function(){ setPicked(null); });
+  $("rlForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    if(!picked) return;
+    const url = $("rlUrl").value.trim(), pass = $("rlPass").value.trim();
+    if(!isHttps(url)){ say($("rlMsg"), "The link must start with https://", false); return; }
+    const s = sessions().filter(function(x){ return x.key === picked.key; })[0];
+    if(!s) return;
+    $("rlSave").disabled = true;
+    const write = s.kind === "base"
+      ? db.ref("recordingUrls/" + s.key).set({ url: url, passcode: pass || null, by: currentActor(), ts: firebase.database.ServerValue.TIMESTAMP })
+      : db.ref("recordings/" + s.key).update({ url: url, passcode: pass || null });
+    write.then(function(){
+      notifyRecording("add", s.r.subject + " — " + s.r.lecture + " (link)");
+      setPicked(null);
+      say($("rlMsg"), "Link saved — it is live on the Recordings tab.", true);
+    }).catch(function(err){
+      say($("rlMsg"), "Failed to save: " + err.message, false);
+      $("rlSave").disabled = false;
+    });
+  });
+  $("rlClear").addEventListener("click", function(){
+    if(!picked || !confirm("Remove this link?")) return;
+    const s = sessions().filter(function(x){ return x.key === picked.key; })[0];
+    if(!s) return;
+    const w = s.kind === "base" ? db.ref("recordingUrls/" + s.key).remove() : db.ref("recordings/" + s.key).update({ url: null, passcode: null });
+    w.then(function(){ setPicked(null); }).catch(function(err){ say($("rlMsg"), "Failed: " + err.message, false); });
+  });
+
+  /* ---------- 2. class sessions ---------- */
+  function syncDur(){ $("rsDur").value = recDuration($("rsStart").value, $("rsEnd").value); }
+  $("rsStart").addEventListener("change", syncDur);
+  $("rsEnd").addEventListener("change", syncDur);
+  function setSessionEdit(key){
+    editingSession = key || null;
+    const e = key && extra.filter(function(x){ return x.key === key; })[0];
+    $("rsFormTitle").textContent = e ? "Edit class session" : "Add class session";
+    $("rsSubmitLabel").textContent = e ? "Save changes" : "Add session";
+    $("rsCancel").hidden = !e;
+    clearMsg($("rsMsg"));
+    if(e){
+      const v = e.val;
+      $("rsSubject").value = v.subject || ""; $("rsLecture").value = v.lecture || "";
+      $("rsFaculty").value = v.faculty || ""; $("rsTerm").value = v.term || "";
+      $("rsDate").value = v.date || "";
+      $("rsStart").value = from12(v.time); $("rsEnd").value = from12(v.ends);
+      $("rsUrl").value = v.url || ""; $("rsPass").value = v.passcode || "";
+      $("rsCampus").checked = !!v.campus;
+      syncDur();
+      $("rsForm").scrollIntoView({ behavior: "smooth", block: "center" });
+    } else {
+      $("rsForm").reset();
+      $("rsStart").value = ""; $("rsEnd").value = ""; $("rsDur").value = "";
+    }
+    [].forEach.call(document.querySelectorAll("#rsList .annCard"), function(c){ c.classList.toggle("editing", !!key && c.dataset.key === key); });
+  }
+  $("rsCancel").addEventListener("click", function(){ setSessionEdit(null); });
+  $("rsForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    const url = $("rsUrl").value.trim();
+    const start = $("rsStart").value, end = $("rsEnd").value;
+    if(!start){ say($("rsMsg"), "Choose a start time.", false); return; }
+    if(url && !isHttps(url)){ say($("rsMsg"), "The link must start with https://", false); return; }
+    if(end && recMins(end) <= recMins(start)){ say($("rsMsg"), "End time must be after the start time.", false); return; }
+    const payload = {
+      date: $("rsDate").value, time: to12(start), ends: end ? to12(end) : null,
+      subject: $("rsSubject").value, lecture: $("rsLecture").value.trim(),
+      faculty: $("rsFaculty").value.trim() || null, term: $("rsTerm").value.trim() || null,
+      duration: recDuration(start, end) || null, campus: $("rsCampus").checked || null,
+      url: url || null, passcode: $("rsPass").value.trim() || null
+    };
+    $("rsSubmit").disabled = true;
+    const label = payload.subject + " — " + payload.lecture;
+    let w;
+    if(editingSession){
+      payload.editedBy = currentActor();
+      w = db.ref("recordings/" + editingSession).update(payload);
+    } else {
+      payload.createdBy = currentActor();
+      payload.ts = firebase.database.ServerValue.TIMESTAMP;
+      w = db.ref("recordings").push(payload);
+    }
+    w.then(function(){
+      notifyRecording(editingSession ? "edit" : "add", label);
+      setSessionEdit(null);
+      say($("rsMsg"), editingSession ? "Session updated." : "Session added — it is live on the site.", true);
+    }).catch(function(err){
+      say($("rsMsg"), "Failed to save: " + err.message, false);
+    }).finally(function(){ $("rsSubmit").disabled = false; });
+  });
+  function renderSessions(){
+    const el = $("rsList");
+    const rows = extra.slice().sort(function(a, b){ return recStamp(b.val) - recStamp(a.val); });
+    if(!rows.length){ el.innerHTML = '<div class="empty">No sessions added from here yet.</div>'; return; }
+    el.innerHTML = rows.map(function(e){
+      const v = e.val;
+      const meta = [esc(v.date) + (v.time ? " · " + esc(v.time) + (v.ends ? " – " + esc(v.ends) : "") : "")];
+      if(v.term) meta.push(esc(v.term));
+      if(v.campus) meta.push('<span class="tag">On campus</span>');
+      else meta.push(v.url ? '<span class="tag new">Linked</span>' : '<span class="tag">No link</span>');
+      return '<div class="annCard' + (e.key === editingSession ? ' editing' : '') + '" data-key="' + esc(e.key) + '">' +
+        '<div class="txt"><p>' + esc(v.subject) + ' — ' + esc(v.lecture) + '</p><div class="meta">' + meta.join(" · ") + '</div></div>' +
+        '<div class="annActions">' +
+          '<button class="annDel annEdit" data-edit="' + esc(e.key) + '">Edit</button>' +
+          '<button class="annDel annRemove" data-del="' + esc(e.key) + '">Delete</button>' +
+        '</div></div>';
+    }).join("");
+    [].forEach.call(el.querySelectorAll("[data-edit]"), function(b){ b.addEventListener("click", function(){ setSessionEdit(b.dataset.edit); }); });
+    [].forEach.call(el.querySelectorAll("[data-del]"), function(b){
+      b.addEventListener("click", function(){
+        const e = extra.filter(function(x){ return x.key === b.dataset.del; })[0];
+        if(!e || !confirm("Delete this session?")) return;
+        db.ref("recordings/" + e.key).remove().then(function(){ notifyRecording("delete", e.val.subject + " — " + e.val.lecture); });
+      });
+    });
+  }
+
+  /* ---------- 3. subjects ---------- */
+  $("rbForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    const name = $("rbName").value.trim(), code = $("rbCode").value.trim().toUpperCase(), color = $("rbColor").value;
+    const key = subjKey(name);
+    if(!key){ say($("rbMsg"), "Enter a subject name.", false); return; }
+    if(base.subs[name]){ say($("rbMsg"), "That subject already exists on the site.", false); return; }
+    $("rbSubmit").disabled = true;
+    db.ref("recordingSubjects/" + key).set({ name: name, code: code, color: color, by: currentActor() }).then(function(){
+      notifyRecording("add", "Subject: " + name);
+      $("rbForm").reset(); $("rbColor").value = "#1B4B8F";
+      say($("rbMsg"), "Subject saved — you can pick it when adding a session.", true);
+    }).catch(function(err){ say($("rbMsg"), "Failed to save: " + err.message, false); })
+      .finally(function(){ $("rbSubmit").disabled = false; });
+  });
+  function renderSubjects(){
+    const el = $("rbList");
+    const all = allSubjects();
+    const names = Object.keys(all).sort(function(a, b){ return (all[a].builtin ? 1 : 0) - (all[b].builtin ? 1 : 0) || a.localeCompare(b); });
+    if(!names.length){ el.innerHTML = '<div class="empty">No subjects yet.</div>'; return; }
+    el.innerHTML = names.map(function(n){
+      const s = all[n];
+      return '<div class="annCard"><div class="txt"><p><span class="recSwatch" style="background:' + esc(s.color) + '"></span>' + esc(n) + ' <span class="tag">' + esc(s.code) + '</span></p>' +
+        '<div class="meta">' + (s.builtin ? 'Built in' : 'Added from the dashboard') + '</div></div>' +
+        (s.builtin ? '' : '<div class="annActions"><button class="annDel annRemove" data-sub="' + esc(s.key) + '" data-name="' + esc(n) + '">Delete</button></div>') + '</div>';
+    }).join("");
+    [].forEach.call(el.querySelectorAll("[data-sub]"), function(b){
+      b.addEventListener("click", function(){
+        const used = sessions().some(function(s){ return s.r.subject === b.dataset.name; });
+        if(!confirm(used ? "Sessions still use this subject; they will show with a grey tag. Delete anyway?" : "Delete this subject?")) return;
+        db.ref("recordingSubjects/" + b.dataset.sub).remove();
+      });
+    });
+  }
+
+  function renderAll(){
+    fillSubjectSelects();
+    if(picked && !sessions().some(function(s){ return s.key === picked.key; })) picked = null;
+    renderLinks(); renderSessions(); renderSubjects();
+  }
+  loadRecBase().then(function(b){ base = b; renderAll(); });
+  trackListener(db.ref("recordingUrls"), function(snap){ urls = snap.val() || {}; renderAll(); });
+  trackListener(db.ref("recordingSubjects"), function(snap){ subs = snap.val() || {}; renderAll(); });
+  trackListener(db.ref("recordings"), function(snap){
+    extra = [];
+    snap.forEach(function(c){ const v = c.val(); if(v && v.subject && v.date) extra.push({ key: c.key, val: v }); });
+    if(editingSession && !extra.some(function(x){ return x.key === editingSession; })) setSessionEdit(null);
+    renderAll();
   });
 }
 
@@ -1995,7 +2417,7 @@ function startNotifications(isSuper){
       if(n.action === "reject") return who + ' rejected the admin request from <strong>' + esc(n.text) + '</strong>';
       if(n.action === "revoke") return who + ' revoked admin access for <strong>' + esc(n.text) + '</strong>';
     }
-    const noun = n.type === "event" ? "calendar event" : "announcement";
+    const noun = n.type === "event" ? "calendar event" : n.type === "recording" ? "recording" : "announcement";
     return who + ' ' + (VERBS[n.action] || esc(n.action)) + ' ' + noun + ' ' + t;
   }
   const isMine = n => n.by && me && n.by.uid === me.uid;
@@ -2940,9 +3362,6 @@ function startAnalytics(){
   rangeMode = { days: 14, from: "", to: "" };
   syncRangeUI();
   loadVisits().then(ensureRangeCovered);
-  refreshVisitsFn = function(){
-    return loadVisits();
-  };
 }
 </script>
 <script>

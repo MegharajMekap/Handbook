@@ -3572,7 +3572,69 @@ setTab(startTab());
 
 /* called once the signed-in user's role is known: "admin" and "super" unlock Recordings and Notes
    (the flag is still named isSuper for historical reasons) */
+/* ── recordings managed from the admin dashboard (Firebase, admin/super read only):
+   recordingUrls     → link overrides for the classes listed above
+   recordings        → extra classes added by admins
+   recordingSubjects → extra subjects (name, code, colour) ── */
+const BASE_RECORDINGS = RECORDINGS.slice();
+const BASE_SUBJECT_NAMES = Object.keys(SUBJECTS);
+const recKey = r => [r.date, r.time || "", r.subject].map(s => String(s).replace(/[^A-Za-z0-9]+/g, "")).join("_");
+const remoteRec = { urls:{}, extra:[], subs:{}, refs:[] };
+
+function applyRemoteRecordings(){
+  Object.keys(SUBJECTS).forEach(n => { if(BASE_SUBJECT_NAMES.indexOf(n) < 0) delete SUBJECTS[n]; });
+  Object.keys(remoteRec.subs).forEach(k => {
+    const s = remoteRec.subs[k];
+    if(s && s.name && !SUBJECTS[s.name]) SUBJECTS[s.name] = { code: s.code || "—", color: /^#[0-9a-f]{6}$/i.test(s.color || "") ? s.color : "#5D6892" };
+  });
+  BASE_RECORDINGS.forEach(r => {
+    if(!("_u0" in r)){ r._u0 = r.url || ""; r._p0 = r.passcode || ""; }
+    const o = remoteRec.urls[recKey(r)];
+    r.url = o && o.url ? o.url : r._u0;
+    r.passcode = o && o.url ? (o.passcode || "") : r._p0;
+  });
+  RECORDINGS.length = 0;
+  BASE_RECORDINGS.concat(remoteRec.extra).forEach(r => RECORDINGS.push(r));
+  sorted.length = 0;
+  RECORDINGS.filter(r => !isQuiz(r)).sort((a,b) => stamp(b) - stamp(a)).forEach(r => sorted.push(r));
+  buildChips();
+  render();
+  cntRecordings.textContent = sorted.filter(r => r.campus || hasRecordedUrl(r)).length;
+}
+
+function watchRemoteRecordings(on){
+  if(typeof firebase === "undefined" || !firebase.apps || !firebase.apps.length) return;
+  if(!on){
+    if(!remoteRec.refs.length) return;
+    remoteRec.refs.forEach(x => x.ref.off("value", x.cb));
+    remoteRec.refs = []; remoteRec.urls = {}; remoteRec.extra = []; remoteRec.subs = {};
+    applyRemoteRecordings();
+    return;
+  }
+  if(remoteRec.refs.length) return;
+  const watch = (path, read) => {
+    const ref = firebase.database().ref(path);
+    const cb = snap => { read(snap); applyRemoteRecordings(); };
+    ref.on("value", cb, () => {}); // unreadable (rules not published yet) — site keeps the built-in classes
+    remoteRec.refs.push({ ref, cb });
+  };
+  watch("recordingSubjects", snap => { remoteRec.subs = snap.val() || {}; });
+  watch("recordingUrls", snap => { remoteRec.urls = snap.val() || {}; });
+  watch("recordings", snap => {
+    const items = [];
+    snap.forEach(c => {
+      const v = c.val() || {};
+      if(!v.subject || !/^\d{4}-\d{2}-\d{2}$/.test(v.date || "")) return;
+      items.push({ date:v.date, time:v.time || "", ends:v.ends || "", subject:v.subject, faculty:v.faculty || "",
+        lecture:v.lecture || "Session", duration:v.duration || "", term:v.term || "", campus:!!v.campus,
+        url:/^https:\/\//i.test(v.url || "") ? v.url : "", passcode:v.passcode || "" });
+    });
+    remoteRec.extra = items;
+  });
+}
+
 window.mekapSetSuper = function(isSuper){
+  watchRemoteRecordings(!!isSuper);
   const was = !!window.isSuper;
   window.isSuper = isSuper;
   try { isSuper ? localStorage.setItem("mekapIsSuper", "1") : localStorage.removeItem("mekapIsSuper"); } catch(e) {}
