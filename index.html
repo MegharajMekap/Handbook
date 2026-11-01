@@ -3839,7 +3839,8 @@ window.mekapSetSuper = function(isSuper){
   }
 
   function currentClass(){
-    return RECORDINGS.find(isLive);
+    // on-campus classes get the same banner (without the Zoom button)
+    return RECORDINGS.find(r => stamp(r) <= Date.now() && Date.now() < endStamp(r));
   }
 
   function tick(){
@@ -3859,10 +3860,11 @@ window.mekapSetSuper = function(isSuper){
     bar.classList.toggle("onbreak", !!onBreak);
     textEl.innerHTML = '<span class="lb-title">' + esc(s.code) + ' · ' + esc(r.subject) + '</span>' +
       '<span class="lb-meta">' + esc(r.lecture) + sessionOf(r) +
+      (r.campus ? ' · On campus' : '') +
       (onBreak ? ' · resumes ' + esc(brk.end) : brk && now < brk.from ? ' · ☕ break ' + esc(r.brk) : '') +
       ' · ends ' + esc(r.ends || r.time) + '</span>';
     progEl.style.setProperty("--p", Math.max(0, Math.min(100, (now - stamp(r)) / (endStamp(r) - stamp(r)) * 100)) + "%");
-    if(r.url){
+    if(r.url && !r.campus){
       joinEl.hidden = false;
       bar.href = r.url;
     } else {
