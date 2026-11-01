@@ -1,7 +1,7 @@
 {
-  "name": "Class Recordings and Notes",
-  "short_name": "Recordings",
-  "description": "Executive MBA class recordings and notes",
+  "name": "IIM Handbook",
+  "short_name": "IIM Handbook",
+  "description": "Executive MBA Handbook",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
