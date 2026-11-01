@@ -194,6 +194,7 @@
     animation:livePulse 1.8s ease-in-out infinite;
   }
   .visitorPill .sep{color:var(--line)}
+  body.calOnly .visitorPill{display:none!important} /* online / visit counts are for admins only */
   /* page title kept for screen readers / SEO, but not shown */
   .srOnly{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
   h1{
