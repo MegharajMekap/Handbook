@@ -93,7 +93,7 @@
     box-shadow:0 1px 2px rgba(22,35,58,.05),0 8px 22px -12px rgba(22,35,58,.22);
   }
   .funfact[hidden]{display:none}
-  body.inSession .quoteline,body.inSession .noticebar{display:none!important} /* keep students focused during class */
+  body.inSession .noticebar{display:none!important} /* keep students focused during class */
   .funfactIcon{
     flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;
     background:linear-gradient(135deg,#D9503F,#C23A2D);color:#fff;
@@ -218,11 +218,6 @@
     display:block;font-size:1em;font-weight:600;
     color:#B8590A;margin:6px 0 10px;
   }
-  .quoteline{
-    margin:10px 0 0;max-width:58ch;
-    color:var(--mute);font-size:14px;font-style:italic;
-  }
-  .quoteauthor{color:#1B4B8F;font-weight:600;font-style:normal}
   h1 .typecaret{width:3px;background:currentColor}
   .typecaret{
     display:inline-block;width:2px;height:1em;margin-left:1px;
@@ -1927,7 +1922,6 @@
     </div>
     <h1 class="srOnly"><span id="h1Text"></span><span id="h1Caret" class="typecaret done"></span></h1>
     <p class="standfirst" id="standfirst"><span id="greetLine" class="greetline"><span id="greetText"></span><span id="greetCaret" class="typecaret done"></span></span><span id="festivalLine" class="festivalline" hidden><span id="festivalText"></span><span id="festivalCaret" class="typecaret done"></span></span></p>
-    <p class="quoteline" id="quoteLine" hidden><span id="quoteText"></span><span id="quoteCaret" class="typecaret done"></span></p>
     <div class="funfact" id="funFact" aria-live="off" hidden>
       <span class="funfactIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></span>
       <span class="funfactBody">
@@ -3889,9 +3883,6 @@ window.mekapSetSuper = function(isSuper){
   const greetEl = document.getElementById("greetLine");
   const greetTextEl = document.getElementById("greetText");
   const greetCaretEl = document.getElementById("greetCaret");
-  const quoteEl = document.getElementById("quoteLine");
-  const quoteTextEl = document.getElementById("quoteText");
-  const quoteCaretEl = document.getElementById("quoteCaret");
   const festivalEl = document.getElementById("festivalLine");
   const festivalTextEl = document.getElementById("festivalText");
   const festivalCaretEl = document.getElementById("festivalCaret");
@@ -3921,217 +3912,6 @@ window.mekapSetSuper = function(isSuper){
     const key = y + "-" + mmdd;
     return FESTIVALS[key] || null;
   }
-
-  function renderQuote(el, str){
-    const sep = str.lastIndexOf(" — ");
-    if(sep === -1){ el.textContent = str; return; }
-    el.innerHTML = esc(str.slice(0, sep)) +
-      '<span class="quoteauthor"> — ' + esc(str.slice(sep + 3)) + '</span>';
-  }
-
-  const QUOTES = [
-    "“Leadership and learning are indispensable to each other.” — John F. Kennedy",
-    "“The purpose of learning is growth, and our minds can keep growing as long as we live.” — Mortimer Adler",
-    "“A leader is best when people barely know he exists; when his work is done, they will say: we did it ourselves.” — Lao Tzu",
-    "“Don’t sit down and wait for the opportunities to come. Get up and make them.” — Madame C.J. Walker",
-    "“The only person you are destined to become is the person you decide to be.” — Ralph Waldo Emerson",
-    "“The journey is the reward.” — Chinese Proverb",
-    "“Management is doing things right; leadership is doing the right things.” — Peter Drucker",
-    "“The best way to predict the future is to create it.” — Peter Drucker",
-    "“It is not the strongest that survive, but those most responsive to change.” — Charles Darwin",
-    "“Opportunities don’t happen. You create them.” — Chris Grosser",
-    "“Innovation distinguishes between a leader and a follower.” — Steve Jobs",
-    "“Your time is limited, so don’t waste it living someone else’s life.” — Steve Jobs",
-    "“Stay hungry, stay foolish.” — Steve Jobs",
-    "“The only way to do great work is to love what you do.” — Steve Jobs",
-    "“The way to get started is to quit talking and begin doing.” — Walt Disney",
-    "“If you can dream it, you can do it.” — Walt Disney",
-    "“Whether you think you can, or you think you can’t, you’re right.” — Henry Ford",
-    "“Quality means doing it right when no one is looking.” — Henry Ford",
-    "“Coming together is a beginning; keeping together is progress; working together is success.” — Henry Ford",
-    "“Obstacles are those frightful things you see when you take your eyes off your goal.” — Henry Ford",
-    "“Whatever you can do, or dream you can, begin it. Boldness has genius, power and magic in it.” — Johann Wolfgang von Goethe",
-    "“It always seems impossible until it’s done.” — Nelson Mandela",
-    "“The greatest glory in living lies not in never falling, but in rising every time we fall.” — Nelson Mandela",
-    "“Education is the most powerful weapon which you can use to change the world.” — Nelson Mandela",
-    "“I have not failed. I’ve just found 10,000 ways that won’t work.” — Thomas Edison",
-    "“Genius is one percent inspiration and ninety-nine percent perspiration.” — Thomas Edison",
-    "“Our greatest weakness lies in giving up. The most certain way to succeed is always to try just one more time.” — Thomas Edison",
-    "“Success is not final, failure is not fatal: it is the courage to continue that counts.” — Winston Churchill",
-    "“Success consists of going from failure to failure without loss of enthusiasm.” — Winston Churchill",
-    "“Continuous effort, not strength or intelligence, is the key to unlocking our potential.” — Winston Churchill",
-    "“To improve is to change; to be perfect is to change often.” — Winston Churchill",
-    "“You miss 100% of the shots you don’t take.” — Wayne Gretzky",
-    "“Believe you can and you’re halfway there.” — Theodore Roosevelt",
-    "“Nothing in the world is worth having or doing unless it means effort, pain, difficulty.” — Theodore Roosevelt",
-    "“It is hard to fail, but it is worse never to have tried to succeed.” — Theodore Roosevelt",
-    "“Do what you can, with what you have, where you are.” — Theodore Roosevelt",
-    "“The man who moves a mountain begins by carrying away small stones.” — Confucius",
-    "“It does not matter how slowly you go as long as you do not stop.” — Confucius",
-    "“Real knowledge is to know the extent of one’s ignorance.” — Confucius",
-    "“Choose a job you love, and you will never have to work a day in your life.” — Confucius",
-    "“The best time to plant a tree was 20 years ago. The second best time is now.” — Chinese Proverb",
-    "“Give me six hours to chop down a tree and I will spend the first four sharpening the axe.” — Abraham Lincoln",
-    "“Whatever you are, be a good one.” — Abraham Lincoln",
-    "“Things may come to those who wait, but only the things left by those who hustle.” — Abraham Lincoln",
-    "“The best way to find yourself is to lose yourself in the service of others.” — Mahatma Gandhi",
-    "“Live as if you were to die tomorrow. Learn as if you were to live forever.” — Mahatma Gandhi",
-    "“A man is but the product of his thoughts. What he thinks, he becomes.” — Mahatma Gandhi",
-    "“Be the change that you wish to see in the world.” — Mahatma Gandhi",
-    "“Dream is not that which you see while sleeping, it is something that does not let you sleep.” — Dr. A.P.J. Abdul Kalam",
-    "“Excellence is a continuous process and not an accident.” — Dr. A.P.J. Abdul Kalam",
-    "“If you want to shine like a sun, first burn like a sun.” — Dr. A.P.J. Abdul Kalam",
-    "“You have to dream before your dreams can come true.” — Dr. A.P.J. Abdul Kalam",
-    "“One man can be a decisive influence for excellence, honesty and success.” — Ratan Tata",
-    "“Take the stones people throw at you and use them to build a monument.” — Ratan Tata",
-    "“None can destroy iron, but its own rust can. Likewise, none can destroy a person but his own mindset can.” — Ratan Tata",
-    "“I don’t believe in taking right decisions. I take decisions and then make them right.” — Ratan Tata",
-    "“There is no substitute for hard work.” — Thomas Edison",
-    "“The function of leadership is to produce more leaders, not more followers.” — Ralph Nader",
-    "“A leader takes people where they want to go. A great leader takes people where they don’t necessarily want to go, but ought to be.” — Rosalynn Carter",
-    "“Leadership is the capacity to translate vision into reality.” — Warren Bennis",
-    "“The pessimist complains about the wind; the optimist expects it to change; the realist adjusts the sails.” — William Arthur Ward",
-    "“In the middle of difficulty lies opportunity.” — Albert Einstein",
-    "“Try not to become a person of success, but rather try to become a person of value.” — Albert Einstein",
-    "“Logic will get you from A to B. Imagination will take you everywhere.” — Albert Einstein",
-    "“Once you stop learning, you start dying.” — Albert Einstein",
-    "“A person who never made a mistake never tried anything new.” — Albert Einstein",
-    "“Strive not to be a success, but rather to be of value.” — Albert Einstein",
-    "“The difference between ordinary and extraordinary is that little extra.” — Jimmy Johnson",
-    "“Good business leaders create a vision, articulate the vision, passionately own the vision and relentlessly drive it to completion.” — Jack Welch",
-    "“Before you are a leader, success is all about growing yourself. When you become a leader, success is all about growing others.” — Jack Welch",
-    "“Change before you have to.” — Jack Welch",
-    "“An organization’s ability to learn, and translate that learning into action rapidly, is the ultimate competitive advantage.” — Jack Welch",
-    "“It’s fine to celebrate success but it is more important to heed the lessons of failure.” — Bill Gates",
-    "“Your most unhappy customers are your greatest source of learning.” — Bill Gates",
-    "“Success today requires the agility and drive to constantly rethink, reinvigorate, react and reinvent.” — Bill Gates",
-    "“Life is not fair; get used to it.” — Bill Gates",
-    "“Price is what you pay. Value is what you get.” — Warren Buffett",
-    "“It takes 20 years to build a reputation and five minutes to ruin it.” — Warren Buffett",
-    "“Someone is sitting in the shade today because someone planted a tree a long time ago.” — Warren Buffett",
-    "“Risk comes from not knowing what you’re doing.” — Warren Buffett",
-    "“The most important investment you can make is in yourself.” — Warren Buffett",
-    "“Do not save what is left after spending; instead spend what is left after saving.” — Warren Buffett",
-    "“The only thing worse than starting something and failing is not starting something.” — Seth Godin",
-    "“Ideas that spread, win.” — Seth Godin",
-    "“Don’t worry about people stealing an idea. If it’s original, you will have to ram it down their throats.” — Howard Aiken",
-    "“If you really look closely, most overnight successes took a long time.” — Steve Jobs",
-    "“I find that the harder I work, the more luck I seem to have.” — Thomas Jefferson",
-    "“You can’t build a reputation on what you are going to do.” — Henry Ford",
-    "“Setting goals is the first step in turning the invisible into the visible.” — Tony Robbins",
-    "“The only limit to our realization of tomorrow will be our doubts of today.” — Franklin D. Roosevelt",
-    "“It is not the critic who counts... The credit belongs to the man who is actually in the arena.” — Theodore Roosevelt",
-    "“What you get by achieving your goals is not as important as what you become by achieving your goals.” — Zig Ziglar",
-    "“People often say that motivation doesn’t last. Well, neither does bathing — that’s why we recommend it daily.” — Zig Ziglar",
-    "“You don’t have to be great to start, but you have to start to be great.” — Zig Ziglar",
-    "“A goal properly set is halfway reached.” — Zig Ziglar",
-    "“Motivation is what gets you started. Habit is what keeps you going.” — Jim Ryun",
-    "“We are what we repeatedly do. Excellence, then, is not an act, but a habit.” — Will Durant",
-    "“The secret of getting ahead is getting started.” — Mark Twain",
-    "“Twenty years from now you will be more disappointed by the things you didn’t do than by the ones you did.” — Mark Twain",
-    "“The two most important days in your life are the day you are born and the day you find out why.” — Mark Twain",
-    "“Continuous learning is the minimum requirement for success in any field.” — Brian Tracy",
-    "“Formal education will make you a living; self-education will make you a fortune.” — Jim Rohn",
-    "“You are the average of the five people you spend the most time with.” — Jim Rohn",
-    "“Either you run the day, or the day runs you.” — Jim Rohn",
-    "“Discipline is the bridge between goals and accomplishment.” — Jim Rohn",
-    "“Don’t wish it were easier; wish you were better.” — Jim Rohn",
-    "“Failure is simply the opportunity to begin again, this time more intelligently.” — Henry Ford",
-    "“If you are not willing to risk the usual, you will have to settle for the ordinary.” — Jim Rohn",
-    "“The successful warrior is the average man, with laser-like focus.” — Bruce Lee",
-    "“As you think, so shall you become.” — Bruce Lee",
-    "“Knowing is not enough; we must apply. Willing is not enough; we must do.” — Bruce Lee",
-    "“The best revenge is massive success.” — Frank Sinatra",
-    "“The successful man will profit from his mistakes and try again in a different way.” — Dale Carnegie",
-    "“Flaming enthusiasm, backed by horse sense and persistence, is the quality that most frequently makes for success.” — Dale Carnegie",
-    "“Develop success from failures. Discouragement and failure are two of the surest stepping stones to success.” — Dale Carnegie",
-    "“It is during our darkest moments that we must focus to see the light.” — Aristotle",
-    "“We are what we repeatedly do; excellence, then, is not an act, but a habit.” — Aristotle",
-    "“Knowing yourself is the beginning of all wisdom.” — Aristotle",
-    "“Quality is not an act, it is a habit.” — Aristotle",
-    "“The whole is greater than the sum of its parts.” — Aristotle",
-    "“Well begun is half done.” — Aristotle",
-    "“Efficiency is doing things right; effectiveness is doing the right things.” — Peter Drucker",
-    "“What gets measured gets managed.” — Peter Drucker",
-    "“The most important thing in communication is hearing what isn’t said.” — Peter Drucker",
-    "“Culture eats strategy for breakfast.” — Peter Drucker",
-    "“Plans are only good intentions unless they immediately degenerate into hard work.” — Peter Drucker",
-    "“Rank does not confer privilege or give power. It imposes responsibility.” — Peter Drucker",
-    "“There is nothing so useless as doing efficiently that which should not be done at all.” — Peter Drucker",
-    "“The best executive is the one who has sense enough to pick good men to do what he wants done.” — Theodore Roosevelt",
-    "“Great things in business are never done by one person; they’re done by a team of people.” — Steve Jobs",
-    "“Management is efficiency in climbing the ladder of success; leadership determines whether the ladder is leaning against the right wall.” — Stephen Covey",
-    "“Begin with the end in mind.” — Stephen Covey",
-    "“Most people do not listen with the intent to understand; they listen with the intent to reply.” — Stephen Covey",
-    "“The key is not to prioritize what’s on your schedule, but to schedule your priorities.” — Stephen Covey",
-    "“Trust is the glue of life. It’s the most essential ingredient in effective communication.” — Stephen Covey",
-    "“I never dreamed about success. I worked for it.” — Estée Lauder",
-    "“Have no fear of perfection; you’ll never reach it.” — Salvador Dalí",
-    "“If you are working on something exciting that you really care about, you don’t have to be pushed.” — Steve Jobs",
-    "“You don’t need a big close, as many sales reps believe. You risk losing your customer when you save all the good stuff for a rousing finish.” — Jim Cathcart",
-    "“Turn your wounds into wisdom.” — Oprah Winfrey",
-    "“The biggest adventure you can take is to live the life of your dreams.” — Oprah Winfrey",
-    "“What you get by achieving your desired goals was not nearly as important as what you become by achieving your goals.” — Henry David Thoreau",
-    "“Go confidently in the direction of your dreams. Live the life you have imagined.” — Henry David Thoreau",
-    "“Do not go where the path may lead, go instead where there is no path and leave a trail.” — Ralph Waldo Emerson",
-    "“What lies behind us and what lies before us are tiny matters compared to what lies within us.” — Ralph Waldo Emerson",
-    "“Nothing great was ever achieved without enthusiasm.” — Ralph Waldo Emerson",
-    "“The road to success and the road to failure are almost exactly the same.” — Colin R. Davis",
-    "“Either you run the business, or the business runs you.” — Peter Drucker",
-    "“Vision without execution is hallucination.” — Thomas Edison",
-    "“Chase the vision, not the money; the money will end up following you.” — Tony Hsieh",
-    "“A brand for a company is like a reputation for a person. You earn reputation by trying to do hard things well.” — Jeff Bezos",
-    "“We see our customers as invited guests to a party, and we are the hosts.” — Jeff Bezos",
-    "“If you double the number of experiments you do per year, you’re going to double your inventiveness.” — Jeff Bezos",
-    "“Your brand is what other people say about you when you’re not in the room.” — Jeff Bezos",
-    "“The best leader is not necessarily the one who does the greatest things. He is the one that gets the people to do the greatest things.” — Ronald Reagan",
-    "“Management is nothing more than motivating other people.” — Lee Iacocca",
-    "“The art of communication is the language of leadership.” — James Humes",
-    "“A good leader takes a little more than his share of the blame, a little less than his share of the credit.” — Arnold H. Glasow",
-    "“Outstanding leaders go out of their way to boost the self-esteem of their personnel.” — Sam Walton",
-    "“High expectations are the key to everything.” — Sam Walton",
-    "“There are no traffic jams along the extra mile.” — Roger Staubach",
-    "“Champions keep playing until they get it right.” — Billie Jean King",
-    "“You can’t use up creativity. The more you use, the more you have.” — Maya Angelou",
-    "“Nothing will work unless you do.” — Maya Angelou",
-    "“If you don’t like something, change it. If you can’t change it, change your attitude.” — Maya Angelou",
-    "“You may encounter many defeats, but you must not be defeated.” — Maya Angelou",
-    "“The pessimist sees difficulty in every opportunity. The optimist sees opportunity in every difficulty.” — Winston Churchill",
-    "“Money is a terrible master but an excellent servant.” — P.T. Barnum",
-    "“Don’t be afraid to give up the good to go for the great.” — John D. Rockefeller",
-    "“Good management consists in showing average people how to do the work of superior people.” — John D. Rockefeller",
-    "“I always tried to turn every disaster into an opportunity.” — John D. Rockefeller",
-    "“If everyone is moving forward together, then success takes care of itself.” — Henry Ford",
-    "“Fall seven times, stand up eight.” — Japanese Proverb",
-    "“A smooth sea never made a skilled sailor.” — English Proverb",
-    "“The expert in anything was once a beginner.” — Helen Hayes",
-    "“A ship in harbor is safe, but that is not what ships are built for.” — John A. Shedd",
-    "“Great minds discuss ideas; average minds discuss events; small minds discuss people.” — Eleanor Roosevelt",
-    "“The future belongs to those who believe in the beauty of their dreams.” — Eleanor Roosevelt",
-    "“You must do the things you think you cannot do.” — Eleanor Roosevelt",
-    "“It is during our darkest moments that we must focus to see the light.” — Aristotle Onassis",
-    "“Whatever the mind can conceive and believe, it can achieve.” — Napoleon Hill",
-    "“Don’t wait. The time will never be just right.” — Napoleon Hill",
-    "“Persistence and determination alone are omnipotent.” — Calvin Coolidge",
-    "“Nothing happens until something moves.” — Albert Einstein",
-    "“Leadership is unlocking people’s potential to become better.” — Bill Bradley",
-    "“Do not wait to strike till the iron is hot; but make it hot by striking.” — William Butler Yeats",
-    "“The only place where success comes before work is in the dictionary.” — Vidal Sassoon",
-    "“I am not a product of my circumstances. I am a product of my decisions.” — Stephen Covey",
-    "“You can’t connect the dots looking forward; you can only connect them looking backward.” — Steve Jobs",
-    "“The customer’s perception is your reality.” — Kate Zabriskie",
-    "“Great things are done by a series of small things brought together.” — Vincent Van Gogh",
-    "“The only source of knowledge is experience.” — Albert Einstein",
-    "“Not everything that is faced can be changed, but nothing can be changed until it is faced.” — James Baldwin",
-    "“Leaders become great, not because of their power, but because of their ability to empower others.” — John Maxwell",
-    "“A leader is one who knows the way, goes the way, and shows the way.” — John Maxwell",
-    "“People buy into the leader before they buy into the vision.” — John Maxwell",
-    "“Teamwork is the ability to work together toward a common vision.” — Andrew Carnegie",
-    "“No man will make a great leader who wants to do it all himself.” — Andrew Carnegie",
-    "“Do the difficult things while they are easy and do the great things while they are small.” — Lao Tzu",
-    "“A journey of a thousand miles begins with a single step.” — Lao Tzu",
-    "“The best fighter is never angry.” — Lao Tzu"
-  ];
 
   const GREETINGS = {
     morning: [
@@ -4225,8 +4005,6 @@ window.mekapSetSuper = function(isSuper){
     greetTextEl.textContent = "";
     festivalTextEl.textContent = "";
     festivalEl.hidden = true;
-    quoteTextEl.textContent = "";
-    quoteEl.hidden = true;
     // the "Executive MBA" headline is no longer shown, so skip straight to the greeting
     h1TextEl.textContent = H1_TEXT;
     (function(next){ next(); })(function(){
@@ -4235,15 +4013,7 @@ window.mekapSetSuper = function(isSuper){
         greetCaretEl.classList.add("done");
 
         function afterFestival(){
-          setTimeout(function(){
-            quoteEl.hidden = false;
-            quoteCaretEl.classList.remove("done");
-            const quote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
-            typeInto(quoteTextEl, quote, function(){
-              renderQuote(quoteTextEl, quote);
-              typing = false;
-            });
-          }, 700);
+          typing = false;
         }
 
         const festival = todaysFestival();
@@ -4306,20 +4076,6 @@ window.mekapSetSuper = function(isSuper){
       });
     }
   }, 30000);
-
-  // Rotate the quote every 15 seconds while the page stays open,
-  // using the same erase + type animation as the initial reveal.
-  setInterval(function(){
-    if(typing || quoteEl.hidden) return;
-    typing = true;
-    eraseFrom(quoteTextEl, function(){
-      const quote = QUOTES[Math.floor(Math.random() * QUOTES.length)];
-      typeInto(quoteTextEl, quote, function(){
-        renderQuote(quoteTextEl, quote);
-        typing = false;
-      }, 22);
-    });
-  }, 15 * 1000);
 })();
 
 /* ── live clock ── */
@@ -4625,7 +4381,7 @@ window.mekapSetSuper = function(isSuper){
   const inSession = () => RECORDINGS.some(r => stamp(r) <= Date.now() && Date.now() < endStamp(r));
   function syncCard(){
     const on = inSession();
-    document.body.classList.toggle("inSession", on); // swaps the quote line out while the card is showing
+    document.body.classList.toggle("inSession", on); 
     if(card.hidden === !on) return;
     card.hidden = !on;
     if(on) show(i);
