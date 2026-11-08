@@ -2154,20 +2154,42 @@ function startRecordings(){
   });
 
   /* ---------- one-time move of the built-in classes to the server ---------- */
-  const CLASS_FIELDS = ["date", "time", "ends", "subject", "faculty", "lecture", "duration", "term", "campus", "thumb"];
+  const CLASS_FIELDS = ["date", "time", "ends", "subject", "faculty", "lecture", "duration", "term", "campus", "thumb", "brk"];
   function toClass(r){
     const c = {};
     CLASS_FIELDS.forEach(function(f){ if(r[f]) c[f] = r[f]; });
     return c;
   }
+  // the first migration left out each class's break time; these are the server classes still missing it
+  function missingBreaks(){
+    if(!onServer() || base.failed) return [];
+    const have = {};
+    classes.forEach(function(c){ have[c.key] = c.val; });
+    return base.recs.filter(function(r){ const c = have[recKey(r)]; return r.brk && c && !c.brk; });
+  }
   function renderMigrate(){
     const box = $("rsMigrate");
-    const can = !onServer() && !base.failed && (base.recs.length || extra.length);
+    const fix = missingBreaks();
+    const can = (!onServer() && !base.failed && (base.recs.length || extra.length)) || fix.length;
     box.hidden = !can;
-    if(can) $("rsMigrateText").textContent = "The class schedule is still built into the site (" + (base.recs.length + extra.length) +
-      " sessions). Move it to the server so classes can be added, edited and removed here without a code change.";
+    if(!can) return;
+    $("rsMigrateBtn").textContent = fix.length ? "Restore break times" : "Move classes to the server";
+    $("rsMigrateText").textContent = fix.length
+      ? fix.length + " classes on the server are missing their break time. Restore them from the built-in schedule."
+      : "The class schedule is still built into the site (" + (base.recs.length + extra.length) +
+        " sessions). Move it to the server so classes can be added, edited and removed here without a code change.";
   }
   $("rsMigrateBtn").addEventListener("click", function(){
+    const fix = missingBreaks();
+    if(fix.length){
+      const upd = {};
+      fix.forEach(function(r){ upd["classes/" + recKey(r) + "/brk"] = r.brk; });
+      $("rsMigrateBtn").disabled = true;
+      db.ref().update(upd).then(function(){ say($("rsMsg"), "Break times restored for " + fix.length + " classes.", true); })
+        .catch(function(err){ say($("rsMsg"), "Failed: " + err.message, false); })
+        .finally(function(){ $("rsMigrateBtn").disabled = false; });
+      return;
+    }
     if(onServer() || !confirm("Copy all classes to the server? Existing links are kept; nothing is deleted.")) return;
     const upd = {}, stamp = firebase.database.ServerValue.TIMESTAMP;
     function link(key, url, pass){

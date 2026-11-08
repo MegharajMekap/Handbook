@@ -3584,7 +3584,7 @@ const CLASS_CACHE = "mekapClasses";
 function classFrom(key, v){
   return { _key:key, date:v.date, time:v.time || "", ends:v.ends || "", subject:v.subject, faculty:v.faculty || "",
     lecture:v.lecture || "Session", duration:v.duration || "", term:v.term || "", campus:!!v.campus,
-    thumb:v.thumb || "", url:"", passcode:"" };
+    thumb:v.thumb || "", brk:v.brk || "", url:"", passcode:"" };
 }
 try {
   const cached = JSON.parse(localStorage.getItem(CLASS_CACHE) || "null");
