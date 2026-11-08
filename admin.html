@@ -137,13 +137,15 @@
     padding:12px 16px;font-size:13px;color:var(--ink-soft);margin:0 0 26px;line-height:1.55;
   }
   .brand{display:flex;align-items:center;gap:13px}
-  .brandIcon{
-    width:42px;height:42px;border-radius:12px;flex:none;
-    background:linear-gradient(150deg,#2A5CA6,var(--navy-deep));
-    display:flex;align-items:center;justify-content:center;
-    box-shadow:0 4px 12px -3px rgba(18,53,104,.4);
+  /* logo.jpg carries its own white margin, so the rounded corners never clip the artwork */
+  .brandLogo{
+    display:block;flex:none;width:48px;height:48px;border-radius:14px;overflow:hidden;background:#fff;
+    box-shadow:0 1px 2px rgba(22,35,58,.06),0 6px 16px -8px rgba(22,35,58,.3),inset 0 0 0 1px rgba(22,35,58,.06);
+    transition:transform .15s ease,box-shadow .15s ease;
   }
-  .brandIcon svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .brandLogo img{display:block;width:100%;height:100%;object-fit:contain}
+  .brandLogo:hover{transform:translateY(-1px);box-shadow:0 1px 2px rgba(22,35,58,.06),0 10px 20px -8px rgba(22,35,58,.35),inset 0 0 0 1px rgba(22,35,58,.06)}
+  .brandLogo:focus-visible{outline:2px solid var(--navy);outline-offset:2px}
   .topbarActions{display:flex;align-items:center;gap:10px}
   .signout,.homeBtn{
     background:var(--card);border:1px solid var(--line);border-radius:8px;padding:9px 15px;
@@ -534,7 +536,6 @@
   .stat{transition:transform .25s var(--ease-out),box-shadow .25s ease}
   .stat:hover{transform:translateY(-3px)}
   .statIcon{border-radius:14px}
-  .brandIcon{border-radius:14px;box-shadow:0 10px 20px -8px rgba(18,53,104,.55),inset 0 1px 0 rgba(255,255,255,.25)}
   .limitedNote{border-radius:var(--r-md)}
   .tag,.countBadge{border-radius:999px}
 
@@ -628,6 +629,14 @@
     .adminMain{padding:18px 14px 6px}
     .secBtn{padding:14px 14px}
   }
+  /* show / hide password toggle (added to every password field by the script at the end of the page) */
+  .pwWrap{position:relative}
+  .pwWrap > input{padding-right:44px !important}
+  .pwToggle{position:absolute;top:50%;right:6px;transform:translateY(-50%);width:34px;height:34px;padding:0;
+    display:flex;align-items:center;justify-content:center;border:0;background:transparent;border-radius:8px;
+    color:var(--mute,#6b7280);cursor:pointer}
+  .pwToggle:hover{color:var(--navy,#1B4B8F);background:rgba(0,0,0,.05)}
+  .pwToggle:focus-visible{outline:2px solid var(--navy,#1B4B8F);outline-offset:1px}
 </style>
 </head>
 <body>
@@ -667,7 +676,7 @@
   <div id="dash">
     <div class="topbar">
       <div class="brand">
-        <div class="brandIcon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div>
+        <a class="brandLogo" href="index.html" title="Back to the site" aria-label="IIM Kashipur — go to the home page"><img src="logo.jpg" alt="IIM Kashipur"></a>
         <div>
           <h1>Admin dashboard <span class="roleBadge" id="roleBadge" hidden></span></h1>
           <p class="sub">IIM Handbook · site analytics</p>
@@ -3421,6 +3430,36 @@ function startAnalytics(){
       if(b.tagName === "BUTTON") b.classList.toggle("is-busy", b.disabled && m.oldValue === null);
     });
   }).observe(document.documentElement, { attributes: true, attributeFilter: ["disabled"], attributeOldValue: true, subtree: true });
+})();
+</script>
+<script>
+/* show / hide toggle on every password field */
+(function(){
+  var ATTR = 'width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+  var EYE = '<svg ' + ATTR + '><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  var EYE_OFF = '<svg ' + ATTR + '><path d="M17.94 17.94A10.9 10.9 0 0112 19c-6.5 0-10-7-10-7a18.4 18.4 0 015.06-5.94M9.9 4.24A9.1 9.1 0 0112 4c6.5 0 10 7 10 7a18.5 18.5 0 01-2.16 3.19"/><path d="M14.12 14.12a3 3 0 11-4.24-4.24M1 1l22 22"/></svg>';
+  document.querySelectorAll('input[type="password"]').forEach(function(input){
+    var wrap = document.createElement("div");
+    wrap.className = "pwWrap";
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "pwToggle";
+    function paint(){
+      var shown = input.type === "text";
+      btn.innerHTML = shown ? EYE_OFF : EYE;
+      btn.setAttribute("aria-label", shown ? "Hide password" : "Show password");
+      btn.setAttribute("aria-pressed", shown ? "true" : "false");
+    }
+    btn.addEventListener("click", function(){
+      input.type = input.type === "password" ? "text" : "password";
+      paint();
+      input.focus();
+    });
+    paint();
+    wrap.appendChild(btn);
+  });
 })();
 </script>
 </body>
