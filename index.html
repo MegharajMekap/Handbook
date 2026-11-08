@@ -2807,7 +2807,13 @@ function calChipDone(r){
 /* ── admin-added calendar events (Firebase "calendarEvents", public read,
    written from the admin dashboard). Shown alongside classes on the
    month grid and in the timetable. ── */
+// last copy kept in this browser so events appear straight away, like the class schedule
+const EVENT_CACHE = "mekapEvents";
 let CAL_EVENTS = [];
+try {
+  const cached = JSON.parse(localStorage.getItem(EVENT_CACHE) || "null");
+  if(Array.isArray(cached)) CAL_EVENTS = cached.filter(e => e && e.title && /^\d{4}-\d{2}-\d{2}$/.test(e.date || ""));
+} catch(e) {}
 const EVENT_TYPES = {
   event:    { label: "Event",    color: "#2563EB", icon: "★" },
   deadline: { label: "Deadline", color: "#DC2626", icon: "⏰" },
@@ -3090,6 +3096,7 @@ if(typeof firebase !== "undefined" && firebase.apps && firebase.apps.length){
         link: /^https?:\/\//i.test(v.link || "") ? v.link : "" });
     });
     CAL_EVENTS = items;
+    try { localStorage.setItem(EVENT_CACHE, JSON.stringify(items)); } catch(e) {}
     if(!document.getElementById("panel-calendar").hidden) renderCalendar();
   }, () => {}); // unreadable (e.g. rules not set yet) — calendar just shows classes
 }
