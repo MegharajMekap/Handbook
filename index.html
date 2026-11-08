@@ -847,22 +847,26 @@
     padding:2px 7px;border-radius:5px;color:#fff;background:var(--ev);
   }
   .calEvNote{display:block;font-size:12px;color:var(--mute);margin-top:2px;font-weight:400}
-  /* while the first answer from Firebase is on its way, the cached chips and rows pulse and show a spinner */
-  @keyframes calSpin{to{transform:rotate(360deg)}}
-  @keyframes calSyncPulse{50%{opacity:.6}}
+  /* while the first answer from Firebase is on its way, cached chips get a light sweep and rows breathe;
+     nothing is added to the layout, so nothing can overlap the text or the + button */
+  @keyframes calShimmer{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+  @keyframes calSyncPulse{50%{opacity:.55}}
+  @keyframes calDot{50%{transform:scale(1.7);opacity:.35}}
   .calSyncC .calChip:not(.calChip-event):not(.calChip-ghost):not(.calChip-live),
-  .calSyncE .calChip-event:not(.calChip-ghost){animation:calSyncPulse 1.3s ease-in-out infinite}
-  .calSyncC .calChip:not(.calChip-event):not(.calChip-ghost),
-  .calSyncE .calChip-event:not(.calChip-ghost){position:relative}
-  .calSyncC .calChip:not(.calChip-event):not(.calChip-ghost) .calChipAdd,
-  .calSyncE .calChip-event:not(.calChip-ghost) .calChipAdd{visibility:hidden}
-  .calSyncC .calChip:not(.calChip-event):not(.calChip-ghost)::after,
-  .calSyncE .calChip-event:not(.calChip-ghost)::after,
-  .calSyncC .caltable tbody tr:not(.calRow-ev):not(.calPastToggle) td:first-child::after,
-  .calSyncE .caltable tbody tr.calRow-ev td:first-child::after{
-    content:"";position:absolute;right:5px;top:50%;width:9px;height:9px;margin-top:-4.5px;box-sizing:border-box;
-    border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:calSpin .7s linear infinite;
+  .calSyncE .calChip-event:not(.calChip-ghost){position:relative;overflow:hidden}
+  .calSyncC .calChip:not(.calChip-event):not(.calChip-ghost):not(.calChip-live)::after,
+  .calSyncE .calChip-event:not(.calChip-ghost)::after{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(100deg,transparent 25%,rgba(255,255,255,.6) 50%,transparent 75%);
+    animation:calShimmer 1.3s ease-in-out infinite;
   }
+  .calSyncC .caltable tbody tr:not(.calRow-ev):not(.calPastToggle),
+  .calSyncE .caltable tbody tr.calRow-ev{animation:calSyncPulse 1.4s ease-in-out infinite}
+  /* a clear "updating" badge beside the heading, so phones (where the chips are tiny) see it too */
+  .calSyncNote{display:none;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--navy);
+    background:var(--navy-tint);border-radius:999px;padding:3px 11px 3px 9px}
+  .calSyncNote::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;animation:calDot 1s ease-in-out infinite}
+  .calSyncC .calSyncNote,.calSyncE .calSyncNote{display:inline-flex}
   @media (prefers-reduced-motion:reduce){.calSyncC *,.calSyncE *{animation:none!important}}
   .caltable{
     width:100%;border-collapse:collapse;
@@ -1999,6 +2003,7 @@
       <div class="nhead">
         <h2>Calendar</h2>
         <span class="ntally" id="caltally"></span>
+        <span class="calSyncNote" role="status">Updating from server…</span>
       </div>
       <div id="calOut"></div>
     </section>
