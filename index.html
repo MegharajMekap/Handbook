@@ -3574,7 +3574,22 @@ setTab(startTab());
 const BASE_RECORDINGS = RECORDINGS.slice();
 const BASE_SUBJECTS = JSON.parse(JSON.stringify(SUBJECTS));
 const recKey = r => [r.date, r.time || "", r.subject].map(s => String(s).replace(/[^A-Za-z0-9]+/g, "")).join("_");
-const remoteRec = { urls:{}, extra:[], subs:{}, refs:[] };
+const remoteRec = { urls:{}, extra:[], subs:{}, classes:null, refs:[] };
+
+/* ── class schedule on the server ──
+   classes → every class session (public read, no links), keyed by a stable id
+   Once that node has data it replaces the built-in RECORDINGS list above. The last copy is cached
+   locally so the schedule still shows offline. */
+const CLASS_CACHE = "mekapClasses";
+function classFrom(key, v){
+  return { _key:key, date:v.date, time:v.time || "", ends:v.ends || "", subject:v.subject, faculty:v.faculty || "",
+    lecture:v.lecture || "Session", duration:v.duration || "", term:v.term || "", campus:!!v.campus,
+    thumb:v.thumb || "", url:"", passcode:"" };
+}
+try {
+  const cached = JSON.parse(localStorage.getItem(CLASS_CACHE) || "null");
+  if(Array.isArray(cached) && cached.length) remoteRec.classes = cached.filter(c => c && c._key && c.subject && c.date);
+} catch(e) {}
 
 function applyRemoteRecordings(){
   Object.keys(SUBJECTS).forEach(n => { delete SUBJECTS[n]; });
@@ -3583,14 +3598,26 @@ function applyRemoteRecordings(){
     const s = remoteRec.subs[k];
     if(s && s.name) SUBJECTS[s.name] = { code: s.code || "—", color: /^#[0-9a-f]{6}$/i.test(s.color || "") ? s.color : "#5D6892" };
   });
-  BASE_RECORDINGS.forEach(r => {
-    if(!("_u0" in r)){ r._u0 = r.url || ""; r._p0 = r.passcode || ""; }
-    const o = remoteRec.urls[recKey(r)];
-    r.url = o && o.url ? o.url : r._u0;
-    r.passcode = o && o.url ? (o.passcode || "") : r._p0;
-  });
+  let list;
+  if(remoteRec.classes && remoteRec.classes.length){
+    // server schedule: links come only from the admin-read recordingUrls node
+    remoteRec.classes.forEach(c => {
+      const o = remoteRec.urls[c._key];
+      c.url = o && o.url ? o.url : "";
+      c.passcode = o && o.url ? (o.passcode || "") : "";
+    });
+    list = remoteRec.classes;
+  } else {
+    BASE_RECORDINGS.forEach(r => {
+      if(!("_u0" in r)){ r._u0 = r.url || ""; r._p0 = r.passcode || ""; }
+      const o = remoteRec.urls[recKey(r)];
+      r.url = o && o.url ? o.url : r._u0;
+      r.passcode = o && o.url ? (o.passcode || "") : r._p0;
+    });
+    list = BASE_RECORDINGS.concat(remoteRec.extra);
+  }
   RECORDINGS.length = 0;
-  BASE_RECORDINGS.concat(remoteRec.extra).forEach(r => RECORDINGS.push(r));
+  list.forEach(r => RECORDINGS.push(r));
   sorted.length = 0;
   RECORDINGS.filter(r => !isQuiz(r)).sort((a,b) => stamp(b) - stamp(a)).forEach(r => sorted.push(r));
   buildChips();
@@ -3598,12 +3625,36 @@ function applyRemoteRecordings(){
   cntRecordings.textContent = sorted.filter(r => r.campus || hasRecordedUrl(r)).length;
 }
 
+const fbReady = () => typeof firebase !== "undefined" && firebase.apps && firebase.apps.length;
+
+/* public: the class schedule and subject colours — everyone */
+(function(){
+  if(remoteRec.classes) applyRemoteRecordings();   // cached copy first, in case we are offline
+  if(!fbReady()) return;
+  const db = firebase.database();
+  db.ref("recordingSubjects").on("value", snap => { remoteRec.subs = snap.val() || {}; applyRemoteRecordings(); }, () => {});
+  db.ref("classes").on("value", snap => {
+    const items = [];
+    snap.forEach(c => {
+      const v = c.val() || {};
+      if(v.subject && /^\d{4}-\d{2}-\d{2}$/.test(v.date || "")) items.push(classFrom(c.key, v));
+    });
+    remoteRec.classes = items.length ? items : null;   // empty node → keep the built-in list
+    try {
+      if(items.length) localStorage.setItem(CLASS_CACHE, JSON.stringify(items.map(c => Object.assign({}, c, { url:"", passcode:"" }))));
+      else localStorage.removeItem(CLASS_CACHE);
+    } catch(e) {}
+    applyRemoteRecordings();
+  }, () => {});   // unreadable (rules not published yet) — site keeps the built-in classes
+})();
+
+/* admin / super only: recording links, plus the legacy per-admin "recordings" node */
 function watchRemoteRecordings(on){
-  if(typeof firebase === "undefined" || !firebase.apps || !firebase.apps.length) return;
+  if(!fbReady()) return;
   if(!on){
     if(!remoteRec.refs.length) return;
     remoteRec.refs.forEach(x => x.ref.off("value", x.cb));
-    remoteRec.refs = []; remoteRec.urls = {}; remoteRec.extra = []; remoteRec.subs = {};
+    remoteRec.refs = []; remoteRec.urls = {}; remoteRec.extra = [];
     applyRemoteRecordings();
     return;
   }
@@ -3611,10 +3662,9 @@ function watchRemoteRecordings(on){
   const watch = (path, read) => {
     const ref = firebase.database().ref(path);
     const cb = snap => { read(snap); applyRemoteRecordings(); };
-    ref.on("value", cb, () => {}); // unreadable (rules not published yet) — site keeps the built-in classes
+    ref.on("value", cb, () => {});
     remoteRec.refs.push({ ref, cb });
   };
-  watch("recordingSubjects", snap => { remoteRec.subs = snap.val() || {}; });
   watch("recordingUrls", snap => { remoteRec.urls = snap.val() || {}; });
   watch("recordings", snap => {
     const items = [];

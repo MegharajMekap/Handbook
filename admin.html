@@ -999,7 +999,11 @@
 
     <div class="section" id="blkRecSessions">
       <div class="sectionHead"><h2><span class="dot" style="background:#7C3AED"></span><span id="rsFormTitle">Add class session</span></h2></div>
-      <p class="sectionNote">Creates a new class on the Recordings tab and the Calendar. Classes already on the site stay as they are.</p>
+      <p class="sectionNote">Creates a new class on the Recordings tab and the Calendar.</p>
+      <div class="sectionNote" id="rsMigrate" hidden>
+        <span id="rsMigrateText"></span>
+        <button type="button" class="annSubmit" id="rsMigrateBtn" style="margin-top:8px">Move classes to the server</button>
+      </div>
       <form class="annForm" id="rsForm">
         <div class="evGrid">
           <div class="field">
@@ -1810,7 +1814,9 @@ function notifyRecording(action, text){
 function startRecordings(){
   let base = { recs: [], subs: {} };
   let urls = {}, extra = [], subs = {};
-  let picked = null;        // { kind: "base"|"custom", key }
+  let classes = [];         // [{ key, val }] — the "classes" node; once non-empty it is the whole schedule
+  const onServer = function(){ return classes.length > 0; };
+  let picked = null;        // { kind: "class"|"base"|"custom", key }
   let editingSession = null;
   let shown = 20;
   let statusFilter = "need";
@@ -1831,6 +1837,12 @@ function startRecordings(){
     return out;
   }
   function sessions(){
+    if(onServer()){
+      return classes.map(function(e){
+        const o = urls[e.key];
+        return { kind: "class", key: e.key, r: e.val, url: (o && o.url) || "", pass: o ? (o.passcode || "") : "", overridden: !!(o && o.url) };
+      }).sort(function(a, b){ return recStamp(b.r) - recStamp(a.r); });
+    }
     const fromBase = base.recs.map(function(r){
       const key = recKey(r), o = urls[key];
       return { kind: "base", key: key, r: r, url: (o && o.url) || r.url || "", pass: o ? (o.passcode || "") : (r.passcode || ""), overridden: !!o };
@@ -1851,7 +1863,7 @@ function startRecordings(){
     if(names.indexOf(rlPrev) > -1) rl.value = rlPrev;
     if(names.indexOf(rsPrev) > -1) rs.value = rsPrev;
     const terms = {};
-    base.recs.concat(extra.map(function(e){ return e.val; })).forEach(function(r){ if(r.term) terms[r.term] = 1; });
+    (onServer() ? classes : base.recs.concat(extra)).map(function(e){ return e.val || e; }).forEach(function(r){ if(r.term) terms[r.term] = 1; });
     $("rsTermList").innerHTML = Object.keys(terms).map(function(t){ return '<option value="' + esc(t) + '">'; }).join("");
   }
 
@@ -1866,7 +1878,7 @@ function startRecordings(){
     $("rlPicked").classList.toggle("on", !!s);
     $("rlSave").disabled = !s;
     $("rlCancel").hidden = !s;
-    $("rlClear").hidden = !s || !(s.overridden || s.kind === "custom" && s.url);
+    $("rlClear").hidden = !s || !(s.overridden || s.kind === "custom" && s.url);   // (a "class" only has a link when overridden)
     $("rlClear").textContent = s && s.kind === "base" ? "Remove override" : "Remove link";
     $("rlUrl").value = s ? s.url : "";
     $("rlPass").value = s ? s.pass : "";
@@ -1888,7 +1900,7 @@ function startRecordings(){
       return true;
     });
     const el = $("rlList");
-    if(base.failed && !base.recs.length && !extra.length){
+    if(base.failed && !base.recs.length && !extra.length && !onServer()){
       el.innerHTML = '<div class="empty">Could not read the class list from the site. Reload the page and try again.</div>';
       return;
     }
@@ -1931,7 +1943,7 @@ function startRecordings(){
     const s = sessions().filter(function(x){ return x.key === picked.key; })[0];
     if(!s) return;
     $("rlSave").disabled = true;
-    const write = s.kind === "base"
+    const write = s.kind !== "custom"
       ? db.ref("recordingUrls/" + s.key).set({ url: url, passcode: pass || null, by: currentActor(), ts: firebase.database.ServerValue.TIMESTAMP })
       : db.ref("recordings/" + s.key).update({ url: url, passcode: pass || null });
     write.then(function(){
@@ -1947,7 +1959,7 @@ function startRecordings(){
     if(!picked || !confirm("Remove this link?")) return;
     const s = sessions().filter(function(x){ return x.key === picked.key; })[0];
     if(!s) return;
-    const w = s.kind === "base" ? db.ref("recordingUrls/" + s.key).remove() : db.ref("recordings/" + s.key).update({ url: null, passcode: null });
+    const w = s.kind !== "custom" ? db.ref("recordingUrls/" + s.key).remove() : db.ref("recordings/" + s.key).update({ url: null, passcode: null });
     w.then(function(){ setPicked(null); }).catch(function(err){ say($("rlMsg"), "Failed: " + err.message, false); });
   });
 
@@ -1955,9 +1967,11 @@ function startRecordings(){
   function syncDur(){ $("rsDur").value = recDuration($("rsStart").value, $("rsEnd").value); }
   $("rsStart").addEventListener("change", syncDur);
   $("rsEnd").addEventListener("change", syncDur);
+  // the sessions an admin can edit here: every class once the schedule is on the server, else only the ones added from the dashboard
+  function editable(){ return onServer() ? classes : extra; }
   function setSessionEdit(key){
     editingSession = key || null;
-    const e = key && extra.filter(function(x){ return x.key === key; })[0];
+    const e = key && editable().filter(function(x){ return x.key === key; })[0];
     $("rsFormTitle").textContent = e ? "Edit class session" : "Add class session";
     $("rsSubmitLabel").textContent = e ? "Save changes" : "Add session";
     $("rsCancel").hidden = !e;
@@ -1968,7 +1982,9 @@ function startRecordings(){
       $("rsFaculty").value = v.faculty || ""; $("rsTerm").value = v.term || "";
       $("rsDate").value = v.date || "";
       $("rsStart").value = from12(v.time); $("rsEnd").value = from12(v.ends);
-      $("rsUrl").value = v.url || ""; $("rsPass").value = v.passcode || "";
+      const o = onServer() ? urls[key] : null;
+      $("rsUrl").value = onServer() ? ((o && o.url) || "") : (v.url || "");
+      $("rsPass").value = onServer() ? ((o && o.passcode) || "") : (v.passcode || "");
       $("rsCampus").checked = !!v.campus;
       syncDur();
       $("rsForm").scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1996,7 +2012,18 @@ function startRecordings(){
     $("rsSubmit").disabled = true;
     const label = payload.subject + " — " + payload.lecture;
     let w;
-    if(editingSession){
+    if(onServer()){
+      // schedule fields are public ("classes"); the link and passcode go to the admin-only "recordingUrls"
+      const link = { url: payload.url, pass: payload.passcode };
+      delete payload.url; delete payload.passcode;
+      const ref = editingSession ? db.ref("classes/" + editingSession) : db.ref("classes").push();
+      const upd = {};
+      Object.keys(payload).forEach(function(k){ upd["classes/" + ref.key + "/" + k] = payload[k]; });
+      if(editingSession) upd["classes/" + ref.key + "/editedBy"] = currentActor();
+      else { upd["classes/" + ref.key + "/createdBy"] = currentActor(); upd["classes/" + ref.key + "/ts"] = firebase.database.ServerValue.TIMESTAMP; }
+      upd["recordingUrls/" + ref.key] = link.url ? { url: link.url, passcode: link.pass, by: currentActor(), ts: firebase.database.ServerValue.TIMESTAMP } : null;
+      w = db.ref().update(upd);
+    } else if(editingSession){
       payload.editedBy = currentActor();
       w = db.ref("recordings/" + editingSession).update(payload);
     } else {
@@ -2014,14 +2041,14 @@ function startRecordings(){
   });
   function renderSessions(){
     const el = $("rsList");
-    const rows = extra.slice().sort(function(a, b){ return recStamp(b.val) - recStamp(a.val); });
+    const rows = editable().slice().sort(function(a, b){ return recStamp(b.val) - recStamp(a.val); });
     if(!rows.length){ el.innerHTML = '<div class="empty">No sessions added from here yet.</div>'; return; }
     el.innerHTML = rows.map(function(e){
       const v = e.val;
       const meta = [esc(v.date) + (v.time ? " · " + esc(v.time) + (v.ends ? " – " + esc(v.ends) : "") : "")];
       if(v.term) meta.push(esc(v.term));
       if(v.campus) meta.push('<span class="tag">On campus</span>');
-      else meta.push(v.url ? '<span class="tag new">Linked</span>' : '<span class="tag">No link</span>');
+      else meta.push((onServer() ? (urls[e.key] && urls[e.key].url) : v.url) ? '<span class="tag new">Linked</span>' : '<span class="tag">No link</span>');
       return '<div class="annCard' + (e.key === editingSession ? ' editing' : '') + '" data-key="' + esc(e.key) + '">' +
         '<div class="txt"><p>' + esc(v.subject) + ' — ' + esc(v.lecture) + '</p><div class="meta">' + meta.join(" · ") + '</div></div>' +
         '<div class="annActions">' +
@@ -2032,9 +2059,10 @@ function startRecordings(){
     [].forEach.call(el.querySelectorAll("[data-edit]"), function(b){ b.addEventListener("click", function(){ setSessionEdit(b.dataset.edit); }); });
     [].forEach.call(el.querySelectorAll("[data-del]"), function(b){
       b.addEventListener("click", function(){
-        const e = extra.filter(function(x){ return x.key === b.dataset.del; })[0];
+        const e = editable().filter(function(x){ return x.key === b.dataset.del; })[0];
         if(!e || !confirm("Delete this session?")) return;
-        db.ref("recordings/" + e.key).remove().then(function(){ notifyRecording("delete", e.val.subject + " — " + e.val.lecture); });
+        const gone = onServer() ? db.ref().update({ ["classes/" + e.key]: null, ["recordingUrls/" + e.key]: null }) : db.ref("recordings/" + e.key).remove();
+        gone.then(function(){ notifyRecording("delete", e.val.subject + " — " + e.val.lecture); });
       });
     });
   }
@@ -2107,7 +2135,7 @@ function startRecordings(){
   function renderAll(){
     fillSubjectSelects();
     if(picked && !sessions().some(function(s){ return s.key === picked.key; })) picked = null;
-    renderLinks(); renderSessions(); renderSubjects();
+    renderLinks(); renderSessions(); renderSubjects(); renderMigrate();
   }
   loadRecBase().then(function(b){ base = b; renderAll(); });
   trackListener(db.ref("recordingUrls"), function(snap){ urls = snap.val() || {}; renderAll(); });
@@ -2115,8 +2143,52 @@ function startRecordings(){
   trackListener(db.ref("recordings"), function(snap){
     extra = [];
     snap.forEach(function(c){ const v = c.val(); if(v && v.subject && v.date) extra.push({ key: c.key, val: v }); });
-    if(editingSession && !extra.some(function(x){ return x.key === editingSession; })) setSessionEdit(null);
+    if(editingSession && !editable().some(function(x){ return x.key === editingSession; })) setSessionEdit(null);
     renderAll();
+  });
+  trackListener(db.ref("classes"), function(snap){
+    classes = [];
+    snap.forEach(function(c){ const v = c.val(); if(v && v.subject && v.date) classes.push({ key: c.key, val: v }); });
+    if(editingSession && !editable().some(function(x){ return x.key === editingSession; })) setSessionEdit(null);
+    renderAll();
+  });
+
+  /* ---------- one-time move of the built-in classes to the server ---------- */
+  const CLASS_FIELDS = ["date", "time", "ends", "subject", "faculty", "lecture", "duration", "term", "campus", "thumb"];
+  function toClass(r){
+    const c = {};
+    CLASS_FIELDS.forEach(function(f){ if(r[f]) c[f] = r[f]; });
+    return c;
+  }
+  function renderMigrate(){
+    const box = $("rsMigrate");
+    const can = !onServer() && !base.failed && (base.recs.length || extra.length);
+    box.hidden = !can;
+    if(can) $("rsMigrateText").textContent = "The class schedule is still built into the site (" + (base.recs.length + extra.length) +
+      " sessions). Move it to the server so classes can be added, edited and removed here without a code change.";
+  }
+  $("rsMigrateBtn").addEventListener("click", function(){
+    if(onServer() || !confirm("Copy all classes to the server? Existing links are kept; nothing is deleted.")) return;
+    const upd = {}, stamp = firebase.database.ServerValue.TIMESTAMP;
+    function link(key, url, pass){
+      if(isHttps(url) && !recPending(url)) upd["recordingUrls/" + key] = { url: url, passcode: pass || null, by: currentActor(), ts: stamp };
+    }
+    base.recs.forEach(function(r){
+      const key = recKey(r), o = urls[key];
+      upd["classes/" + key] = toClass(r);
+      link(key, (o && o.url) || r.url, o ? o.passcode : r.passcode);
+    });
+    extra.forEach(function(e){
+      upd["classes/" + e.key] = toClass(e.val);
+      link(e.key, e.val.url, e.val.passcode);
+    });
+    $("rsMigrateBtn").disabled = true;
+    db.ref().update(upd).then(function(){
+      notifyRecording("add", "Moved " + Object.keys(upd).filter(function(k){ return k.indexOf("classes/") === 0; }).length + " classes to the server");
+      say($("rsMsg"), "Done — the schedule now lives on the server.", true);
+    }).catch(function(err){
+      say($("rsMsg"), "Failed: " + err.message + ". Publish the latest database.rules.json in the Firebase console and retry.", false);
+    }).finally(function(){ $("rsMigrateBtn").disabled = false; });
   });
 }
 
