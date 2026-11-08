@@ -174,6 +174,7 @@
     background:#1E8A4C;flex:none;
     animation:livePulse 1.8s ease-in-out infinite;
   }
+  .clock .sep{width:1px;height:12px;background:currentColor;opacity:.35;margin:0 5px;flex:none}
   .term .live{
     color:#1E8A4C;font-weight:700;
     animation:livePulse 1.8s ease-in-out infinite;
@@ -846,6 +847,23 @@
     padding:2px 7px;border-radius:5px;color:#fff;background:var(--ev);
   }
   .calEvNote{display:block;font-size:12px;color:var(--mute);margin-top:2px;font-weight:400}
+  /* while the first answer from Firebase is on its way, the cached chips and rows pulse and show a spinner */
+  @keyframes calSpin{to{transform:rotate(360deg)}}
+  @keyframes calSyncPulse{50%{opacity:.6}}
+  .calSyncC .calChip:not(.calChip-event):not(.calChip-ghost):not(.calChip-live),
+  .calSyncE .calChip-event:not(.calChip-ghost){animation:calSyncPulse 1.3s ease-in-out infinite}
+  .calSyncC .calChip:not(.calChip-event):not(.calChip-ghost),
+  .calSyncE .calChip-event:not(.calChip-ghost){position:relative}
+  .calSyncC .calChip:not(.calChip-event):not(.calChip-ghost) .calChipAdd,
+  .calSyncE .calChip-event:not(.calChip-ghost) .calChipAdd{visibility:hidden}
+  .calSyncC .calChip:not(.calChip-event):not(.calChip-ghost)::after,
+  .calSyncE .calChip-event:not(.calChip-ghost)::after,
+  .calSyncC .caltable tbody tr:not(.calRow-ev):not(.calPastToggle) td:first-child::after,
+  .calSyncE .caltable tbody tr.calRow-ev td:first-child::after{
+    content:"";position:absolute;right:5px;top:50%;width:9px;height:9px;margin-top:-4.5px;box-sizing:border-box;
+    border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:calSpin .7s linear infinite;
+  }
+  @media (prefers-reduced-motion:reduce){.calSyncC *,.calSyncE *{animation:none!important}}
   .caltable{
     width:100%;border-collapse:collapse;
     background:var(--card);border:1px solid var(--line);
@@ -2808,6 +2826,17 @@ function calChipDone(r){
    written from the admin dashboard). Shown alongside classes on the
    month grid and in the timetable. ── */
 // last copy kept in this browser so events appear straight away, like the class schedule
+/* true while we are still waiting for Firebase's first answer; the cached chips and rows spin meanwhile
+   (it also stops on an error or after 8s, so an offline visit does not spin forever) */
+const calSync = { classes: true, events: true };
+const calPanelEl = document.getElementById("panel-calendar");
+function calSyncDone(which){
+  calSync[which] = false;
+  calPanelEl.classList.remove(which === "classes" ? "calSyncC" : "calSyncE");
+}
+calPanelEl.classList.add("calSyncC", "calSyncE");
+setTimeout(() => { calSyncDone("classes"); calSyncDone("events"); }, 8000);
+if(typeof firebase === "undefined" || !firebase.apps || !firebase.apps.length){ calSyncDone("classes"); calSyncDone("events"); }
 const EVENT_CACHE = "mekapEvents";
 let CAL_EVENTS = [];
 try {
@@ -2867,7 +2896,7 @@ function calEventRow(e){
   const t = evType(e);
   const d = d0(e.date);
   const done = evEndStamp(e) <= Date.now();
-  return '<tr' + (done ? ' class="calRow-done"' : '') + ' style="--accent:' + t.color + ';--ev:' + t.color + '">' +
+  return '<tr class="calRow-ev' + (done ? ' calRow-done' : '') + '" style="--accent:' + t.color + ';--ev:' + t.color + '">' +
     '<td><span class="calDateDow">' + DOW[d.getDay()].slice(0,3) + '</span>' +
       '<span class="calDateNum">' + d.getDate() + ' ' + MON[d.getMonth()].slice(0,3) + '</span></td>' +
     '<td><span class="calEvType">' + t.label + '</span> <strong>' + esc(e.title) + '</strong>' +
@@ -2992,6 +3021,7 @@ function calMonthBlock(year, month, upcoming, past, events, todayFlag, emptyHtml
 
 
 /* month filter — null means "the current month" */
+let calLastHtml = "";   // what the calendar view currently shows
 let calView = null;
 let calSel = null; // month index currently shown
 const calPrev = { disabled: false };   // first / last month reached (drives the header arrows)
@@ -3075,10 +3105,12 @@ function renderCalendar(){
         '<button class="reset" id="calReset">Show everything</button></div>'
     : '<p class="calNoClass">No classes scheduled in ' + MON[month] + ' ' + year + '.</p>';
 
-  calOut.innerHTML = '<p class="calLegend">Tap a class or its “Open link” to view the recording · tinted chips are events and deadlines · <span class="calLegendCampus">' + CAMPUS_ICO + 'striped = offline class on campus</span> · tap + to add any of them to your own calendar.</p>' +
+  const calHtml = '<p class="calLegend">Tap a class or its “Open link” to view the recording · tinted chips are events and deadlines · <span class="calLegendCampus">' + CAMPUS_ICO + 'striped = offline class on campus</span> · tap + to add any of them to your own calendar.</p>' +
     calMonthBlock(year, month, upcoming, past, events, todayFlagText(), emptyHtml,
       RECORDINGS.filter(r => !inMonth(r) && matchesFilter(r, q))
         .concat(CAL_EVENTS.filter(e => !inMonth(e) && evMatches(e, q))));
+  // the 20s timer re-renders this view; rewriting identical HTML would replay the cell/flag animations (a flicker)
+  if(calHtml !== calLastHtml){ calLastHtml = calHtml; calOut.innerHTML = calHtml; }
 
   caltally.textContent = filtering
     ? list.length + " of " + upcomingAll.length + " upcoming classes"
@@ -3098,7 +3130,8 @@ if(typeof firebase !== "undefined" && firebase.apps && firebase.apps.length){
     CAL_EVENTS = items;
     try { localStorage.setItem(EVENT_CACHE, JSON.stringify(items)); } catch(e) {}
     if(!document.getElementById("panel-calendar").hidden) renderCalendar();
-  }, () => {}); // unreadable (e.g. rules not set yet) — calendar just shows classes
+    calSyncDone("events");
+  }, () => calSyncDone("events")); // unreadable (e.g. rules not set yet) — calendar just shows classes
 }
 
 /* ── tabs ── */
@@ -3447,7 +3480,8 @@ const fbReady = () => typeof firebase !== "undefined" && firebase.apps && fireba
       else localStorage.removeItem(CLASS_CACHE);
     } catch(e) {}
     applyRemoteRecordings();
-  }, () => {});   // unreadable — the cached copy, if any, stays on screen
+    calSyncDone("classes");
+  }, () => calSyncDone("classes"));   // unreadable — the cached copy, if any, stays on screen
 })();
 
 /* admin / super only: recording links */
@@ -3927,7 +3961,7 @@ window.mekapSetSuper = function(isSuper){
     const now = new Date();
     const dateStr = now.toLocaleDateString(undefined, { weekday:"short", day:"numeric", month:"short" });
     const timeStr = now.toLocaleTimeString(undefined, { hour:"2-digit", minute:"2-digit", second:"2-digit" });
-    el.innerHTML = '<span class="dot"></span>' + esc(dateStr) + ' · ' + esc(timeStr);
+    el.innerHTML = '<span class="dot"></span><span>' + esc(dateStr) + '</span><span class="sep" aria-hidden="true"></span><span>' + esc(timeStr) + '</span>';
   }
   tick();
   setInterval(tick, 1000);
