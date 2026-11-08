@@ -2428,200 +2428,11 @@
 </script>
 
 <script>
-/* ══════════════════════════════════════════════════════════════
-   1. ADD YOUR RECORDINGS HERE
-   Copy one block, paste it above the others, edit the values.
-   lecture → the name of the lecture, e.g. "Sampling distributions"
-   date  → YYYY-MM-DD
-   url   → paste the recording link. Leave it as "" and the card
-           shows "Link coming soon" until you fill it in.
-           Recordings stay on Google Drive (YouTube isn't an option
-           per IIM policy). Drive's own in-page video player can fail
-           with "There was a problem playing this video" when opened
-           inside an in-app browser (WhatsApp, Instagram, LinkedIn,
-           etc.) rather than a real browser — this is a Drive/WebView
-           limitation, not a broken link. If a student reports this,
-           tell them to tap the ⋮ menu in that in-app browser and
-           choose "Open in Chrome"/"Open in browser" — the same link
-           plays fine there.
-   thumb → optional image URL. For YouTube use:
-           https://img.youtube.com/vi/VIDEO_ID/hqdefault.jpg
-   ══════════════════════════════════════════════════════════════ */
-
-/* TODO (PRIORITY — security): the recording URLs below (Google Drive links on finished sessions) are
-   readable by anyone via View Source. Hiding them in the UI (canOpenLink) is cosmetic only.
-   Plan: move recording links to a Firebase node (e.g. "recordingLinks") whose rules allow read only for
-   admin/super, drop them from this file, and fetch them after sign-in. Keep live-class join links of
-   upcoming sessions public (separate node or stay here). Do this before sharing the site widely. */
-const RECORDINGS = [
-  // ---- Term 1 Phase 1 ----
-  { date:"2026-07-18", time:"3:45 PM", ends:"6:30 PM", subject:"Marketing Management I", faculty:"Prof. Utkarsh",
-    lecture:"Session 1", duration:"2h 30m", term:"Term 1 Phase 1", campus:true, url:"", passcode:"" },
-  { date:"2026-07-18", time:"6:45 PM", ends:"9:30 PM", subject:"Business Statistics", faculty:"Prof. Jimut Bahan Chakrabarty",
-    lecture:"Session 1", duration:"2h 30m", term:"Term 1 Phase 1", campus:true, url:"", passcode:"" },
-  { date:"2026-07-19", time:"10:00 AM", ends:"12:45 PM", subject:"Business Statistics", faculty:"Prof. Jimut Bahan Chakrabarty",
-    lecture:"Session 2", duration:"2h 30m", term:"Term 1 Phase 1", campus:true, url:"", passcode:"" },
-  { date:"2026-07-19", time:"1:45 PM", ends:"4:30 PM", subject:"Marketing Management I", faculty:"Prof. Utkarsh",
-    lecture:"Session 2", duration:"2h 30m", term:"Term 1 Phase 1", campus:true, url:"", passcode:"" },
-  { date:"2026-07-25", time:"1:00 PM", ends:"3:45 PM", subject:"Business Statistics", faculty:"Prof. Jimut Bahan Chakrabarty",
-    lecture:"Session 3", duration:"2h 30m", term:"Term 1 Phase 1", thumb:"thumbnails/BS/session3.jpg", url:"", passcode:"" },
-  { date:"2026-07-25", time:"4:00 PM", ends:"6:45 PM", subject:"Marketing Management I", faculty:"Prof. Utkarsh",
-    lecture:"Session 3", duration:"2h 30m", term:"Term 1 Phase 1", url:"", passcode:"" },
-  { date:"2026-07-26", time:"9:00 AM", ends:"11:45 AM", subject:"Business Statistics", faculty:"Prof. Jimut Bahan Chakrabarty",
-    lecture:"Session 4", duration:"2h 30m", term:"Term 1 Phase 1", thumb:"thumbnails/BS/session4.jpg", url:"", passcode:"" },
-  { date:"2026-07-26", time:"1:00 PM", ends:"3:45 PM", subject:"Marketing Management I", faculty:"Prof. Utkarsh",
-    lecture:"Session 4", duration:"2h 30m", term:"Term 1 Phase 1", url:"", passcode:"" },
-  { date:"2026-08-01", time:"1:00 PM", ends:"3:45 PM", subject:"Marketing Management I", faculty:"Prof. Utkarsh",
-    lecture:"Session 5", duration:"2h 30m", term:"Term 1 Phase 1", url:"", passcode:"" },
-  { date:"2026-08-01", time:"4:00 PM", ends:"6:45 PM", subject:"Business Statistics", faculty:"Prof. Jimut Bahan Chakrabarty",
-    lecture:"Session 5", duration:"2h 30m", term:"Term 1 Phase 1", thumb:"thumbnails/BS/session5.jpg", url:"", passcode:"" },
-  { date:"2026-08-02", time:"9:00 AM", ends:"11:45 AM", subject:"Marketing Management I", faculty:"Prof. Utkarsh",
-    lecture:"Session 6", duration:"2h 30m", term:"Term 1 Phase 1", url:"", passcode:"" },
-  { date:"2026-08-02", time:"1:00 PM", ends:"3:45 PM", subject:"Business Statistics", faculty:"Prof. Jimut Bahan Chakrabarty",
-    lecture:"Session 6", duration:"2h 30m", term:"Term 1 Phase 1", thumb:"thumbnails/BS/session6.jpg", url:"", passcode:"" },
-  { date:"2026-08-08", time:"1:00 PM", ends:"3:45 PM", subject:"Marketing Management I", faculty:"Prof. Utkarsh",
-    lecture:"Session 7", duration:"2h 30m", term:"Term 1 Phase 1", url:"", passcode:"" },
-  { date:"2026-08-08", time:"4:00 PM", ends:"6:45 PM", subject:"Business Statistics", faculty:"Prof. Jimut Bahan Chakrabarty",
-    lecture:"Session 7", duration:"2h 30m", term:"Term 1 Phase 1", thumb:"thumbnails/BS/session7.jpg", url:"", passcode:"" },
-  { date:"2026-08-09", time:"9:00 AM", ends:"11:45 AM", subject:"Business Statistics", faculty:"Prof. Jimut Bahan Chakrabarty",
-    lecture:"Session 8", duration:"2h 30m", term:"Term 1 Phase 1", thumb:"thumbnails/BS/session8.jpg", url:"", passcode:"" },
-  { date:"2026-08-09", time:"2:15 PM", ends:"5:00 PM", subject:"Marketing Management I", faculty:"Prof. Utkarsh",
-    lecture:"Session 8", duration:"2h 30m", term:"Term 1 Phase 1", url:"", passcode:"" },
-  { date:"2026-08-22", time:"1:00 PM", ends:"3:45 PM", subject:"Marketing Management I", faculty:"Prof. Utkarsh",
-    lecture:"Session 9", duration:"2h 55m", term:"Term 1 Phase 1", thumb:"thumbnails/MM1/session9.png", url:"https://drive.google.com/file/d/1LOEhF6ZCBFlGssrK7t0jVM6HjB9gTws5/view?usp=sharing", passcode:"" },
-  { date:"2026-08-22", time:"4:00 PM", ends:"6:45 PM", subject:"Business Statistics", faculty:"Prof. Jimut Bahan Chakrabarty",
-    lecture:"Session 9", duration:"2h 49m", term:"Term 1 Phase 1", thumb:"thumbnails/BS/session9.png", url:"https://drive.google.com/file/d/15xGqeDRECva12mqpfuX-_-XYh_3p9a1R/view?usp=sharing", passcode:"" },
-  { date:"2026-08-23", time:"9:00 AM", ends:"11:45 AM", subject:"Marketing Management I", faculty:"Prof. Utkarsh",
-    lecture:"Session 10", duration:"3h 45m", term:"Term 1 Phase 1", thumb:"thumbnails/MM1/session10.png", url:"https://drive.google.com/file/d/11lXn3iTWct5JhGt1UMJTnkCNmDSQTJ0e/view?usp=sharing", passcode:"" },
-  { date:"2026-08-23", time:"1:00 PM", ends:"3:45 PM", subject:"Business Statistics", faculty:"Prof. Jimut Bahan Chakrabarty",
-    lecture:"Session 10", duration:"3h 2m", term:"Term 1 Phase 1", thumb:"thumbnails/BS/session10.png", url:"https://drive.google.com/file/d/1Vf_1QbMogga8tI-qFn19uSvTEFne_tbH/view?usp=sharing", passcode:"" },
-
-  // ---- Term 1 Phase 2 ----
-  { date:"2026-09-05", time:"1:00 PM", ends:"3:45 PM", subject:"Financial Reporting and Analysis", faculty:"Prof. Ashish Kumar",
-    lecture:"Session 1", duration:"3h 12m", term:"Term 1 Phase 2", thumb:"thumbnails/FRA/session1.png", url:"https://drive.google.com/file/d/1-7wyHl7tcYZTXxukIKyawGlIk9YVERwk/view?usp=sharing", passcode:"" },
-  { date:"2026-09-05", time:"4:00 PM", ends:"6:45 PM", subject:"Organizational Behaviour", faculty:"Prof. Subramaniyam",
-    lecture:"Session 1", duration:"2h 52m", term:"Term 1 Phase 2", thumb:"thumbnails/OB/session1.png", url:"https://drive.google.com/file/d/1ieip3ESuAx4sVWiqLYVUW1zPPpTMWY5Z/view?usp=sharing", passcode:"" },
-  { date:"2026-09-06", time:"9:00 AM", ends:"11:45 AM", subject:"Organizational Behaviour", faculty:"Prof. Subramaniyam",
-    lecture:"Session 2", duration:"2h 52m", term:"Term 1 Phase 2", thumb:"thumbnails/OB/session2.png", url:"https://drive.google.com/file/d/11qPofzfrTVsHDIdlCDkXfvsNkbrZ3x9d/view?usp=sharing", passcode:"" },
-  { date:"2026-09-06", time:"1:00 PM", ends:"3:45 PM", subject:"Financial Reporting and Analysis", faculty:"Prof. Ashish Kumar",
-    lecture:"Session 2", duration:"3h 6m", term:"Term 1 Phase 2", thumb:"thumbnails/FRA/session2.png", url:"https://drive.google.com/file/d/1UyeQOikyWLeuq0WJxbCxbVjwwJtk4KHX/view?usp=sharing", passcode:"" },
-  { date:"2026-09-12", time:"1:00 PM", ends:"3:45 PM", subject:"Organizational Behaviour", faculty:"Prof. Subramaniyam",
-    lecture:"Session 3", duration:"2h 56m", term:"Term 1 Phase 2", thumb:"thumbnails/OB/session3.jpg", url:"https://drive.google.com/file/d/1Gngbj-tWqkxfpSwF5zDg8jcV2CMfZTKy/view?usp=sharing", passcode:"" },
-  { date:"2026-09-12", time:"4:00 PM", ends:"6:45 PM", subject:"Financial Reporting and Analysis", faculty:"Prof. Ashish Kumar",
-    lecture:"Session 3", duration:"3h 0m", term:"Term 1 Phase 2", thumb:"thumbnails/FRA/session3.jpg", url:"https://drive.google.com/file/d/1esF0rGoIQYJSGq39wAnS8RaEHLRqPvWo/view?usp=sharing", passcode:"" },
-  { date:"2026-09-13", time:"9:00 AM", ends:"11:45 AM", subject:"Organizational Behaviour", faculty:"Prof. Subramaniyam",
-    lecture:"Session 4", duration:"3h 6m", term:"Term 1 Phase 2", thumb:"thumbnails/OB/session4.jpg", url:"https://drive.google.com/file/d/16Td2dr5XvnibWGYY69zWujxxGpFu0UBq/view?usp=sharing", passcode:"" },
-  { date:"2026-09-13", time:"1:00 PM", ends:"3:45 PM", subject:"Financial Reporting and Analysis", faculty:"Prof. Ashish Kumar",
-    lecture:"Session 4", duration:"4h 6m", term:"Term 1 Phase 2", thumb:"thumbnails/FRA/session4.jpg", url:"https://drive.google.com/file/d/1gJm1NrgkhQeeMlFz7LnidAEm0ALV-osX/view?usp=sharing", passcode:"" },
-  { date:"2026-09-19", time:"1:00 PM", ends:"3:45 PM", brk:"2:15 PM – 2:30 PM", subject:"Financial Reporting and Analysis", faculty:"Prof. Ashish Kumar",
-    lecture:"Session 5", duration:"3h 4m", term:"Term 1 Phase 2", url:"https://drive.google.com/file/d/1ayqhX71IFq-8BdGmFE6UCam06XSF8z8h/view?usp=sharing", passcode:"" },
-  { date:"2026-09-19", time:"4:00 PM", ends:"6:45 PM", brk:"5:15 PM – 5:30 PM", subject:"Executive Communications", faculty:"Prof. Smarak Samarjeet",
-    lecture:"Session 1", duration:"2h 57m", term:"Term 1 Phase 2", url:"https://drive.google.com/file/d/1nHZkyOBbALVFXdobrzq6KXVtJhpinE7t/view?usp=sharing", passcode:"" },
-  { date:"2026-09-20", time:"9:00 AM", ends:"11:45 AM", brk:"10:15 AM – 10:30 AM", subject:"Executive Communications", faculty:"Prof. Smarak Samarjeet",
-    lecture:"Session 2", duration:"2h 52m", term:"Term 1 Phase 2", url:"https://drive.google.com/file/d/1gmw752mMOjP8R6tqavXXWHm8HIl8bTb1/view?usp=sharing", passcode:"" },
-  { date:"2026-09-20", time:"1:00 PM", ends:"3:45 PM", brk:"2:15 PM – 2:30 PM", subject:"Financial Reporting and Analysis", faculty:"Prof. Ashish Kumar",
-    lecture:"Session 6", duration:"4h 49m", term:"Term 1 Phase 2", url:"https://drive.google.com/file/d/1XftUpiEuuzHNbiKLKokgPT0d7Hy0rsZ-/view?usp=sharing", passcode:"" },
-  { date:"2026-09-26", time:"1:00 PM", ends:"3:45 PM", subject:"Organizational Behaviour", faculty:"Prof. Subramaniyam",
-    lecture:"Session 5", duration:"2h 30m", term:"Term 1 Phase 2", campus:true, url:"", passcode:"" },
-  { date:"2026-09-26", time:"4:00 PM", ends:"6:45 PM", subject:"Financial Reporting and Analysis", faculty:"Prof. Ashish Kumar",
-    lecture:"Session 7", duration:"2h 30m", term:"Term 1 Phase 2", campus:true, url:"", passcode:"" },
-  { date:"2026-09-27", time:"9:00 AM", ends:"11:45 AM", subject:"Financial Reporting and Analysis", faculty:"Prof. Ashish Kumar",
-    lecture:"Session 8", duration:"2h 30m", term:"Term 1 Phase 2", campus:true, url:"", passcode:"" },
-  { date:"2026-09-27", time:"1:00 PM", ends:"3:45 PM", subject:"Executive Communications", faculty:"Prof. Smarak Samarjeet",
-    lecture:"Session 3", duration:"2h 30m", term:"Term 1 Phase 2", campus:true, url:"", passcode:"" },
-  { date:"2026-10-03", time:"1:00 PM", ends:"3:45 PM", brk:"2:15 PM – 2:30 PM", subject:"Financial Reporting and Analysis", faculty:"Prof. Ashish Kumar",
-    lecture:"Session 9", duration:"2h 36m", term:"Term 1 Phase 2", url:"https://drive.google.com/file/d/11WCS51-ezd-5UF1VHTkiFGo1tiNFGW7K/view?usp=sharing", passcode:"" },
-  { date:"2026-10-03", time:"4:00 PM", ends:"6:45 PM", brk:"5:15 PM – 5:30 PM", subject:"Executive Communications", faculty:"Prof. Smarak Samarjeet",
-    lecture:"Session 4", duration:"2h 58m", term:"Term 1 Phase 2", url:"https://drive.google.com/file/d/1LFcj26JMv2Aq65eF7pjyEXqAbiPGK4RE/view?usp=sharing", passcode:"" },
-  { date:"2026-10-04", time:"9:00 AM", ends:"11:45 AM", brk:"10:15 AM – 10:30 AM", subject:"Executive Communications", faculty:"Prof. Smarak Samarjeet",
-    lecture:"Session 5", duration:"2h 49m", term:"Term 1 Phase 2", url:"https://drive.google.com/file/d/1MBoleguFJEOgBL9hczVr4ewCRaXQwe5d/view?usp=sharing", passcode:"" },
-  { date:"2026-10-04", time:"1:00 PM", ends:"3:45 PM", brk:"2:15 PM – 2:30 PM", subject:"Financial Reporting and Analysis", faculty:"Prof. Ashish Kumar",
-    lecture:"Session 10", duration:"3h 3m", term:"Term 1 Phase 2", url:"https://drive.google.com/file/d/1vjqVW444C82Wj9eQIzWKZGen5NXgZvBI/view?usp=sharing", passcode:"" },
-
-  // ---- Term 2 Phase 1 ----
-  { date:"2026-10-17", time:"1:00 PM", ends:"3:45 PM", brk:"2:15 PM – 2:30 PM", subject:"Managerial Economics", faculty:"Prof. Gyasuddin Ansari",
-    lecture:"Session 1", duration:"2h 48m", term:"Term 2 Phase 1", url:"https://drive.google.com/file/d/1tqhMkc2SiIDyhT8fv2mlUqEDq7Yq3fO1/view?usp=sharing", passcode:"" },
-  { date:"2026-10-18", time:"9:00 AM", ends:"11:45 AM", brk:"10:15 AM – 10:30 AM", subject:"Managerial Economics", faculty:"Prof. Gyasuddin Ansari",
-    lecture:"Session 2", duration:"2h 49m", term:"Term 2 Phase 1", url:"https://drive.google.com/file/d/1IgVAtk7jdmTIvVO5HPzscnT-U-dGjLvb/view?usp=sharing", passcode:"" },
-  { date:"2026-10-24", time:"1:00 PM", ends:"3:45 PM", brk:"2:15 PM – 2:30 PM", subject:"Corporate Communication Strategy", faculty:"Prof. Smarak Samarjeet",
-    lecture:"Session 1", duration:"2h 30m", term:"Term 2 Phase 1", url:"https://iimkashipur-ac-in.zoom.us/j/85694728635?pwd=2aNCQXsrXlUrG4xcm9Cy753HdErY43.1", passcode:"" },
-  { date:"2026-10-24", time:"4:00 PM", ends:"6:45 PM", brk:"5:15 PM – 5:30 PM", subject:"Managerial Economics", faculty:"Prof. Gyasuddin Ansari",
-    lecture:"Session 3", duration:"2h 30m", term:"Term 2 Phase 1", url:"https://iimkashipur-ac-in.zoom.us/j/89258773034?pwd=avggQRLTk9mJJ95G3ZnPdTFDguyVBX.1", passcode:"" },
-  { date:"2026-10-25", time:"9:00 AM", ends:"11:45 AM", brk:"10:15 AM – 10:30 AM", subject:"Corporate Communication Strategy", faculty:"Prof. Smarak Samarjeet",
-    lecture:"Session 2", duration:"2h 30m", term:"Term 2 Phase 1", url:"https://iimkashipur-ac-in.zoom.us/j/85694728635?pwd=2aNCQXsrXlUrG4xcm9Cy753HdErY43.1", passcode:"" },
-  { date:"2026-10-25", time:"1:00 PM", ends:"3:45 PM", brk:"2:15 PM – 2:30 PM", subject:"Managerial Economics", faculty:"Prof. Gyasuddin Ansari",
-    lecture:"Session 4", duration:"2h 30m", term:"Term 2 Phase 1", url:"https://iimkashipur-ac-in.zoom.us/j/89258773034?pwd=avggQRLTk9mJJ95G3ZnPdTFDguyVBX.1", passcode:"" },
-  { date:"2026-10-31", time:"1:00 PM", ends:"3:45 PM", brk:"2:15 PM – 2:30 PM", subject:"Managerial Economics", faculty:"Prof. Gyasuddin Ansari",
-    lecture:"Session 5", duration:"2h 30m", term:"Term 2 Phase 1", campus:true, url:"", passcode:"" },
-  { date:"2026-10-31", time:"4:00 PM", ends:"6:45 PM", brk:"5:15 PM – 5:30 PM", subject:"Design Work Organization", faculty:"Prof. Devjani Chatterjee",
-    lecture:"Session 1", duration:"2h 30m", term:"Term 2 Phase 1", campus:true, url:"", passcode:"" },
-  { date:"2026-11-01", time:"9:00 AM", ends:"11:45 AM", brk:"10:15 AM – 10:30 AM", subject:"Managerial Economics", faculty:"Prof. Gyasuddin Ansari",
-    lecture:"Session 6", duration:"2h 30m", term:"Term 2 Phase 1", campus:true, url:"", passcode:"" },
-  { date:"2026-11-01", time:"1:00 PM", ends:"3:45 PM", brk:"2:15 PM – 2:30 PM", subject:"Corporate Communication Strategy", faculty:"Prof. Smarak Samarjeet",
-    lecture:"Session 3", duration:"2h 30m", term:"Term 2 Phase 1", campus:true, url:"", passcode:"" },
-  { date:"2026-11-14", time:"9:00 AM", ends:"11:45 AM", brk:"10:15 AM – 10:30 AM", subject:"Design Work Organization", faculty:"Prof. Devjani Chatterjee",
-    lecture:"Session 2", duration:"2h 30m", term:"Term 2 Phase 1", url:"https://iimkashipur-ac-in.zoom.us/j/82780598284?pwd=aD7a7faNlmXmeZDrupuxWeC3vaDKlP.1", passcode:"" },
-  { date:"2026-11-14", time:"1:00 PM", ends:"3:45 PM", brk:"2:15 PM – 2:30 PM", subject:"Corporate Communication Strategy", faculty:"Prof. Smarak Samarjeet",
-    lecture:"Session 4", duration:"2h 30m", term:"Term 2 Phase 1", url:"https://iimkashipur-ac-in.zoom.us/j/85694728635?pwd=2aNCQXsrXlUrG4xcm9Cy753HdErY43.1", passcode:"" },
-  { date:"2026-11-14", time:"4:00 PM", ends:"6:45 PM", brk:"5:15 PM – 5:30 PM", subject:"Managerial Economics", faculty:"Prof. Gyasuddin Ansari",
-    lecture:"Session 7", duration:"2h 30m", term:"Term 2 Phase 1", url:"https://iimkashipur-ac-in.zoom.us/j/89258773034?pwd=avggQRLTk9mJJ95G3ZnPdTFDguyVBX.1", passcode:"" },
-  { date:"2026-11-15", time:"9:00 AM", ends:"11:45 AM", brk:"10:15 AM – 10:30 AM", subject:"Corporate Communication Strategy", faculty:"Prof. Smarak Samarjeet",
-    lecture:"Session 5", duration:"2h 30m", term:"Term 2 Phase 1", url:"https://iimkashipur-ac-in.zoom.us/j/85694728635?pwd=2aNCQXsrXlUrG4xcm9Cy753HdErY43.1", passcode:"" },
-  { date:"2026-11-15", time:"1:00 PM", ends:"3:45 PM", brk:"2:15 PM – 2:30 PM", subject:"Managerial Economics", faculty:"Prof. Gyasuddin Ansari",
-    lecture:"Session 8", duration:"2h 30m", term:"Term 2 Phase 1", url:"https://iimkashipur-ac-in.zoom.us/j/89258773034?pwd=avggQRLTk9mJJ95G3ZnPdTFDguyVBX.1", passcode:"" },
-  { date:"2026-11-15", time:"4:00 PM", ends:"6:45 PM", brk:"5:15 PM – 5:30 PM", subject:"Design Work Organization", faculty:"Prof. Devjani Chatterjee",
-    lecture:"Session 3", duration:"2h 30m", term:"Term 2 Phase 1", url:"https://iimkashipur-ac-in.zoom.us/j/82780598284?pwd=aD7a7faNlmXmeZDrupuxWeC3vaDKlP.1", passcode:"" },
-  { date:"2026-11-21", time:"9:00 AM", ends:"11:45 AM", brk:"10:15 AM – 10:30 AM", subject:"Design Work Organization", faculty:"Prof. Devjani Chatterjee",
-    lecture:"Session 4", duration:"2h 30m", term:"Term 2 Phase 1", url:"https://iimkashipur-ac-in.zoom.us/j/82780598284?pwd=aD7a7faNlmXmeZDrupuxWeC3vaDKlP.1", passcode:"" },
-  { date:"2026-11-21", time:"1:00 PM", ends:"3:45 PM", brk:"2:15 PM – 2:30 PM", subject:"Managerial Economics", faculty:"Prof. Gyasuddin Ansari",
-    lecture:"Session 9", duration:"2h 30m", term:"Term 2 Phase 1", url:"https://iimkashipur-ac-in.zoom.us/j/89258773034?pwd=avggQRLTk9mJJ95G3ZnPdTFDguyVBX.1", passcode:"" },
-  { date:"2026-11-22", time:"9:00 AM", ends:"11:45 AM", brk:"10:15 AM – 10:30 AM", subject:"Managerial Economics", faculty:"Prof. Gyasuddin Ansari",
-    lecture:"Session 10", duration:"2h 30m", term:"Term 2 Phase 1", url:"https://iimkashipur-ac-in.zoom.us/j/89258773034?pwd=avggQRLTk9mJJ95G3ZnPdTFDguyVBX.1", passcode:"" },
-  { date:"2026-11-22", time:"1:00 PM", ends:"3:45 PM", brk:"2:15 PM – 2:30 PM", subject:"Design Work Organization", faculty:"Prof. Devjani Chatterjee",
-    lecture:"Session 5", duration:"2h 30m", term:"Term 2 Phase 1", url:"https://iimkashipur-ac-in.zoom.us/j/82780598284?pwd=aD7a7faNlmXmeZDrupuxWeC3vaDKlP.1", passcode:"" },
-
-  // ---- Term 2 Phase 2 ----
-  { date:"2026-12-05", time:"1:00 PM", ends:"3:45 PM", brk:"2:15 PM – 2:30 PM", subject:"Management Accounting", faculty:"Prof. Deepali Kalia",
-    lecture:"Session 1", duration:"2h 30m", term:"Term 2 Phase 2", url:"", passcode:"" },
-  { date:"2026-12-05", time:"4:00 PM", ends:"6:45 PM", brk:"5:15 PM – 5:30 PM", subject:"Business Simulation", faculty:"Prof. Jagdish Prasad Sahu",
-    lecture:"Session 1", duration:"2h 30m", term:"Term 2 Phase 2", url:"", passcode:"" },
-  { date:"2026-12-06", time:"9:00 AM", ends:"11:45 AM", brk:"10:15 AM – 10:30 AM", subject:"Management Accounting", faculty:"Prof. Deepali Kalia",
-    lecture:"Session 2", duration:"2h 30m", term:"Term 2 Phase 2", url:"", passcode:"" },
-  { date:"2026-12-06", time:"1:00 PM", ends:"3:45 PM", brk:"2:15 PM – 2:30 PM", subject:"Business Simulation", faculty:"Prof. Jagdish Prasad Sahu",
-    lecture:"Session 2", duration:"2h 30m", term:"Term 2 Phase 2", url:"", passcode:"" },
-  { date:"2026-12-12", time:"1:00 PM", ends:"3:45 PM", brk:"2:15 PM – 2:30 PM", subject:"Business Simulation", faculty:"Prof. Jagdish Prasad Sahu",
-    lecture:"Session 3", duration:"2h 30m", term:"Term 2 Phase 2", url:"", passcode:"" },
-  { date:"2026-12-12", time:"4:00 PM", ends:"6:45 PM", brk:"5:15 PM – 5:30 PM", subject:"Management Accounting", faculty:"Prof. Deepali Kalia",
-    lecture:"Session 3", duration:"2h 30m", term:"Term 2 Phase 2", url:"", passcode:"" },
-  { date:"2026-12-13", time:"9:00 AM", ends:"11:45 AM", brk:"10:15 AM – 10:30 AM", subject:"Business Simulation", faculty:"Prof. Jagdish Prasad Sahu",
-    lecture:"Session 4", duration:"2h 30m", term:"Term 2 Phase 2", url:"", passcode:"" },
-  { date:"2026-12-13", time:"1:00 PM", ends:"3:45 PM", brk:"2:15 PM – 2:30 PM", subject:"Management Accounting", faculty:"Prof. Deepali Kalia",
-    lecture:"Session 4", duration:"2h 30m", term:"Term 2 Phase 2", url:"", passcode:"" },
-  { date:"2026-12-19", time:"1:00 PM", ends:"3:45 PM", brk:"2:15 PM – 2:30 PM", subject:"Management Accounting", faculty:"Prof. Deepali Kalia",
-    lecture:"Session 5", duration:"2h 30m", term:"Term 2 Phase 2", campus:true, url:"", passcode:"" },
-  { date:"2026-12-19", time:"4:00 PM", ends:"6:45 PM", brk:"5:15 PM – 5:30 PM", subject:"Marketing Management II", faculty:"Prof. Madhurima Deb",
-    lecture:"Session 1", duration:"2h 30m", term:"Term 2 Phase 2", campus:true, url:"", passcode:"" },
-  { date:"2026-12-20", time:"9:00 AM", ends:"11:45 AM", brk:"10:15 AM – 10:30 AM", subject:"Management Accounting", faculty:"Prof. Deepali Kalia",
-    lecture:"Session 6", duration:"2h 30m", term:"Term 2 Phase 2", campus:true, url:"", passcode:"" },
-  { date:"2026-12-20", time:"1:00 PM", ends:"3:45 PM", brk:"2:15 PM – 2:30 PM", subject:"Business Simulation", faculty:"Prof. Jagdish Prasad Sahu",
-    lecture:"Session 5", duration:"2h 30m", term:"Term 2 Phase 2", campus:true, url:"", passcode:"" },
-  { date:"2026-12-26", time:"1:00 PM", ends:"3:45 PM", brk:"2:15 PM – 2:30 PM", subject:"Marketing Management II", faculty:"Prof. Madhurima Deb",
-    lecture:"Session 2", duration:"2h 30m", term:"Term 2 Phase 2", url:"", passcode:"" },
-  { date:"2026-12-26", time:"4:00 PM", ends:"6:45 PM", brk:"5:15 PM – 5:30 PM", subject:"Management Accounting", faculty:"Prof. Deepali Kalia",
-    lecture:"Session 7", duration:"2h 30m", term:"Term 2 Phase 2", url:"", passcode:"" },
-  { date:"2026-12-27", time:"9:00 AM", ends:"11:45 AM", brk:"10:15 AM – 10:30 AM", subject:"Marketing Management II", faculty:"Prof. Madhurima Deb",
-    lecture:"Session 3", duration:"2h 30m", term:"Term 2 Phase 2", url:"", passcode:"" },
-  { date:"2026-12-27", time:"1:00 PM", ends:"3:45 PM", brk:"2:15 PM – 2:30 PM", subject:"Management Accounting", faculty:"Prof. Deepali Kalia",
-    lecture:"Session 8", duration:"2h 30m", term:"Term 2 Phase 2", url:"", passcode:"" },
-  { date:"2027-01-02", time:"1:00 PM", ends:"3:45 PM", brk:"2:15 PM – 2:30 PM", subject:"Management Accounting", faculty:"Prof. Deepali Kalia",
-    lecture:"Session 9", duration:"2h 30m", term:"Term 2 Phase 2", url:"", passcode:"" },
-  { date:"2027-01-02", time:"4:00 PM", ends:"6:45 PM", brk:"5:15 PM – 5:30 PM", subject:"Marketing Management II", faculty:"Prof. Madhurima Deb",
-    lecture:"Session 4", duration:"2h 30m", term:"Term 2 Phase 2", url:"", passcode:"" },
-  { date:"2027-01-03", time:"9:00 AM", ends:"11:45 AM", brk:"10:15 AM – 10:30 AM", subject:"Management Accounting", faculty:"Prof. Deepali Kalia",
-    lecture:"Session 10", duration:"2h 30m", term:"Term 2 Phase 2", url:"", passcode:"" },
-  { date:"2027-01-03", time:"1:00 PM", ends:"3:45 PM", brk:"2:15 PM – 2:30 PM", subject:"Marketing Management II", faculty:"Prof. Madhurima Deb",
-    lecture:"Session 5", duration:"2h 30m", term:"Term 2 Phase 2", url:"", passcode:"" },
-];
+/* ── Class schedule ──
+   The classes are no longer listed here: they live in Firebase ("classes", public read) and are
+   managed from the admin page. Recording / join links are in "recordingUrls" (admin read only).
+   This array is filled from the server by applyRemoteRecordings() below. */
+const RECORDINGS = [];
 
 
 /* ── 2. Subject list: short code + colour. Add a row for a new subject. ── */
@@ -3567,19 +3378,14 @@ setTab(startTab());
 
 /* called once the signed-in user's role is known: "admin" and "super" unlock Recordings and Notes
    (the flag is still named isSuper for historical reasons) */
-/* ── recordings managed from the admin dashboard (Firebase, admin/super read only):
-   recordingUrls     → link overrides for the classes listed above
-   recordings        → extra classes added by admins
-   recordingSubjects → extra subjects (name, code, colour) ── */
-const BASE_RECORDINGS = RECORDINGS.slice();
+/* ── class schedule and recordings, all from Firebase:
+   classes           → every class session (public read, no links)
+   recordingUrls     → recording / join links per class (admin/super read only)
+   recordingSubjects → subject name, code and colour overrides ── */
 const BASE_SUBJECTS = JSON.parse(JSON.stringify(SUBJECTS));
-const recKey = r => [r.date, r.time || "", r.subject].map(s => String(s).replace(/[^A-Za-z0-9]+/g, "")).join("_");
-const remoteRec = { urls:{}, extra:[], subs:{}, classes:null, refs:[] };
+const remoteRec = { urls:{}, subs:{}, classes:null, refs:[] };
 
-/* ── class schedule on the server ──
-   classes → every class session (public read, no links), keyed by a stable id
-   Once that node has data it replaces the built-in RECORDINGS list above. The last copy is cached
-   locally so the schedule still shows offline. */
+/* The last copy of the schedule is cached locally so it still shows offline. */
 const CLASS_CACHE = "mekapClasses";
 function classFrom(key, v){
   return { _key:key, date:v.date, time:v.time || "", ends:v.ends || "", subject:v.subject, faculty:v.faculty || "",
@@ -3598,24 +3404,13 @@ function applyRemoteRecordings(){
     const s = remoteRec.subs[k];
     if(s && s.name) SUBJECTS[s.name] = { code: s.code || "—", color: /^#[0-9a-f]{6}$/i.test(s.color || "") ? s.color : "#5D6892" };
   });
-  let list;
-  if(remoteRec.classes && remoteRec.classes.length){
-    // server schedule: links come only from the admin-read recordingUrls node
-    remoteRec.classes.forEach(c => {
-      const o = remoteRec.urls[c._key];
-      c.url = o && o.url ? o.url : "";
-      c.passcode = o && o.url ? (o.passcode || "") : "";
-    });
-    list = remoteRec.classes;
-  } else {
-    BASE_RECORDINGS.forEach(r => {
-      if(!("_u0" in r)){ r._u0 = r.url || ""; r._p0 = r.passcode || ""; }
-      const o = remoteRec.urls[recKey(r)];
-      r.url = o && o.url ? o.url : r._u0;
-      r.passcode = o && o.url ? (o.passcode || "") : r._p0;
-    });
-    list = BASE_RECORDINGS.concat(remoteRec.extra);
-  }
+  // links come only from the admin-read recordingUrls node
+  const list = remoteRec.classes || [];
+  list.forEach(c => {
+    const o = remoteRec.urls[c._key];
+    c.url = o && o.url ? o.url : "";
+    c.passcode = o && o.url ? (o.passcode || "") : "";
+  });
   RECORDINGS.length = 0;
   list.forEach(r => RECORDINGS.push(r));
   sorted.length = 0;
@@ -3639,22 +3434,22 @@ const fbReady = () => typeof firebase !== "undefined" && firebase.apps && fireba
       const v = c.val() || {};
       if(v.subject && /^\d{4}-\d{2}-\d{2}$/.test(v.date || "")) items.push(classFrom(c.key, v));
     });
-    remoteRec.classes = items.length ? items : null;   // empty node → keep the built-in list
+    remoteRec.classes = items.length ? items : null;
     try {
       if(items.length) localStorage.setItem(CLASS_CACHE, JSON.stringify(items.map(c => Object.assign({}, c, { url:"", passcode:"" }))));
       else localStorage.removeItem(CLASS_CACHE);
     } catch(e) {}
     applyRemoteRecordings();
-  }, () => {});   // unreadable (rules not published yet) — site keeps the built-in classes
+  }, () => {});   // unreadable — the cached copy, if any, stays on screen
 })();
 
-/* admin / super only: recording links, plus the legacy per-admin "recordings" node */
+/* admin / super only: recording links */
 function watchRemoteRecordings(on){
   if(!fbReady()) return;
   if(!on){
     if(!remoteRec.refs.length) return;
     remoteRec.refs.forEach(x => x.ref.off("value", x.cb));
-    remoteRec.refs = []; remoteRec.urls = {}; remoteRec.extra = [];
+    remoteRec.refs = []; remoteRec.urls = {};
     applyRemoteRecordings();
     return;
   }
@@ -3666,17 +3461,6 @@ function watchRemoteRecordings(on){
     remoteRec.refs.push({ ref, cb });
   };
   watch("recordingUrls", snap => { remoteRec.urls = snap.val() || {}; });
-  watch("recordings", snap => {
-    const items = [];
-    snap.forEach(c => {
-      const v = c.val() || {};
-      if(!v.subject || !/^\d{4}-\d{2}-\d{2}$/.test(v.date || "")) return;
-      items.push({ date:v.date, time:v.time || "", ends:v.ends || "", subject:v.subject, faculty:v.faculty || "",
-        lecture:v.lecture || "Session", duration:v.duration || "", term:v.term || "", campus:!!v.campus,
-        url:/^https:\/\//i.test(v.url || "") ? v.url : "", passcode:v.passcode || "" });
-    });
-    remoteRec.extra = items;
-  });
 }
 
 window.mekapSetSuper = function(isSuper){

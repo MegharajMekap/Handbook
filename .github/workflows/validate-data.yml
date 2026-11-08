@@ -1,4 +1,4 @@
-name: Validate recordings data
+name: Validate class schedule
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    # Weekly, catches links that go dead after the fact (not just on edit)
+    # Weekly, catches bad data entered from the admin page (the schedule lives in Firebase)
     - cron: "0 6 * * 1"
   workflow_dispatch: {}
 

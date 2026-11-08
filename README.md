@@ -1,26 +1,37 @@
 # IIM-EMBA-Class-Recording-and-Notes
 
-## Adding a recording
+## Where the data lives
 
-Instead of hand-editing the `RECORDINGS` array in `index.html`, run:
+The class schedule is stored in Firebase Realtime Database, not in the code.
 
-```
-npm run add-recording
-```
+| Node | Contents | Who can read |
+| --- | --- | --- |
+| `classes` | every class session: date, time, subject, faculty, lecture, term, break, thumbnail | everyone |
+| `recordingUrls` | recording / join link and passcode per class (same key as in `classes`) | admins |
+| `recordingSubjects` | subject name, code and colour overrides | everyone |
+| `calendarEvents`, `announcements` | calendar events and notices | everyone |
 
-It prompts for the session details, computes `duration` from the start/end
-time, and appends a correctly formatted entry.
+The rules are in `database.rules.json`. Publish them in the Firebase console
+(Realtime Database → Rules) whenever that file changes.
+
+## Adding or editing classes and links
+
+Use the admin page (`admin.html`) → **Recordings**:
+
+- **Recording links**: paste a link for a class.
+- **Add class session**: add, edit or delete a class.
+- **Subjects**: add a subject or change its code and colour.
+
+Changes show on the site straight away; no deploy is needed.
 
 ## Validating data
 
-Checks that every `thumb` path exists on disk and that every `url` resolves
-(flags a hard failure on 404s, warns on other statuses since Drive/Zoom
-links can return non-200s even when working, e.g. permission prompts):
+Checks that every class in `classes` has a valid date, subject, lecture and term,
+that no link or passcode leaked into the public node, and that every `thumb` path
+exists on disk:
 
 ```
-npm run validate            # schema + thumb files + live URL checks
-npm run validate:offline    # schema + thumb files only, no network calls
+npm run validate
 ```
 
-This also runs automatically in CI on every push/PR to `main` and weekly on
-a schedule, to catch links that go dead after the fact.
+This also runs automatically in CI on every push/PR to `main` and weekly on a schedule.

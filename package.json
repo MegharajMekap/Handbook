@@ -3,8 +3,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "validate": "node scripts/validate-data.mjs",
-    "validate:offline": "node scripts/validate-data.mjs --no-network",
-    "add-recording": "node scripts/add-recording.mjs"
+    "validate": "node scripts/validate-data.mjs"
   }
 }
