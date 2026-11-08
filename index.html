@@ -146,6 +146,8 @@
     align-items:center;justify-content:center;
     font-family:var(--serif);font-weight:700;font-size:1.02rem;letter-spacing:.02em;
   }
+  .lockup img,.lockup .mono{cursor:pointer}
+  .lockup img:focus-visible,.lockup .mono:focus-visible{outline:2px solid var(--navy);outline-offset:3px;border-radius:14px}
   .lockup.nologo img{display:none}
   .lockup.nologo .mono{display:flex}
   .lockup .bar{width:1px;align-self:stretch;background:var(--line);margin:2px 0}
@@ -1549,7 +1551,7 @@
     box-shadow:0 1px 2px rgba(22,35,58,.05),inset 0 1px 0 rgba(255,255,255,.8);
   }
   /* logo.jpg carries its own white margin, so the rounded corners never clip the artwork */
-  .lockup img{height:64px;padding:0;background:#fff;border-radius:14px;box-shadow:0 1px 2px rgba(22,35,58,.06),0 6px 16px -8px rgba(22,35,58,.25),inset 0 0 0 1px rgba(27,75,143,.08)}
+  .lockup img{height:72px;box-sizing:border-box;padding:10px;background:#fff;border-radius:14px;box-shadow:0 1px 2px rgba(22,35,58,.06),0 6px 16px -8px rgba(22,35,58,.25),inset 0 0 0 1px rgba(27,75,143,.08)}
   .standfirst{line-height:1.6}
 
   /* controls */
@@ -1916,7 +1918,7 @@
          If it is missing, a plain IIMK monogram shows instead. -->
     <div class="headrow">
     <div class="lockup" id="lockup">
-      <img src="logo.jpg" alt="Indian Institute of Management Kashipur"
+      <img src="logo.jpg" alt="Indian Institute of Management Kashipur" role="link" tabindex="0" title="Back to the home page"
            onerror="document.getElementById('lockup').classList.add('nologo')">
       <span class="mono" aria-hidden="true">IIMK</span>
       <span class="bar"></span>
@@ -3964,6 +3966,19 @@ window.mekapSetSuper = function(isSuper){
       });
     }
   }, 30000);
+})();
+
+/* ── logo → home: reload the page from the top (drops any #tab or ?query) ── */
+(function(){
+  const lockup = document.getElementById("lockup");
+  if(!lockup) return;
+  const goHome = () => location.assign(location.pathname);
+  lockup.querySelectorAll("img, .mono").forEach(el => {
+    el.addEventListener("click", goHome);
+    el.addEventListener("keydown", e => { if(e.key === "Enter" || e.key === " "){ e.preventDefault(); goHome(); } });
+  });
+  const mono = lockup.querySelector(".mono");
+  if(mono){ mono.setAttribute("role", "link"); mono.tabIndex = 0; mono.title = "Back to the home page"; }
 })();
 
 /* ── live clock ── */
