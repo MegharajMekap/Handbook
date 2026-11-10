@@ -2152,7 +2152,10 @@
       device: deviceInfo,
       visit: visitMeta,
       ts: firebase.database.ServerValue.TIMESTAMP
-    }, locationFields || {})).catch(() => {});
+    }, locationFields || {})).then(() => {
+      window.mekapVisitRef = ref;
+      window.dispatchEvent(new Event("mekap-visit"));
+    }).catch(() => {});
   }
 
   fetch("https://ipwho.is/")
@@ -2409,7 +2412,19 @@
 
   let roleFailed = false;
   let roleKnown = false;   // true once roles/<uid> has been read (so "Request admin access" doesn't flash for admins)
+  // Record who is signed in on this visit's log entry (needs the visit to be written first).
+  let visitUser = null, visitTagged = false;
+  function tagVisitUser(user){
+    if(user) visitUser = user;
+    if(!visitUser || visitTagged || !window.mekapVisitRef) return;
+    visitTagged = true;
+    window.mekapVisitRef.child("user").set({ uid: visitUser.uid, email: visitUser.email || null })
+      .catch(function(){ visitTagged = false; });
+  }
+  window.addEventListener("mekap-visit", function(){ tagVisitUser(null); });
+
   function emitAuth(user){
+    tagVisitUser(user);
     window.mekapAuthState = { user: user ? { email: user.email } : null, admin: !adminDashLink.hidden, roleKnown: roleKnown, roleFailed: roleFailed };
     window.dispatchEvent(new CustomEvent("mekap-auth", { detail: window.mekapAuthState }));
   }

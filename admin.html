@@ -2974,6 +2974,23 @@ function startAnalytics(){
   function ipKey(ip){ return String(ip).replace(/[.#$\[\]\/]/g, "_"); }
   function ipName(ip){ return ip ? (ipLabels[ipKey(ip)] || "") : ""; }
 
+  /* ---- names for devices (Firebase "deviceLabels"): the random id each browser keeps follows
+     one person across networks, unlike the IP address ---- */
+  let deviceLabels = {};
+  function deviceId(r){ return r && r.visit && r.visit.deviceId || ""; }
+  function deviceName(r){ const id = deviceId(r); return id ? (deviceLabels[ipKey(id)] || "") : ""; }
+  function whoHTML(r){
+    const id = deviceId(r);
+    const parts = [];
+    if(r.user && r.user.email) parts.push('<div class="ipName" title="Signed-in account">' + esc(r.user.email) + '</div>');
+    if(id){
+      const nm = deviceName(r);
+      parts.push('<div>' + (nm ? '<strong>' + esc(nm) + '</strong> ' : '<span class="mono muted">' + esc("…" + id.slice(-6)) + '</span> ') +
+        '<button type="button" class="ipEdit" data-dev="' + esc(id) + '" title="' + (nm ? "Rename this device" : "Name this device") + '" aria-label="Name this device">✎</button></div>');
+    }
+    return parts.join("");
+  }
+
   function populateVisitFilterOptions(){
     populateSelectOptions("fVisTime", visitRows.map(function(r){
       const t = fmtTime(r.ts);
@@ -3082,7 +3099,7 @@ function startAnalytics(){
           : "–") + "</td>" +
         "<td class=\"muted\">" + esc(r.isp || "–") + "</td>" +
         "<td>" + dev + "</td>" +
-        "<td>" + ret + "</td>" +
+        "<td>" + ret + whoHTML(r) + "</td>" +
         "<td>" + dur + "</td>" +
         "<td>" + tagList(r.tabsVisited) + "</td>" +
         "<td>" + (r.searchUsed ? '<span class="tag">Yes</span>' : '<span class="muted">No</span>') + "</td>" +
@@ -3101,12 +3118,26 @@ function startAnalytics(){
   document.getElementById("visitsBody").addEventListener("click", function(e){
     const btn = e.target.closest && e.target.closest(".ipEdit");
     if(!btn) return;
+    if(btn.dataset.dev){
+      const id = btn.dataset.dev;
+      const cur = deviceLabels[ipKey(id)] || "";
+      const nxt = window.prompt("Name for this device (follows the person across networks; leave empty to remove):", cur);
+      if(nxt === null) return;
+      const nm = nxt.trim().slice(0, 40);
+      const dref = db.ref("deviceLabels/" + ipKey(id));
+      (nm ? dref.set(nm) : dref.remove()).catch(function(err){ alert("Could not save: " + err.message); });
+      return;
+    }
     const ip = btn.dataset.ip;
     const next = window.prompt("Name for " + ip + " (leave empty to remove):", ipName(ip));
     if(next === null) return;
     const name = next.trim().slice(0, 40);
     const ref = db.ref("ipLabels/" + ipKey(ip));
     (name ? ref.set(name) : ref.remove()).catch(function(err){ alert("Could not save: " + err.message); });
+  });
+  trackListener(db.ref("deviceLabels"), function(snap){
+    deviceLabels = snap.val() || {};
+    renderVisitsPage();
   });
   trackListener(db.ref("ipLabels"), function(snap){
     ipLabels = snap.val() || {};
@@ -3421,12 +3452,12 @@ function startAnalytics(){
   document.getElementById("visitsExport").onclick = function(){
     const rows = getFilteredVisitRows();
     if(!rows.length){ alert("There are no visits to export."); return; }
-    const head = ["Time","City","Region","Country","IP address","IP name","ISP","Device","Viewport","PWA","Return visit","Visit count",
+    const head = ["Time","City","Region","Country","IP address","IP name","Signed-in account","Device name","ISP","Device","Viewport","PWA","Return visit","Visit count",
       "Duration (min)","Tabs","Search used","Subjects","Recordings opened","Notes opened","Load time (ms)"];
     const list = function(a){ return (a || []).join("; "); };
     const lines = [head.map(csvCell).join(",")].concat(rows.map(function(r){
       return [
-        fmtTime(r.ts), r.city, r.region, r.country, r.ip, ipName(r.ip), r.isp,
+        fmtTime(r.ts), r.city, r.region, r.country, r.ip, ipName(r.ip), r.user && r.user.email, deviceName(r), r.isp,
         r.device && r.device.type, r.device && r.device.viewport, r.device && r.device.pwa ? "yes" : "no",
         r.visit ? (r.visit.isReturning ? "returning" : "new") : "", r.visit && r.visit.visitCount,
         typeof r.durationSec === "number" ? Math.round(r.durationSec / 6) / 10 : "",

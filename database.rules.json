@@ -16,7 +16,7 @@
       "$visitId": {
         ".write": "!data.exists() && newData.exists() && newData.hasChild('ts')",
         "$field": {
-          ".write": "data.parent().exists() && !data.exists() && $field.matches(/^(durationSec|tabsVisited|searchUsed|subjectFilters|recordingsOpened|notesOpened|performance)$/)"
+          ".write": "data.parent().exists() && !data.exists() && ($field.matches(/^(durationSec|tabsVisited|searchUsed|subjectFilters|recordingsOpened|notesOpened|performance)$/) || ($field == 'user' && auth != null && newData.child('uid').val() == auth.uid && (!newData.child('email').exists() || newData.child('email').val() == auth.token.email)))"
         }
       }
     },
@@ -28,6 +28,13 @@
       }
     },
     "ipLabels": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).val() == 'super'",
+      "$k": {
+        ".write": "auth != null && root.child('roles').child(auth.uid).val() == 'super'",
+        ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 40)"
+      }
+    },
+    "deviceLabels": {
       ".read": "auth != null && root.child('roles').child(auth.uid).val() == 'super'",
       "$k": {
         ".write": "auth != null && root.child('roles').child(auth.uid).val() == 'super'",
