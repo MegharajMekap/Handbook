@@ -27,6 +27,13 @@
         ".write": "!data.exists() && newData.exists() && newData.hasChildren(['kind', 'ts'])"
       }
     },
+    "ipLabels": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).val() == 'super'",
+      "$k": {
+        ".write": "auth != null && root.child('roles').child(auth.uid).val() == 'super'",
+        ".validate": "!newData.exists() || (newData.isString() && newData.val().length <= 40)"
+      }
+    },
     "fcmTokens": {
       "$tid": {
         ".write": "!newData.exists() || (newData.hasChildren(['token', 'ts']) && newData.child('token').isString() && newData.child('token').val().length < 400)"

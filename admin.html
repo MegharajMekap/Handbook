@@ -485,6 +485,9 @@
     cursor:pointer;padding:2px 0;text-decoration:underline;text-underline-offset:2px;
   }
   .clearFilters[hidden]{display:none}
+  .ipName{ font-weight:600; margin-bottom:2px; }
+  .ipEdit{ border:0; background:none; cursor:pointer; color:var(--muted,#6b7385); font-size:14px; padding:0 4px; }
+  .ipEdit:hover{ color:var(--navy,#1B4B8F); }
   .tag{
     display:inline-block;background:var(--navy-tint);color:var(--navy);border-radius:5px;
     padding:2px 8px;font-size:11px;font-weight:700;margin:1px 3px 1px 0;
@@ -2966,6 +2969,11 @@ function startAnalytics(){
   const visitReturnLabels = { new: "New", returning: "Returning" };
   const visitSearchLabels = { yes: "Yes", no: "No" };
 
+  /* ---- names for IP addresses (Firebase "ipLabels", super admin only) ---- */
+  let ipLabels = {};
+  function ipKey(ip){ return String(ip).replace(/[.#$\[\]\/]/g, "_"); }
+  function ipName(ip){ return ip ? (ipLabels[ipKey(ip)] || "") : ""; }
+
   function populateVisitFilterOptions(){
     populateSelectOptions("fVisTime", visitRows.map(function(r){
       const t = fmtTime(r.ts);
@@ -2976,7 +2984,7 @@ function startAnalytics(){
       return { value: v.toLowerCase(), label: v };
     }));
     populateSelectOptions("fVisIp", uniqueSorted(visitRows.map(function(r){ return r.ip || ""; })).map(function(v){
-      return { value: v.toLowerCase(), label: v };
+      return { value: v.toLowerCase(), label: ipName(v) ? ipName(v) + " (" + v + ")" : v };
     }));
     populateSelectOptions("fVisIsp", uniqueSorted(visitRows.map(function(r){ return r.isp || ""; })).map(function(v){
       return { value: v.toLowerCase(), label: v };
@@ -3067,7 +3075,11 @@ function startAnalytics(){
       return "<tr>" +
         "<td>" + esc(fmtTime(r.ts)) + "</td>" +
         "<td>" + loc + "</td>" +
-        "<td class=\"mono muted\">" + (r.ip ? esc(r.ip) : "–") + "</td>" +
+        "<td>" + (r.ip
+          ? (ipName(r.ip) ? '<div class="ipName">' + esc(ipName(r.ip)) + '</div>' : "") +
+            '<span class="mono muted">' + esc(r.ip) + '</span> ' +
+            '<button type="button" class="ipEdit" data-ip="' + esc(r.ip) + '" title="' + (ipName(r.ip) ? "Rename" : "Add a name") + '" aria-label="Name this IP address">✎</button>'
+          : "–") + "</td>" +
         "<td class=\"muted\">" + esc(r.isp || "–") + "</td>" +
         "<td>" + dev + "</td>" +
         "<td>" + ret + "</td>" +
@@ -3085,6 +3097,22 @@ function startAnalytics(){
       btn.addEventListener("click", function(){ goToVisitsPage(parseInt(btn.dataset.page, 10)); });
     });
   }
+
+  document.getElementById("visitsBody").addEventListener("click", function(e){
+    const btn = e.target.closest && e.target.closest(".ipEdit");
+    if(!btn) return;
+    const ip = btn.dataset.ip;
+    const next = window.prompt("Name for " + ip + " (leave empty to remove):", ipName(ip));
+    if(next === null) return;
+    const name = next.trim().slice(0, 40);
+    const ref = db.ref("ipLabels/" + ipKey(ip));
+    (name ? ref.set(name) : ref.remove()).catch(function(err){ alert("Could not save: " + err.message); });
+  });
+  trackListener(db.ref("ipLabels"), function(snap){
+    ipLabels = snap.val() || {};
+    populateVisitFilterOptions();
+    renderVisitsPage();
+  });
 
   const visitFilterFieldMap = {
     fVisTime: "time", fVisLocation: "location", fVisIp: "ip", fVisIsp: "isp", fVisDevice: "device",
@@ -3393,12 +3421,12 @@ function startAnalytics(){
   document.getElementById("visitsExport").onclick = function(){
     const rows = getFilteredVisitRows();
     if(!rows.length){ alert("There are no visits to export."); return; }
-    const head = ["Time","City","Region","Country","IP address","ISP","Device","Viewport","PWA","Return visit","Visit count",
+    const head = ["Time","City","Region","Country","IP address","IP name","ISP","Device","Viewport","PWA","Return visit","Visit count",
       "Duration (min)","Tabs","Search used","Subjects","Recordings opened","Notes opened","Load time (ms)"];
     const list = function(a){ return (a || []).join("; "); };
     const lines = [head.map(csvCell).join(",")].concat(rows.map(function(r){
       return [
-        fmtTime(r.ts), r.city, r.region, r.country, r.ip, r.isp,
+        fmtTime(r.ts), r.city, r.region, r.country, r.ip, ipName(r.ip), r.isp,
         r.device && r.device.type, r.device && r.device.viewport, r.device && r.device.pwa ? "yes" : "no",
         r.visit ? (r.visit.isReturning ? "returning" : "new") : "", r.visit && r.visit.visitCount,
         typeof r.durationSec === "number" ? Math.round(r.durationSec / 6) / 10 : "",
