@@ -4239,25 +4239,34 @@ window.mekapSetSuper = function(isSuper){
   });
 })();
 
-/* ── "Install app" menu item (Chrome / Edge on desktop & Android) ── */
+/* ── "Install app" menu item ──
+   Always shown in the browser (hidden once installed). If Chrome has handed us its install
+   prompt we open it; otherwise we explain where the browser's own install option is. */
 (function(){
   var item = document.getElementById("actInstall");
   if(!item) return;
   if(window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true) return;
+  var isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
   var deferred = null;
+  item.hidden = false;
   window.addEventListener("beforeinstallprompt", function(e){
     e.preventDefault();
     deferred = e;
-    item.hidden = false;
   });
   window.addEventListener("appinstalled", function(){ deferred = null; item.hidden = true; });
   item.addEventListener("click", function(){
-    var d = deferred;
-    if(!d) return;
-    deferred = null;
-    item.hidden = true;
     document.getElementById("actionMenu").hidden = true;
-    d.prompt();
+    if(deferred){
+      var d = deferred;
+      deferred = null;
+      d.prompt();
+    }else if(isIOS){
+      alert("Tap the Share icon in Safari, then Add to Home Screen.");
+    }else{
+      alert("Use your browser's install option: the install icon at the right end of the address bar, or the ⋮ menu → Cast, save and share → Install page as app.
+
+If you've already installed it, open it from your apps instead.");
+    }
   });
 })();
 
