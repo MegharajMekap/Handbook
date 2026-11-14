@@ -1117,6 +1117,20 @@
   .livebar .lb-join svg{width:12px;height:12px;fill:currentColor}
   .livebar:hover .lb-join{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.24)}
   .livebar .lb-join[hidden]{display:none}
+  /* join link still loading from the server */
+  .livebar .lb-joinload{
+    flex:none;display:inline-flex;align-items:center;gap:7px;border-radius:999px;
+    padding:7px 15px 7px 12px;font-size:13px;font-weight:700;white-space:nowrap;
+    background:linear-gradient(90deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.38) 50%,rgba(255,255,255,.18) 100%);
+    background-size:200% 100%;animation:skelShimmer 1.3s linear infinite;
+  }
+  .livebar .lb-joinload[hidden]{display:none}
+  .livebar .lb-spin{width:12px;height:12px;border-radius:50%;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;animation:lbSpin .8s linear infinite}
+  @keyframes lbSpin{to{transform:rotate(360deg)}}
+  .calLinkLoad{display:inline-block;width:74px;height:14px;border-radius:6px;vertical-align:middle;
+    background:linear-gradient(90deg,rgba(27,75,143,.10) 0%,rgba(27,75,143,.26) 50%,rgba(27,75,143,.10) 100%);
+    background-size:200% 100%;animation:skelShimmer 1.3s linear infinite}
+  @media (prefers-reduced-motion:reduce){.livebar .lb-joinload,.livebar .lb-spin,.calLinkLoad{animation:none}}
   /* progress: an inset rounded track inside the banner, so it stays visible against a light page */
   .livebar .lb-progress{
     position:absolute;left:var(--lbpad,18px);right:var(--lbpad,18px);bottom:9px;height:5px;border-radius:99px;
@@ -1839,6 +1853,7 @@
   <span class="lb-pill"><span class="lb-dot" aria-hidden="true"></span><span id="livebarLabel">Live now</span></span>
   <span class="lb-text" id="livebarText"></span>
   <span class="lb-join" id="livebarJoin"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>Join Zoom</span>
+  <span class="lb-joinload" id="livebarJoinLoad" hidden role="status" aria-label="Loading join link"><span class="lb-spin" aria-hidden="true"></span>Loading link…</span>
   <span class="lb-progress" id="livebarProg" aria-hidden="true"></span>
 </a>
 
@@ -2807,6 +2822,7 @@ const canOpenLink = r => !r.campus && !isPending(r) && !!r.url && (window.isSupe
 
 function calLinkCell(r){
   if(r.campus) return '<span class="calCampus">' + CAMPUS_ICO + 'On campus</span>';
+  if(isPending(r) && linksPending()) return '<span class="calLinkLoad" role="status" aria-label="Loading link"></span>';
   if(isPending(r)) return "";
   if(!canOpenLink(r)) return "";
   return '<a href="' + esc(r.url) + '" target="_blank" rel="noopener">Open link</a>';
@@ -3462,7 +3478,11 @@ setTab(startTab());
    recordingUrls     → recording / join links per class (admin/super read only)
    recordingSubjects → subject name, code and colour overrides ── */
 const BASE_SUBJECTS = JSON.parse(JSON.stringify(SUBJECTS));
-const remoteRec = { urls:{}, subs:{}, classes:null, refs:[] };
+const remoteRec = { urls:{}, subs:{}, classes:null, refs:[], urlsReady:false };
+/* true while an admin's links (admin-read recordingUrls) are still on their way from Firebase.
+   Only expected when the cached role says admin; stops on first answer, on an error, or after 10s. */
+const linksPending = () => !!window.isSuper && !remoteRec.urlsReady;
+setTimeout(() => { if(!remoteRec.urlsReady){ remoteRec.urlsReady = true; applyRemoteRecordings(); } }, 10000);
 
 /* The last copy of the schedule is cached locally so it still shows offline. */
 const CLASS_CACHE = "mekapClasses";
@@ -3531,14 +3551,15 @@ function watchRemoteRecordings(on){
     if(!remoteRec.refs.length) return;
     remoteRec.refs.forEach(x => x.ref.off("value", x.cb));
     remoteRec.refs = []; remoteRec.urls = {};
+    remoteRec.urlsReady = true;
     applyRemoteRecordings();
     return;
   }
   if(remoteRec.refs.length) return;
   const watch = (path, read) => {
     const ref = firebase.database().ref(path);
-    const cb = snap => { read(snap); applyRemoteRecordings(); };
-    ref.on("value", cb, () => {});
+    const cb = snap => { read(snap); remoteRec.urlsReady = true; applyRemoteRecordings(); };
+    ref.on("value", cb, () => { remoteRec.urlsReady = true; applyRemoteRecordings(); });
     remoteRec.refs.push({ ref, cb });
   };
   watch("recordingUrls", snap => { remoteRec.urls = snap.val() || {}; });
@@ -3739,6 +3760,7 @@ window.mekapSetSuper = function(isSuper){
   const joinEl = document.getElementById("livebarJoin");
   const labelEl = document.getElementById("livebarLabel");
   const progEl = document.getElementById("livebarProg");
+  const loadEl = document.getElementById("livebarJoinLoad");
   if(!bar) return;
 
   // " of 10" — how many numbered sessions this subject has in its term (blank for quizzes etc.)
@@ -3774,6 +3796,8 @@ window.mekapSetSuper = function(isSuper){
       (onBreak ? ' · resumes ' + esc(brk.end) : brk && now < brk.from ? ' · ☕ break ' + esc(r.brk) : '') +
       ' · ends ' + esc(r.ends || r.time) + '</span>';
     progEl.style.setProperty("--p", Math.max(0, Math.min(100, (now - stamp(r)) / (endStamp(r) - stamp(r)) * 100)) + "%");
+    const waiting = !r.campus && !r.url && linksPending();
+    loadEl.hidden = !waiting;
     if(r.url && !r.campus){
       joinEl.hidden = false;
       bar.href = r.url;
