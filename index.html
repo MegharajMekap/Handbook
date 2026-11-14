@@ -1073,9 +1073,9 @@
 
   /* ---------- live class banner ---------- */
   .livebar{
-    position:relative;display:flex;align-items:center;gap:14px;
+    position:relative;display:flex;align-items:center;gap:16px;
     background:linear-gradient(90deg,#146B2E,#1E8A4C);
-    color:#fff;padding:11px 18px 24px;
+    color:#fff;padding:15px 20px 28px;
     text-decoration:none;cursor:pointer;overflow-x:clip;z-index:5; /* above the notice marquee so the progress dot isn't covered */
     box-shadow:0 6px 18px -8px rgba(15,90,39,.6);
     transition:background .4s ease;
@@ -1094,6 +1094,26 @@
   .livebar.soon .lb-dot{animation:none}
   .livebar.soon .lb-join{color:#B4380B}
   .livebar .lb-count{font-variant-numeric:tabular-nums}
+  /* countdown "water drum": full at 15:00, the water level drops as the start nears (replaces the bar) */
+  .livebar .lb-drum{display:none;order:0;flex:none;position:relative;overflow:hidden;width:38px;height:58px;
+    border:2.5px solid rgba(255,255,255,.9);border-radius:9px 9px 13px 13px;
+    background:linear-gradient(90deg,rgba(0,0,0,.28),rgba(0,0,0,.14) 55%,rgba(0,0,0,.28));
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.25)}
+  .livebar.soon .lb-drum{display:block}
+  .livebar.soon .lb-progress{display:none}
+  .livebar.soon{padding-bottom:15px}
+  .livebar .lb-water{position:absolute;left:-2px;right:-2px;bottom:0;height:var(--p,100%);transition:height 1s linear;
+    background:linear-gradient(180deg,#7DD3FC 0%,#38BDF8 45%,#0284C7 100%)}
+  .livebar .lb-water::before,.livebar .lb-water::after{content:"";position:absolute;left:0;right:0;height:9px;
+    background:radial-gradient(circle at 9px 9px,#7DD3FC 8px,transparent 8.5px) 0 0/18px 9px repeat-x}
+  .livebar .lb-water::before{top:-8px;animation:lbWave 2.2s linear infinite}
+  .livebar .lb-water::after{top:-6px;opacity:.55;background-image:radial-gradient(circle at 9px 9px,#BAE6FD 8px,transparent 8.5px);animation:lbWave 3.1s linear infinite reverse}
+  @keyframes lbWave{from{background-position-x:0}to{background-position-x:18px}}
+  /* glass highlight + level marks */
+  .livebar .lb-drum::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(90deg,rgba(255,255,255,.28) 0,rgba(255,255,255,0) 28%),
+      repeating-linear-gradient(180deg,transparent 0 11px,rgba(255,255,255,.35) 11px 12px) right/9px 100% no-repeat}
+  @media (prefers-reduced-motion:reduce){.livebar .lb-water::before,.livebar .lb-water::after{animation:none}.livebar .lb-water{transition:none}}
   .livebar .lb-left{font-weight:700}
   /* admin-only: start / end a break from the banner */
   .livebar .lb-break{
@@ -1129,9 +1149,19 @@
     70%{box-shadow:0 0 0 7px rgba(255,255,255,0)}
     100%{box-shadow:0 0 0 0 rgba(255,255,255,0)}
   }
-  .livebar .lb-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
-  .livebar .lb-title{font-size:14.5px;font-weight:700;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .livebar .lb-meta{font-size:12px;opacity:.88;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .livebar .lb-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
+  .livebar .lb-title{display:flex;align-items:center;gap:9px;font-size:15.5px;font-weight:700;line-height:1.3;letter-spacing:.005em}
+  .livebar .lb-title > span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .livebar .lb-code{flex:none;font-size:11px;font-weight:800;letter-spacing:.07em;padding:2px 8px;border-radius:6px;
+    background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.28)}
+  /* details as small labelled blocks: SESSION · ENDS · TIME LEFT */
+  .livebar .lb-meta{display:flex;flex-wrap:wrap;align-items:flex-start;gap:9px 28px;line-height:1.2}
+  .livebar .lb-item{display:flex;flex-direction:column;gap:4px;min-width:0}
+  .livebar .lb-k{font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;opacity:.72}
+  /* every value has the same box height so labels line up whether or not it is highlighted */
+  .livebar .lb-v{font-size:13.5px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;
+    border:solid transparent;border-width:1px 0;padding:0}
+  .livebar .lb-item.hl .lb-v{align-self:flex-start;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:0 10px;margin-left:-11px}
   .livebar .lb-join{
     flex:none;display:inline-flex;align-items:center;gap:7px;
     background:#fff;color:#146B2E;border-radius:999px;
@@ -1177,9 +1207,16 @@
     50%{box-shadow:0 0 0 8px rgba(255,255,255,0),0 1px 6px rgba(0,0,0,.35)}
   }
   @media (max-width:640px){
-    .livebar{--lbpad:12px;gap:10px;padding:10px 12px 22px}
-    .livebar .lb-title,.livebar .lb-meta{white-space:normal}
-    .livebar .lb-title{font-size:13.5px}
+    /* phone: row 1 = status pill + buttons, row 2 = the class details at full width */
+    .livebar{--lbpad:12px;gap:10px 8px;padding:12px 12px 24px;flex-wrap:wrap}
+    .livebar .lb-drum{width:32px;height:50px}
+    .livebar .lb-pill{order:1;margin-right:auto}   /* pushes the buttons to the right edge */
+    .livebar .lb-join,.livebar .lb-joinload,.livebar .lb-break{order:2}
+    .livebar .lb-text{order:3;flex:1 1 100%}
+    .livebar .lb-title{font-size:14.5px;gap:8px}
+    .livebar .lb-title > span:last-child{white-space:normal;overflow:visible;text-overflow:clip}
+    .livebar .lb-meta{gap:9px 22px}
+    .livebar .lb-v{font-size:12.5px}
     .livebar .lb-join{padding:7px 12px 7px 10px}
   }
   @media (prefers-reduced-motion:reduce){.livebar::after,.livebar .lb-dot,.livebar .lb-progress::after{animation:none}}
@@ -1876,6 +1913,7 @@
 </div>
 
 <a class="livebar" id="livebar" hidden target="_blank" rel="noopener">
+  <span class="lb-drum" id="livebarDrum" aria-hidden="true"><span class="lb-water"></span></span>
   <span class="lb-pill"><span class="lb-dot" aria-hidden="true"></span><span id="livebarLabel">Live now</span></span>
   <span class="lb-text" id="livebarText"></span>
   <span class="lb-join" id="livebarJoin"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>Join Zoom</span>
@@ -3839,6 +3877,7 @@ window.mekapSetSuper = function(isSuper){
   const progEl = document.getElementById("livebarProg");
   const loadEl = document.getElementById("livebarJoinLoad");
   const breakBtn = document.getElementById("livebarBreak");
+  const drumEl = document.getElementById("livebarDrum");
   if(!bar) return;
 
   /* Manual breaks: an admin taps "Start break now" and the banner shows a 15-minute break for everyone
@@ -3889,6 +3928,15 @@ window.mekapSetSuper = function(isSuper){
     return [h ? h + "h" : "", r || !h ? r + "m" : ""].filter(Boolean).join(" ") + " left";
   }
 
+  // building blocks for the details line: label over value; `hl` = highlighted (time left)
+  const item = (k, v, hl) => '<span class="lb-item' + (hl ? ' hl' : '') + '"><span class="lb-k">' + k + '</span><span class="lb-v">' + v + '</span></span>';
+  const titleHTML = (s, r) => '<span class="lb-title"><span class="lb-code">' + esc(s.code) + '</span><span>' + esc(r.subject) + '</span></span>';
+  // "Session 4" + total -> SESSION 4 of 5; anything else (quiz, exam...) -> CLASS <name>
+  function sessionItem(r){
+    const m = /^Session (\d+)$/.exec(r.lecture || "");
+    return m ? item("Session", m[1] + sessionOf(r)) : item("Class", esc(r.lecture || "—"));
+  }
+
   let lastHtml = "";
   function setText(html){ if(html !== lastHtml){ lastHtml = html; textEl.innerHTML = html; } }
 
@@ -3902,7 +3950,7 @@ window.mekapSetSuper = function(isSuper){
     }
     if(!r){ bar.hidden = true; breakBtn.hidden = true; bar.removeAttribute("href"); bar.classList.remove("soon", "near"); return; }
     const s = sub(r.subject);
-    const title = '<span class="lb-title">' + esc(s.code) + ' · ' + esc(r.subject) + '</span>';
+    const title = titleHTML(s, r);
 
     if(phase === "soon" || phase === "near"){
       breakBtn.hidden = true;
@@ -3912,10 +3960,10 @@ window.mekapSetSuper = function(isSuper){
       bar.classList.add("soon");
       bar.classList.toggle("near", phase === "near");
       labelEl.innerHTML = 'Starts in <span class="lb-count">' + mmss(left) + '</span>';
-      setText(title + '<span class="lb-meta">' + esc(r.lecture) + sessionOf(r) + (r.campus ? ' · On campus' : '') +
-        ' · starts ' + esc(r.time) + '</span>');
-      // countdown: full at 15:00, emptying from the left (its start edge moves right) as the start nears
-      progEl.style.setProperty("--p", Math.max(0, Math.min(100, left / SOON_MS * 100)) + "%");
+      setText(title + '<span class="lb-meta">' + sessionItem(r) + item("Starts", esc(r.time), true) +
+        (r.campus ? item("Venue", "On campus") : '') + '</span>');
+      // countdown: the drum is full at 15:00 and the water level drops as the start nears
+      drumEl.style.setProperty("--p", Math.max(0, Math.min(100, left / SOON_MS * 100)) + "%");
       const showJoin = phase === "near" && !r.campus;
       const waiting = showJoin && !r.url && linksPending();
       loadEl.hidden = !waiting;
@@ -3947,12 +3995,14 @@ window.mekapSetSuper = function(isSuper){
       const mode = mb ? "end" : "start";
       if(breakBtn.dataset.mode !== mode){ breakBtn.dataset.mode = mode; breakBtn.textContent = mb ? "End break" : "☕ Start break now"; }
     }
-    setText('<span class="lb-title">' + esc(s2.code) + ' · ' + esc(r.subject) + '</span>' +
-      '<span class="lb-meta">' + esc(r.lecture) + sessionOf(r) +
-      (r.campus ? ' · On campus' : '') +
-      (mb ? ' · resumes ' + fmtClock(mb.to) + ' · <strong class="lb-left">' + mmss(mb.to - now) + '</strong> left'
-        : onBreak ? ' · resumes ' + esc(brk.end) : brk && now < brk.from ? ' · ☕ break ' + esc(r.brk) : '') +
-      ' · ends ' + esc(r.ends || r.time) + ' · <strong class="lb-left">' + leftText(endStamp(r) - now) + '</strong></span>');
+    setText(titleHTML(s2, r) + '<span class="lb-meta">' + sessionItem(r) +
+      (r.campus ? item("Venue", "On campus") : '') +
+      (mb ? item("Resumes", fmtClock(mb.to)) + item("Break left", mmss(mb.to - now), true)
+        : onBreak ? item("Resumes", esc(brk.end))
+        : brk && now < brk.from ? item("Break", esc(r.brk)) : '') +
+      item("Ends", esc(r.ends || r.time)) +
+      item("Time left", leftText(endStamp(r) - now).replace(/ left$/, ""), !(mb || onBreak)) +
+      '</span>');
     progEl.style.setProperty("--p", Math.max(0, Math.min(100, (now - stamp(r)) / (endStamp(r) - stamp(r)) * 100)) + "%");
     const waiting = !r.campus && !r.url && linksPending();
     loadEl.hidden = !waiting;
