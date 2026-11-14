@@ -3497,6 +3497,7 @@ function applyRemoteRecordings(){
   buildChips();
   render();
   cntRecordings.textContent = sorted.filter(r => r.campus || hasRecordedUrl(r)).length;
+  window.dispatchEvent(new Event("mekap-recordings"));   // lets the live banner pick up a new join link at once
 }
 
 const fbReady = () => typeof firebase !== "undefined" && firebase.apps && firebase.apps.length;
@@ -3784,6 +3785,9 @@ window.mekapSetSuper = function(isSuper){
   }
 
   tick();
+  // the join link arrives (after sign-in) well after the banner first shows — refresh straight away
+  window.addEventListener("mekap-recordings", tick);
+  document.addEventListener("visibilitychange", function(){ if(!document.hidden) tick(); });
   setInterval(function(){
     tick();
     if(!document.getElementById("panel-calendar").hidden) renderCalendar();
