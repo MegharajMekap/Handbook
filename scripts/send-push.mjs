@@ -13,7 +13,7 @@
 import admin from "firebase-admin";
 
 const DB_URL = "https://iim-emba-handbook-default-rtdb.firebaseio.com";
-const SITE_URL = process.env.SITE_URL || "./index.html";
+const SITE_URL = process.env.SITE_URL || "https://megharajmekap.github.io/Handbook/index.html#calendar";
 const REMINDER_OFFSETS_MIN = [-15, -5, 0, 5];     // relative to the class start
 const REMINDER_GRACE_MS = 9 * 60000;              // how late a reminder may still be sent
 const JOIN_RE = /^https:\/\/([a-z0-9-]+\.)*zoom\.us\/j\/[0-9]/;
