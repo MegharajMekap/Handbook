@@ -61,3 +61,10 @@ One-time setup:
 4. Publish the updated `database.rules.json` (adds `fcmTokens`).
 
 On iPhone, push only works once the site is added to the Home Screen (iOS 16.4+).
+
+## Manual break (live banner)
+
+Admins and the Super Admin see a **Start break now** button on the live banner. It shows a 15-minute
+break for every visitor (countdown to the resume time), then the banner goes back to "Live now".
+**End break** ends it early. State is in `liveBreak/<class>` (public read, admin write) — publish
+`database.rules.json` after pulling this change.

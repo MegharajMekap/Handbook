@@ -48,6 +48,13 @@
         ".validate": "!newData.exists() || (newData.child('url').isString() && newData.child('url').val().length <= 500 && newData.child('url').val().matches(/^https:\\/\\/([a-z0-9-]+\\.)*zoom\\.us\\/j\\/[0-9]/) && (!newData.child('passcode').exists() || (newData.child('passcode').isString() && newData.child('passcode').val().length <= 50)))"
       }
     },
+    "liveBreak": {
+      ".read": true,
+      ".write": "auth != null && root.child('roles').child(auth.uid).exists()",
+      "$k": {
+        ".validate": "!newData.exists() || (newData.hasChildren(['from', 'to']) && newData.child('from').isNumber() && newData.child('to').isNumber() && newData.child('to').val() > newData.child('from').val() && newData.child('to').val() - newData.child('from').val() <= 3600000 && (data.exists() || (newData.child('from').val() <= now + 600000 && newData.child('from').val() >= now - 600000)))"
+      }
+    },
     "fcmTokens": {
       "$tid": {
         ".write": "!newData.exists() || (newData.hasChildren(['token', 'ts']) && newData.child('token').isString() && newData.child('token').val().length < 400)"

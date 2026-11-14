@@ -1094,6 +1094,17 @@
   .livebar.soon .lb-dot{animation:none}
   .livebar.soon .lb-join{color:#B4380B}
   .livebar .lb-count{font-variant-numeric:tabular-nums}
+  .livebar .lb-left{font-weight:700}
+  /* admin-only: start / end a break from the banner */
+  .livebar .lb-break{
+    flex:none;font:inherit;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer;
+    color:#fff;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.55);
+    border-radius:999px;padding:6px 11px;transition:background .15s ease;
+  }
+  .livebar .lb-break:hover{background:rgba(255,255,255,.3)}
+  .livebar .lb-break:disabled{opacity:.6;cursor:default}
+  .livebar .lb-break[hidden]{display:none}
+  @media (max-width:640px){.livebar .lb-break{padding:5px 9px;font-size:11.5px}}
   /* countdown bar: full at 15:00, emptying from the LEFT so its start edge moves toward the right */
   .livebar.soon .lb-progress::before{left:auto;right:0}
   .livebar.soon .lb-progress::after{left:calc(100% - var(--p,0%))}
@@ -1868,6 +1879,7 @@
   <span class="lb-pill"><span class="lb-dot" aria-hidden="true"></span><span id="livebarLabel">Live now</span></span>
   <span class="lb-text" id="livebarText"></span>
   <span class="lb-join" id="livebarJoin"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z"/></svg>Join Zoom</span>
+  <button type="button" class="lb-break" id="livebarBreak" hidden></button>
   <span class="lb-joinload" id="livebarJoinLoad" hidden role="status" aria-label="Loading join link"><span class="lb-spin" aria-hidden="true"></span>Loading link…</span>
   <span class="lb-progress" id="livebarProg" aria-hidden="true"></span>
 </a>
@@ -3826,7 +3838,20 @@ window.mekapSetSuper = function(isSuper){
   const labelEl = document.getElementById("livebarLabel");
   const progEl = document.getElementById("livebarProg");
   const loadEl = document.getElementById("livebarJoinLoad");
+  const breakBtn = document.getElementById("livebarBreak");
   if(!bar) return;
+
+  /* Manual breaks: an admin taps "Start break now" and the banner shows a 15-minute break for everyone
+     (Firebase "liveBreak/<class>", public read, admin write), then goes back to "Live now". */
+  const BREAK_MS = 15 * 60000;
+  let liveBreaks = {};
+  function manualBreak(r){
+    const b = liveBreaks[r._key], now = Date.now();
+    return b && typeof b.from === "number" && typeof b.to === "number" && now >= b.from && now < b.to ? b : null;
+  }
+  function fmtClock(ms){
+    return new Date(ms).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" }).toUpperCase();
+  }
 
   // " of 10" — how many numbered sessions this subject has in its term (blank for quizzes etc.)
   function sessionOf(r){
@@ -3857,6 +3882,13 @@ window.mekapSetSuper = function(isSuper){
     return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0");
   }
 
+  // "1h 25m left" / "1h left" / "40m left"
+  function leftText(ms){
+    const m = Math.max(1, Math.ceil(ms / 60000));
+    const h = Math.floor(m / 60), r = m % 60;
+    return [h ? h + "h" : "", r || !h ? r + "m" : ""].filter(Boolean).join(" ") + " left";
+  }
+
   let lastHtml = "";
   function setText(html){ if(html !== lastHtml){ lastHtml = html; textEl.innerHTML = html; } }
 
@@ -3868,11 +3900,12 @@ window.mekapSetSuper = function(isSuper){
       r = soonClass();
       phase = r ? ((stamp(r) - now <= NEAR_MS) ? "near" : "soon") : "";
     }
-    if(!r){ bar.hidden = true; bar.removeAttribute("href"); bar.classList.remove("soon", "near"); return; }
+    if(!r){ bar.hidden = true; breakBtn.hidden = true; bar.removeAttribute("href"); bar.classList.remove("soon", "near"); return; }
     const s = sub(r.subject);
     const title = '<span class="lb-title">' + esc(s.code) + ' · ' + esc(r.subject) + '</span>';
 
     if(phase === "soon" || phase === "near"){
+      breakBtn.hidden = true;
       // before the start: flashing banner with a countdown; the join link appears 5 minutes before
       const left = stamp(r) - now;
       bar.classList.remove("onbreak");
@@ -3901,14 +3934,25 @@ window.mekapSetSuper = function(isSuper){
       if(p.length === 2) brk = { from: new Date(r.date + "T" + to24(p[0])).getTime(),
                                  to: new Date(r.date + "T" + to24(p[1])).getTime(), end: p[1].trim() };
     }
-    const onBreak = brk && now >= brk.from && now < brk.to;
+    // a break started by an admin from this banner overrides the scheduled one
+    const mb = manualBreak(r);
+    if(liveBreaks[r._key] && liveBreaks[r._key].from <= now) brk = null;   // a manual break was used: ignore the schedule
+    const onBreak = !!mb || (brk && now >= brk.from && now < brk.to);
     labelEl.textContent = onBreak ? "☕ Break" : "Live now";
     bar.classList.toggle("onbreak", !!onBreak);
+    // admin button: start a 15-minute break, or end the running one
+    const canBreak = !!window.isSuper && !(onBreak && !mb);
+    breakBtn.hidden = !canBreak;
+    if(canBreak){
+      const mode = mb ? "end" : "start";
+      if(breakBtn.dataset.mode !== mode){ breakBtn.dataset.mode = mode; breakBtn.textContent = mb ? "End break" : "☕ Start break now"; }
+    }
     setText('<span class="lb-title">' + esc(s2.code) + ' · ' + esc(r.subject) + '</span>' +
       '<span class="lb-meta">' + esc(r.lecture) + sessionOf(r) +
       (r.campus ? ' · On campus' : '') +
-      (onBreak ? ' · resumes ' + esc(brk.end) : brk && now < brk.from ? ' · ☕ break ' + esc(r.brk) : '') +
-      ' · ends ' + esc(r.ends || r.time) + '</span>');
+      (mb ? ' · resumes ' + fmtClock(mb.to) + ' · <strong class="lb-left">' + mmss(mb.to - now) + '</strong> left'
+        : onBreak ? ' · resumes ' + esc(brk.end) : brk && now < brk.from ? ' · ☕ break ' + esc(r.brk) : '') +
+      ' · ends ' + esc(r.ends || r.time) + ' · <strong class="lb-left">' + leftText(endStamp(r) - now) + '</strong></span>');
     progEl.style.setProperty("--p", Math.max(0, Math.min(100, (now - stamp(r)) / (endStamp(r) - stamp(r)) * 100)) + "%");
     const waiting = !r.campus && !r.url && linksPending();
     loadEl.hidden = !waiting;
@@ -3926,6 +3970,20 @@ window.mekapSetSuper = function(isSuper){
   // the join link arrives (after sign-in) well after the banner first shows — refresh straight away
   window.addEventListener("mekap-recordings", tick);
   document.addEventListener("visibilitychange", function(){ if(!document.hidden) tick(); });
+  if(typeof firebase !== "undefined" && firebase.apps && firebase.apps.length){
+    firebase.database().ref("liveBreak").on("value", function(snap){ liveBreaks = snap.val() || {}; tick(); }, function(){});
+  }
+  breakBtn.addEventListener("click", function(e){
+    e.preventDefault(); e.stopPropagation();           // the banner itself is a link
+    const r = currentClass();
+    if(!r || !r._key || !window.isSuper) return;
+    const now = Date.now(), mb = manualBreak(r);
+    const data = mb ? { from: mb.from, to: now } : { from: now, to: now + BREAK_MS };
+    breakBtn.disabled = true;
+    firebase.database().ref("liveBreak/" + r._key).set(data)
+      .catch(function(){ alert("Could not change the break. Check that you are signed in as an admin and that your device clock is correct."); })
+      .then(function(){ breakBtn.disabled = false; });
+  });
   setInterval(tick, 1000);   // 1s so the countdown ticks
   setInterval(function(){
     if(!document.getElementById("panel-calendar").hidden) renderCalendar();
