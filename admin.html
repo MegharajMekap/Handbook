@@ -1981,9 +1981,11 @@ function startRecordings(){
     if(!isFinite(endMs) || endMs <= Date.now()) return null;
     return { url: url, passcode: pass || null };
   }
-  let joinSynced = false;
+  let joinSynced = false, urlsLoaded = false, classesLoaded = false;
   function syncJoinLinks(){
-    if(joinSynced || !base || !classes.length) return;
+    // wait until BOTH the admin links and the class list have really loaded, or we could
+    // mistake "not loaded yet" for "no link" and remove public links
+    if(joinSynced || !urlsLoaded || !classesLoaded || !classes.length) return;
     joinSynced = true;
     db.ref("joinLinks").once("value").then(function(snap){
       const have = snap.val() || {}, upd = {};
@@ -2169,12 +2171,13 @@ function startRecordings(){
     renderLinks(); renderSessions(); renderSubjects();
   }
   loadRecBase().then(function(b){ base = b; renderAll(); });
-  trackListener(db.ref("recordingUrls"), function(snap){ urls = snap.val() || {}; renderAll(); syncJoinLinks(); });
+  trackListener(db.ref("recordingUrls"), function(snap){ urls = snap.val() || {}; urlsLoaded = true; renderAll(); syncJoinLinks(); });
   trackListener(db.ref("recordingSubjects"), function(snap){ subs = snap.val() || {}; renderAll(); });
   trackListener(db.ref("classes"), function(snap){
     classes = [];
     snap.forEach(function(c){ const v = c.val(); if(v && v.subject && v.date) classes.push({ key: c.key, val: v }); });
     if(editingSession && !classes.some(function(x){ return x.key === editingSession; })) setSessionEdit(null);
+    classesLoaded = true;
     renderAll();
     syncJoinLinks();
   });
