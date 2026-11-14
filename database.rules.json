@@ -45,7 +45,7 @@
       ".read": true,
       ".write": "auth != null && root.child('roles').child(auth.uid).exists()",
       "$k": {
-        ".validate": "!newData.exists() || (newData.child('url').isString() && newData.child('url').val().length <= 500 && newData.child('url').val().matches(/^https:\\/\\//) && (!newData.child('passcode').exists() || (newData.child('passcode').isString() && newData.child('passcode').val().length <= 50)))"
+        ".validate": "!newData.exists() || (newData.child('url').isString() && newData.child('url').val().length <= 500 && newData.child('url').val().matches(/^https:\\/\\/([a-z0-9-]+\\.)*zoom\\.us\\/j\\/[0-9]/) && (!newData.child('passcode').exists() || (newData.child('passcode').isString() && newData.child('passcode').val().length <= 50)))"
       }
     },
     "fcmTokens": {

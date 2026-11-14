@@ -1951,7 +1951,7 @@ function startRecordings(){
     $("rlSave").disabled = true;
     const wupd = {};
     wupd["recordingUrls/" + s.key] = { url: url, passcode: pass || null, by: currentActor(), ts: firebase.database.ServerValue.TIMESTAMP };
-    wupd["joinLinks/" + s.key] = joinEntry(url, pass, s.r.date);
+    wupd["joinLinks/" + s.key] = joinEntry(url, pass, s.r);
     const write = db.ref().update(wupd);
     write.then(function(){
       notifyRecording("add", s.r.subject + " — " + s.r.lecture + " (link)");
@@ -1970,13 +1970,15 @@ function startRecordings(){
     w.then(function(){ setPicked(null); }).catch(function(err){ say($("rlMsg"), "Failed: " + err.message, false); });
   });
 
-  /* Public join links: a Zoom *join* link (zoom.us/j/...) for a class from yesterday onwards is also
-     copied to the public "joinLinks" node so every visitor can join. Recording links stay admin-only. */
-  function joinEntry(url, pass, date){
-    if(!url || !/^https:\/\/[^\s]*zoom\.us\/j\//i.test(url)) return null;
-    const y = new Date(Date.now() - 86400000), pad = function(n){ return String(n).padStart(2, "0"); };
-    const cutoff = y.getFullYear() + "-" + pad(y.getMonth() + 1) + "-" + pad(y.getDate());
-    if(!date || date < cutoff) return null;
+  /* Public join links: a Zoom *join* link (zoom.us/j/...) for a class that is on now or still to come is
+     also copied to the public "joinLinks" node so every visitor can join. Classes that have already ended
+     are never copied (and are removed), and recording links stay admin-only. `c` is the class
+     ({ date, time, ends }). */
+  function joinEntry(url, pass, c){
+    if(!url || !/^https:\/\/([a-z0-9-]+\.)*zoom\.us\/j\/[0-9]/.test(url)) return null;   // same pattern as the database rule
+    if(!c || !c.date) return null;
+    const endMs = new Date(c.date + "T" + (from12(c.ends || c.time) || "23:59")).getTime();
+    if(!isFinite(endMs) || endMs <= Date.now()) return null;
     return { url: url, passcode: pass || null };
   }
   let joinSynced = false;
@@ -1987,7 +1989,7 @@ function startRecordings(){
       const have = snap.val() || {}, upd = {};
       classes.forEach(function(c){
         const u = urls[c.key];
-        const want = joinEntry(u && u.url, u && u.passcode, c.val.date);
+        const want = joinEntry(u && u.url, u && u.passcode, c.val);
         const cur = have[c.key];
         if(want && (!cur || cur.url !== want.url || (cur.passcode || null) !== want.passcode)) upd["joinLinks/" + c.key] = want;
         if(!want && cur) upd["joinLinks/" + c.key] = null;
@@ -2059,7 +2061,7 @@ function startRecordings(){
     Object.keys(payload).forEach(function(k){ upd["classes/" + ref.key + "/" + k] = payload[k]; });
     if(editingSession) upd["classes/" + ref.key + "/editedBy"] = currentActor();
     else { upd["classes/" + ref.key + "/createdBy"] = currentActor(); upd["classes/" + ref.key + "/ts"] = firebase.database.ServerValue.TIMESTAMP; }
-    upd["joinLinks/" + ref.key] = joinEntry(link.url, link.pass, payload.date);
+    upd["joinLinks/" + ref.key] = joinEntry(link.url, link.pass, payload);
     upd["recordingUrls/" + ref.key] = link.url ? { url: link.url, passcode: link.pass, by: currentActor(), ts: firebase.database.ServerValue.TIMESTAMP } : null;
     db.ref().update(upd).then(function(){
       notifyRecording(editingSession ? "edit" : "add", label);
