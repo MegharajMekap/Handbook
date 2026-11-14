@@ -3860,7 +3860,8 @@ window.mekapSetSuper = function(isSuper){
       labelEl.innerHTML = 'Starts in <span class="lb-count">' + mmss(left) + '</span>';
       setText(title + '<span class="lb-meta">' + esc(r.lecture) + sessionOf(r) + (r.campus ? ' · On campus' : '') +
         ' · starts ' + esc(r.time) + '</span>');
-      progEl.style.setProperty("--p", Math.max(0, Math.min(100, (SOON_MS - left) / SOON_MS * 100)) + "%");
+      // countdown: full at 15:00, shrinking from its right end back toward the left as the start nears
+      progEl.style.setProperty("--p", Math.max(0, Math.min(100, left / SOON_MS * 100)) + "%");
       const showJoin = phase === "near" && !r.campus;
       const waiting = showJoin && !r.url && linksPending();
       loadEl.hidden = !waiting;
