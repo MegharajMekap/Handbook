@@ -831,6 +831,7 @@
     padding:3px 9px;border-radius:999px;
   }
   .calCampus .calCampusIco{width:12px;height:12px}
+  .calSoon{font-size:12.5px;font-weight:600;color:var(--mute);white-space:nowrap}
   .calLegendCampus{display:inline-flex;align-items:center;gap:4px;font-weight:600;color:#9A3412}
 
   /* admin-added events: tinted chip with a coloured edge, so they read apart from classes */
@@ -2830,14 +2831,31 @@ function googleCalUrl(r){
 // small campus (building) icon marking offline classes
 const CAMPUS_ICO = '<svg class="calCampusIco" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10l9-6 9 6M5 10v9M19 10v9M9.5 10v9M14.5 10v9M3 21h18"/></svg>';
 
-// a finished class's url is its recording, which only admins may open;
-// everyone else gets the live-class link for sessions that haven't ended
-const canOpenLink = r => !r.campus && !isPending(r) && !!r.url && (window.isSuper || endStamp(r) > Date.now());
+/* Only the classes that matter right now show a join link: the one(s) live now and the next one to
+   start. Every other upcoming class says "Coming soon". */
+let linkKeysMemo = { at: 0, n: -1, keys: new Set() };
+function linkKeys(){
+  const now = Date.now();
+  if(now - linkKeysMemo.at < 5000 && linkKeysMemo.n === RECORDINGS.length) return linkKeysMemo.keys;
+  const up = RECORDINGS.filter(r => !r.campus && endStamp(r) > now).sort((a, b) => stamp(a) - stamp(b));
+  const keys = new Set(up.filter(r => stamp(r) <= now).map(r => r._key));
+  const next = up.find(r => stamp(r) > now);
+  if(next) keys.add(next._key);
+  linkKeysMemo = { at: now, n: RECORDINGS.length, keys };
+  return keys;
+}
+
+// a finished class's url is its recording, which only admins may open; an upcoming class's link
+// is only offered for the live class and the next one to start
+const canOpenLink = r => !r.campus && !isPending(r) && !!r.url &&
+  (endStamp(r) > Date.now() ? linkKeys().has(r._key) : !!window.isSuper);
 
 function calLinkCell(r){
   if(r.campus) return '<span class="calCampus">' + CAMPUS_ICO + 'On campus</span>';
+  const upcoming = endStamp(r) > Date.now();
+  if(upcoming && !linkKeys().has(r._key)) return '<span class="calSoon">Coming soon</span>';
   if(isPending(r) && linksPending()) return '<span class="calLinkLoad" role="status" aria-label="Loading link"></span>';
-  if(isPending(r)) return "";
+  if(isPending(r)) return upcoming ? '<span class="calSoon">Coming soon</span>' : "";
   if(!canOpenLink(r)) return "";
   return '<a href="' + esc(r.url) + '" target="_blank" rel="noopener">Open link</a>';
 }
@@ -2866,7 +2884,7 @@ function calRow(r){
 
 function calChip(r){
   const s = sub(r.subject);
-  const playable = !r.campus && !isPending(r) && !!r.url;
+  const playable = canOpenLink(r);
   const live = isLive(r);
   const statusText = r.campus ? "Offline class · on campus" : (isPending(r) ? calLinkCell(r).replace(/<[^>]+>/g,"") : "");
   const tip = r.subject + " — " + r.lecture + "\n" + slot(r) + (r.faculty ? "\n" + r.faculty : "") + (statusText ? "\n" + statusText : "") + (live ? "\nLive now" : "");
