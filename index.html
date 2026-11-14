@@ -3504,7 +3504,25 @@ try {
   if(Array.isArray(cached) && cached.length) remoteRec.classes = cached.filter(c => c && c._key && c.subject && c.date);
 } catch(e) {}
 
+/* Keep only join links of classes that are on now or still to come, in memory and in the local cache,
+   so nothing for a finished class lingers in the browser. (Skipped until the class list is known.) */
+function saveJoinCache(){
+  const list = remoteRec.classes;
+  if(!list) return;
+  const keep = {}, now = Date.now();
+  list.forEach(c => {
+    const j = remoteRec.joins[c._key];
+    if(j && j.url && endStamp(c) > now) keep[c._key] = j;
+  });
+  remoteRec.joins = keep;
+  remoteRec.joinsCached = Object.keys(keep).length > 0;
+  try {
+    if(remoteRec.joinsReady) localStorage.setItem(JOIN_CACHE, JSON.stringify(keep));
+  } catch(e) {}
+}
+
 function applyRemoteRecordings(){
+  saveJoinCache();
   Object.keys(SUBJECTS).forEach(n => { delete SUBJECTS[n]; });
   Object.keys(BASE_SUBJECTS).forEach(n => { SUBJECTS[n] = { code: BASE_SUBJECTS[n].code, color: BASE_SUBJECTS[n].color }; });
   Object.keys(remoteRec.subs).forEach(k => {
@@ -3541,8 +3559,7 @@ const fbReady = () => typeof firebase !== "undefined" && firebase.apps && fireba
   db.ref("joinLinks").on("value", snap => {
     remoteRec.joins = snap.val() || {};
     remoteRec.joinsReady = true;
-    try { localStorage.setItem(JOIN_CACHE, JSON.stringify(remoteRec.joins)); } catch(e) {}
-    applyRemoteRecordings();
+    applyRemoteRecordings();   // also refreshes the local cache (without ended classes)
   }, () => { remoteRec.joinsReady = true; applyRemoteRecordings(); });
   db.ref("classes").on("value", snap => {
     const items = [];
