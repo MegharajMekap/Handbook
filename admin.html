@@ -1949,7 +1949,10 @@ function startRecordings(){
     const s = sessions().filter(function(x){ return x.key === picked.key; })[0];
     if(!s) return;
     $("rlSave").disabled = true;
-    const write = db.ref("recordingUrls/" + s.key).set({ url: url, passcode: pass || null, by: currentActor(), ts: firebase.database.ServerValue.TIMESTAMP });
+    const wupd = {};
+    wupd["recordingUrls/" + s.key] = { url: url, passcode: pass || null, by: currentActor(), ts: firebase.database.ServerValue.TIMESTAMP };
+    wupd["joinLinks/" + s.key] = joinEntry(url, pass, s.r.date);
+    const write = db.ref().update(wupd);
     write.then(function(){
       notifyRecording("add", s.r.subject + " — " + s.r.lecture + " (link)");
       setPicked(null);
@@ -1963,9 +1966,36 @@ function startRecordings(){
     if(!picked || !confirm("Remove this link?")) return;
     const s = sessions().filter(function(x){ return x.key === picked.key; })[0];
     if(!s) return;
-    const w = db.ref("recordingUrls/" + s.key).remove();
+    const w = db.ref().update({ ["recordingUrls/" + s.key]: null, ["joinLinks/" + s.key]: null });
     w.then(function(){ setPicked(null); }).catch(function(err){ say($("rlMsg"), "Failed: " + err.message, false); });
   });
+
+  /* Public join links: a Zoom *join* link (zoom.us/j/...) for a class from yesterday onwards is also
+     copied to the public "joinLinks" node so every visitor can join. Recording links stay admin-only. */
+  function joinEntry(url, pass, date){
+    if(!url || !/^https:\/\/[^\s]*zoom\.us\/j\//i.test(url)) return null;
+    const y = new Date(Date.now() - 86400000), pad = function(n){ return String(n).padStart(2, "0"); };
+    const cutoff = y.getFullYear() + "-" + pad(y.getMonth() + 1) + "-" + pad(y.getDate());
+    if(!date || date < cutoff) return null;
+    return { url: url, passcode: pass || null };
+  }
+  let joinSynced = false;
+  function syncJoinLinks(){
+    if(joinSynced || !base || !classes.length) return;
+    joinSynced = true;
+    db.ref("joinLinks").once("value").then(function(snap){
+      const have = snap.val() || {}, upd = {};
+      classes.forEach(function(c){
+        const u = urls[c.key];
+        const want = joinEntry(u && u.url, u && u.passcode, c.val.date);
+        const cur = have[c.key];
+        if(want && (!cur || cur.url !== want.url || (cur.passcode || null) !== want.passcode)) upd["joinLinks/" + c.key] = want;
+        if(!want && cur) upd["joinLinks/" + c.key] = null;
+      });
+      Object.keys(have).forEach(function(k){ if(!classes.some(function(c){ return c.key === k; })) upd["joinLinks/" + k] = null; });
+      if(Object.keys(upd).length) db.ref().update(upd).catch(function(){});
+    }).catch(function(){});
+  }
 
   /* ---------- 2. class sessions ---------- */
   function syncDur(){ $("rsDur").value = recDuration($("rsStart").value, $("rsEnd").value); }
@@ -2029,6 +2059,7 @@ function startRecordings(){
     Object.keys(payload).forEach(function(k){ upd["classes/" + ref.key + "/" + k] = payload[k]; });
     if(editingSession) upd["classes/" + ref.key + "/editedBy"] = currentActor();
     else { upd["classes/" + ref.key + "/createdBy"] = currentActor(); upd["classes/" + ref.key + "/ts"] = firebase.database.ServerValue.TIMESTAMP; }
+    upd["joinLinks/" + ref.key] = joinEntry(link.url, link.pass, payload.date);
     upd["recordingUrls/" + ref.key] = link.url ? { url: link.url, passcode: link.pass, by: currentActor(), ts: firebase.database.ServerValue.TIMESTAMP } : null;
     db.ref().update(upd).then(function(){
       notifyRecording(editingSession ? "edit" : "add", label);
@@ -2060,7 +2091,7 @@ function startRecordings(){
       b.addEventListener("click", function(){
         const e = classes.filter(function(x){ return x.key === b.dataset.del; })[0];
         if(!e || !confirm("Delete this session?")) return;
-        db.ref().update({ ["classes/" + e.key]: null, ["recordingUrls/" + e.key]: null }).then(function(){ notifyRecording("delete", e.val.subject + " — " + e.val.lecture); });
+        db.ref().update({ ["classes/" + e.key]: null, ["recordingUrls/" + e.key]: null, ["joinLinks/" + e.key]: null }).then(function(){ notifyRecording("delete", e.val.subject + " — " + e.val.lecture); });
       });
     });
   }
@@ -2136,13 +2167,14 @@ function startRecordings(){
     renderLinks(); renderSessions(); renderSubjects();
   }
   loadRecBase().then(function(b){ base = b; renderAll(); });
-  trackListener(db.ref("recordingUrls"), function(snap){ urls = snap.val() || {}; renderAll(); });
+  trackListener(db.ref("recordingUrls"), function(snap){ urls = snap.val() || {}; renderAll(); syncJoinLinks(); });
   trackListener(db.ref("recordingSubjects"), function(snap){ subs = snap.val() || {}; renderAll(); });
   trackListener(db.ref("classes"), function(snap){
     classes = [];
     snap.forEach(function(c){ const v = c.val(); if(v && v.subject && v.date) classes.push({ key: c.key, val: v }); });
     if(editingSession && !classes.some(function(x){ return x.key === editingSession; })) setSessionEdit(null);
     renderAll();
+    syncJoinLinks();
   });
 }
 

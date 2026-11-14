@@ -3478,11 +3478,19 @@ setTab(startTab());
    recordingUrls     → recording / join links per class (admin/super read only)
    recordingSubjects → subject name, code and colour overrides ── */
 const BASE_SUBJECTS = JSON.parse(JSON.stringify(SUBJECTS));
-const remoteRec = { urls:{}, subs:{}, classes:null, refs:[], urlsReady:false };
+const remoteRec = { urls:{}, joins:{}, subs:{}, classes:null, refs:[], urlsReady:false, joinsReady:false, joinsCached:false };
+/* Public join links ("joinLinks": Zoom join URLs of upcoming classes) are cached here so they show instantly. */
+const JOIN_CACHE = "mekapJoinLinks";
+try {
+  const jc = JSON.parse(localStorage.getItem(JOIN_CACHE) || "null");
+  if(jc && typeof jc === "object"){ remoteRec.joins = jc; remoteRec.joinsCached = Object.keys(jc).length > 0; }
+} catch(e) {}
 /* true while an admin's links (admin-read recordingUrls) are still on their way from Firebase.
    Only expected when the cached role says admin; stops on first answer, on an error, or after 10s. */
-const linksPending = () => !!window.isSuper && !remoteRec.urlsReady;
-setTimeout(() => { if(!remoteRec.urlsReady){ remoteRec.urlsReady = true; applyRemoteRecordings(); } }, 10000);
+const linksPending = () => (!remoteRec.joinsReady && !remoteRec.joinsCached) || (!!window.isSuper && !remoteRec.urlsReady);
+setTimeout(() => {
+  if(!remoteRec.urlsReady || !remoteRec.joinsReady){ remoteRec.urlsReady = true; remoteRec.joinsReady = true; applyRemoteRecordings(); }
+}, 10000);
 
 /* The last copy of the schedule is cached locally so it still shows offline. */
 const CLASS_CACHE = "mekapClasses";
@@ -3507,8 +3515,10 @@ function applyRemoteRecordings(){
   const list = remoteRec.classes || [];
   list.forEach(c => {
     const o = remoteRec.urls[c._key];
-    c.url = o && o.url ? o.url : "";
-    c.passcode = o && o.url ? (o.passcode || "") : "";
+    const j = remoteRec.joins[c._key];
+    // admin links (recordings or join links) win; everyone else gets the public join link
+    c.url = o && o.url ? o.url : (j && j.url ? j.url : "");
+    c.passcode = o && o.url ? (o.passcode || "") : (j && j.url ? (j.passcode || "") : "");
   });
   RECORDINGS.length = 0;
   list.forEach(r => RECORDINGS.push(r));
@@ -3528,6 +3538,12 @@ const fbReady = () => typeof firebase !== "undefined" && firebase.apps && fireba
   if(!fbReady()) return;
   const db = firebase.database();
   db.ref("recordingSubjects").on("value", snap => { remoteRec.subs = snap.val() || {}; applyRemoteRecordings(); }, () => {});
+  db.ref("joinLinks").on("value", snap => {
+    remoteRec.joins = snap.val() || {};
+    remoteRec.joinsReady = true;
+    try { localStorage.setItem(JOIN_CACHE, JSON.stringify(remoteRec.joins)); } catch(e) {}
+    applyRemoteRecordings();
+  }, () => { remoteRec.joinsReady = true; applyRemoteRecordings(); });
   db.ref("classes").on("value", snap => {
     const items = [];
     snap.forEach(c => {
