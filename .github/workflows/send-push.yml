@@ -2,8 +2,10 @@ name: Send push notifications
 
 on:
   schedule:
-    # Checks for new announcements / calendar events (GitHub may delay scheduled runs)
-    - cron: "*/10 * * * *"
+    # Announcements / events, plus class reminders (15 min before, 5 min before, start, 5 min after).
+    # GitHub runs schedules on a best-effort basis: every 5 minutes is the fastest allowed, and runs
+    # are often delayed, so a reminder can arrive a few minutes late.
+    - cron: "*/5 * * * *"
   workflow_dispatch: {}
 
 concurrency: send-push

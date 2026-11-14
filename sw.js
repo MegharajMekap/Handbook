@@ -19,6 +19,8 @@ self.addEventListener("push", (e) => {
     body: d.body || "",
     icon: "logo.jpg",
     badge: "logo.jpg",
+    tag: d.tag || undefined,          // a reminder replaces an earlier one for the same class
+    renotify: !!d.tag,
     data: { url: d.url || "./index.html" }
   }));
 });
@@ -26,9 +28,12 @@ self.addEventListener("push", (e) => {
 self.addEventListener("notificationclick", (e) => {
   e.notification.close();
   const url = new URL((e.notification.data && e.notification.data.url) || "./index.html", self.registration.scope).href;
+  const inSite = url.startsWith(self.registration.scope);   // a Zoom link must open Zoom, not just focus the site
   e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
-    for (const c of list) {
-      if (c.url.startsWith(self.registration.scope) && "focus" in c) return c.focus();
+    if (inSite) {
+      for (const c of list) {
+        if (c.url.startsWith(self.registration.scope) && "focus" in c) return c.focus();
+      }
     }
     return self.clients.openWindow(url);
   }));

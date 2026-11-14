@@ -39,8 +39,17 @@ This also runs automatically in CI on every push/PR to `main` and weekly on a sc
 ## Push notifications (phone PWA)
 
 Users tap the menu → **Turn on notifications**. Tokens are saved in `fcmTokens`.
-A GitHub Action (`.github/workflows/send-push.yml`, every ~10 min) sends a push
-for each new announcement / calendar event (`scripts/send-push.mjs`).
+A GitHub Action (`.github/workflows/send-push.yml`, every 5 min) runs `scripts/send-push.mjs`, which sends:
+
+- a push for each new announcement / calendar event;
+- class reminders: **15 min before**, **5 min before** (opens the Zoom join link), **at the start**
+  and **5 min after** (each only once).
+
+GitHub schedules are best-effort, so reminders can come a few minutes late; the text always reflects
+the real time left. If a run is late and several reminders are due, only the latest is sent.
+
+On the site, the top banner flashes from 15 min before a class with a countdown, shows the join link
+from 5 min before, and switches to "Live now" at the start.
 
 One-time setup:
 
