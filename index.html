@@ -144,6 +144,29 @@
   .funfactChev{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:var(--navy);background:rgba(27,75,143,.08)}
   .funfactChev svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
   .funfact:hover .funfactChev{background:rgba(27,75,143,.16)}
+  /* step 1: collapsed to just the icon; first tap expands to the full card, second tap opens the pop-up */
+  .funfact.mini{display:inline-flex;flex-wrap:nowrap;width:auto;gap:0;padding:6px;border-radius:16px}
+  .funfact.mini .funfactBody,.funfact.mini .funfactDots,.funfact.mini .funfactChev,.funfact.mini .funfactBar{display:none}
+  .funfact:not(.mini){animation:ffExpand .35s cubic-bezier(.2,.9,.25,1.1)}
+  @keyframes ffExpand{from{opacity:.4;transform:scale(.92);transform-origin:left center}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.funfact:not(.mini){animation:none}}
+  /* tooltip bubble (hover / keyboard focus) */
+  .ffTip{
+    position:fixed;z-index:1100;pointer-events:none;max-width:240px;padding:8px 12px 8px 10px;
+    display:flex;align-items:center;gap:8px;border-radius:12px;
+    font-size:12.5px;font-weight:600;line-height:1.3;color:#fff;
+    background:linear-gradient(135deg,#1B2540,#2A1D3A) padding-box,linear-gradient(135deg,#D9503F,#5B6CF0) border-box;
+    border:1px solid transparent;
+    box-shadow:0 10px 28px -8px rgba(12,17,28,.55),0 2px 6px rgba(12,17,28,.25);
+    opacity:0;transform:translateY(4px) scale(.96);transition:opacity .16s ease,transform .16s ease;
+  }
+  .ffTip.on{opacity:1;transform:none}
+  .ffTip::before{content:"✦";color:#FF8F7E;font-size:13px}
+  .ffTip::after{content:"";position:absolute;left:var(--ax,50%);width:9px;height:9px;margin-left:-5px;background:#1F2440;
+    transform:rotate(45deg);border:1px solid transparent}
+  .ffTip.below::after{top:-5px;border-left-color:#D9503F;border-top-color:#D9503F}
+  .ffTip.above::after{bottom:-5px;border-right-color:#5B6CF0;border-bottom-color:#5B6CF0}
+  @media (prefers-reduced-motion:reduce){.ffTip{transition:none}}
   /* pop-up with every fact (opens when the card is tapped) */
   .ffOverlay{
     position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;
@@ -2144,7 +2167,7 @@
 
 <div class="ffOverlay" id="ffOverlay" role="dialog" aria-modal="true" aria-labelledby="ffTitle" hidden>
   <div class="ffBox">
-    <button class="ffClose" id="ffClose" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <button class="ffClose" id="ffClose" aria-label="Close" data-tip="Close · Esc"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     <div class="ffHead">
       <span class="ffHeadIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></span>
       <div><h2 id="ffTitle">Fun facts</h2><p>Your programme fee, broken down</p></div>
@@ -2349,7 +2372,7 @@
     </div>
     <h1 class="srOnly"><span id="h1Text"></span><span id="h1Caret" class="typecaret done"></span></h1>
     <p class="standfirst" id="standfirst"><span id="greetLine" class="greetline"><span id="greetText"></span><span id="greetCaret" class="typecaret done"></span></span><span id="festivalLine" class="festivalline" hidden><span id="festivalText"></span><span id="festivalCaret" class="typecaret done"></span></span></p>
-    <div class="funfact" id="funFact" aria-live="off" role="button" tabindex="0" aria-haspopup="dialog" aria-label="Fun fact about your programme fee. Tap to see all of them." hidden>
+    <div class="funfact mini" id="funFact" data-tip="Fun fact · tap to show" aria-live="off" role="button" tabindex="0" aria-haspopup="dialog" aria-label="Fun fact about your programme fee. Tap to show it." hidden>
       <span class="funfactIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></span>
       <span class="funfactBody">
         <span class="funfactTag">Fun fact · your programme fee</span>
@@ -5106,7 +5129,7 @@ window.mekapSetSuper = function(isSuper){
     document.body.classList.toggle("inSession", on); 
     if(card.hidden === !on) return;
     card.hidden = !on;
-    if(!on && typeof closeFF === "function") closeFF();
+    if(!on){ if(typeof closeFF === "function") closeFF(); setMini(true); }
     if(on) show(i);
   }
   // tap the card to open a pop-up with every fact; close it with Got it, the X, Esc or a tap outside
@@ -5142,9 +5165,40 @@ window.mekapSetSuper = function(isSuper){
     window.scrollTo(0, ffScrollY);
     if(!card.hidden) card.focus({ preventScroll: true });
   }
-  card.addEventListener("click", openFF);
+  // custom tooltip: shows the data-tip text on hover / keyboard focus (touch screens have no hover)
+  const tip = document.createElement("div");
+  tip.className = "ffTip"; tip.setAttribute("role", "tooltip"); document.body.appendChild(tip);
+  function showTip(t){
+    const txt = t.dataset.tip; if(!txt) return;
+    tip.textContent = txt;
+    const r = t.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+    const below = r.top < h + 16;
+    const left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2));
+    tip.style.left = left + "px";
+    tip.style.top = (below ? r.bottom + 10 : r.top - h - 10) + "px";
+    tip.style.setProperty("--ax", Math.max(14, Math.min(w - 14, r.left + r.width / 2 - left)) + "px");
+    tip.classList.toggle("below", below); tip.classList.toggle("above", !below);
+    tip.classList.add("on");
+  }
+  function hideTip(){ tip.classList.remove("on"); }
+  [card, ffClose].forEach(function(t){
+    t.addEventListener("mouseenter", function(){ showTip(t); });
+    t.addEventListener("mouseleave", hideTip);
+    t.addEventListener("focus", function(){ if(t.matches(":focus-visible")) showTip(t); });
+    t.addEventListener("blur", hideTip);
+    t.addEventListener("click", hideTip);
+  });
+  function setMini(on){
+    card.classList.toggle("mini", on);
+    card.setAttribute("aria-label", on ? "Fun fact about your programme fee. Tap to show it."
+                                       : "Fun fact about your programme fee. Tap to see all of them.");
+    hideTip();
+    card.dataset.tip = on ?"Fun fact · tap to show" : "Tap to see all the fun facts"; card.removeAttribute("title");
+  }
+  function tapCard(){ if(card.classList.contains("mini")) setMini(false); else openFF(); }
+  card.addEventListener("click", tapCard);
   card.addEventListener("keydown", function(e){
-    if(e.key === "Enter" || e.key === " "){ e.preventDefault(); openFF(); }
+    if(e.key === "Enter" || e.key === " "){ e.preventDefault(); tapCard(); }
   });
   ffClose.addEventListener("click", closeFF);
   ffGo.addEventListener("click", closeFF);
