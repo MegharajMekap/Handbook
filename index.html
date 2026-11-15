@@ -1104,11 +1104,13 @@
   .livebar.soon{padding-bottom:15px}
   .livebar .lb-water{position:absolute;left:-2px;right:-2px;bottom:0;height:var(--p,100%);transition:height 1s linear;
     background:linear-gradient(180deg,#7DD3FC 0%,#38BDF8 45%,#0284C7 100%)}
-  .livebar .lb-water::before,.livebar .lb-water::after{content:"";position:absolute;left:0;right:0;height:9px;
-    background:radial-gradient(circle at 9px 9px,#7DD3FC 8px,transparent 8.5px) 0 0/18px 9px repeat-x}
-  .livebar .lb-water::before{top:-8px;animation:lbWave 2.2s linear infinite}
-  .livebar .lb-water::after{top:-6px;opacity:.55;background-image:radial-gradient(circle at 9px 9px,#BAE6FD 8px,transparent 8.5px);animation:lbWave 3.1s linear infinite reverse}
-  @keyframes lbWave{from{background-position-x:0}to{background-position-x:18px}}
+  /* two smooth wave layers riding on the water surface */
+  .livebar .lb-water::before,.livebar .lb-water::after{content:"";position:absolute;left:0;right:0;height:10px;background-repeat:repeat-x;background-size:24px 10px}
+  .livebar .lb-water::before{top:-9px;animation:lbWave 2.2s linear infinite;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='10' viewBox='0 0 24 10'%3E%3Cpath d='M0 5C4 0 8 0 12 5S20 10 24 5V10H0Z' fill='%237DD3FC'/%3E%3C/svg%3E")}
+  .livebar .lb-water::after{top:-6px;opacity:.6;animation:lbWave 3.1s linear infinite reverse;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='10' viewBox='0 0 24 10'%3E%3Cpath d='M0 5C4 0 8 0 12 5S20 10 24 5V10H0Z' fill='%23BAE6FD'/%3E%3C/svg%3E")}
+  @keyframes lbWave{from{background-position-x:0}to{background-position-x:24px}}
   /* glass highlight + level marks */
   .livebar .lb-drum::after{content:"";position:absolute;inset:0;pointer-events:none;
     background:linear-gradient(90deg,rgba(255,255,255,.28) 0,rgba(255,255,255,0) 28%),
@@ -1122,9 +1124,16 @@
     border-radius:999px;padding:6px 11px;transition:background .15s ease;
   }
   .livebar .lb-break:hover{background:rgba(255,255,255,.3)}
+  .livebar .lb-bk-short{display:none}
   .livebar .lb-break:disabled{opacity:.6;cursor:default}
   .livebar .lb-break[hidden]{display:none}
   @media (max-width:640px){.livebar .lb-break{padding:5px 9px;font-size:11.5px}}
+  @media (max-width:440px){
+    .livebar .lb-bk-full{display:none}
+    .livebar .lb-bk-short{display:inline}
+    .livebar .lb-pill{font-size:10px;padding:4px 9px 4px 8px;gap:6px}
+    .livebar .lb-join{font-size:12.5px;padding:7px 11px 7px 9px}
+  }
   /* countdown bar: full at 15:00, emptying from the LEFT so its start edge moves toward the right */
   .livebar.soon .lb-progress::before{left:auto;right:0}
   .livebar.soon .lb-progress::after{left:calc(100% - var(--p,0%))}
@@ -1215,7 +1224,8 @@
     .livebar .lb-text{order:3;flex:1 1 100%}
     .livebar .lb-title{font-size:14.5px;gap:8px}
     .livebar .lb-title > span:last-child{white-space:normal;overflow:visible;text-overflow:clip}
-    .livebar .lb-meta{gap:9px 22px}
+    /* details in a tidy 3-column grid instead of a ragged wrapping row */
+    .livebar .lb-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 8px}
     .livebar .lb-v{font-size:12.5px}
     .livebar .lb-join{padding:7px 12px 7px 10px}
   }
@@ -3993,7 +4003,12 @@ window.mekapSetSuper = function(isSuper){
     breakBtn.hidden = !canBreak;
     if(canBreak){
       const mode = mb ? "end" : "start";
-      if(breakBtn.dataset.mode !== mode){ breakBtn.dataset.mode = mode; breakBtn.textContent = mb ? "End break" : "☕ Start break now"; }
+      if(breakBtn.dataset.mode !== mode){
+        breakBtn.dataset.mode = mode;
+        // long label on wide screens, short one on phones (see .lb-bk-full / .lb-bk-short)
+        breakBtn.innerHTML = mb ? '<span class="lb-bk-full">End break</span><span class="lb-bk-short">End</span>'
+          : '☕ <span class="lb-bk-full">Start break now</span><span class="lb-bk-short">Break</span>';
+      }
     }
     setText(titleHTML(s2, r) + '<span class="lb-meta">' + sessionItem(r) +
       (r.campus ? item("Venue", "On campus") : '') +
