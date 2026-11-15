@@ -9,10 +9,55 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1B4B8F">
 <script>
+/* Theme: dark from sunset to sunrise, light in between, by India time (sun position for IIM Kashipur).
+   A manual switch from the menu holds until the next sunrise / sunset, then the automatic theme takes over.
+   Applied before the first paint so there is no flash. */
 (function(){
-  var t=null;
-  try{ t=localStorage.getItem("theme"); }catch(e){}
-  if(t==="dark") document.documentElement.setAttribute("data-theme","dark");
+  var LAT = 29.2093, LON = 78.9619, IST = 19800000, R = Math.PI / 180;
+  var root = document.documentElement, KEY = "mekapThemeOverride";
+  function sun(ms){                                    // sunrise + sunset (ms) of the India calendar day containing ms
+    var d = new Date(ms + IST);
+    var jd = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 6, 30) / 86400000 + 2440587.5;
+    var n = Math.ceil(jd - 2451545.0 + 0.0008);
+    var js = n - LON / 360;
+    var M = (357.5291 + 0.98560028 * js) % 360;
+    var C = 1.9148 * Math.sin(M * R) + 0.02 * Math.sin(2 * M * R) + 0.0003 * Math.sin(3 * M * R);
+    var L = (M + C + 180 + 102.9372) % 360;
+    var jt = 2451545.0 + js + 0.0053 * Math.sin(M * R) - 0.0069 * Math.sin(2 * L * R);
+    var sinD = Math.sin(L * R) * Math.sin(23.4397 * R), cosD = Math.sqrt(1 - sinD * sinD);
+    var cosW = (Math.sin(-0.833 * R) - Math.sin(LAT * R) * sinD) / (Math.cos(LAT * R) * cosD);
+    var W = Math.acos(Math.max(-1, Math.min(1, cosW))) / R;
+    var ms2 = function(j){ return (j - 2440587.5) * 86400000; };
+    return { rise: ms2(jt - W / 360), set: ms2(jt + W / 360) };
+  }
+  function isNight(ms){ var s = sun(ms); return ms < s.rise || ms >= s.set; }
+  function nextChange(ms){ var s = sun(ms); return ms < s.rise ? s.rise : ms < s.set ? s.set : sun(ms + 86400000).rise; }
+  function override(ms){
+    try{ var o = JSON.parse(localStorage.getItem(KEY)); if(o && (o.t === "dark" || o.t === "light") && o.until > ms) return o; }catch(e){}
+    return null;
+  }
+  function current(ms){ var o = override(ms); return o ? o.t : (isNight(ms) ? "dark" : "light"); }
+  function apply(){
+    var t = current(Date.now());
+    if(t === "dark") root.setAttribute("data-theme", "dark"); else root.removeAttribute("data-theme");
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if(meta) meta.setAttribute("content", t === "dark" ? "#0A0C13" : "#1B4B8F");
+    return t;
+  }
+  try{ localStorage.removeItem("theme"); }catch(e){}     // the old permanent choice no longer applies
+  window.mekapTheme = {
+    apply: apply, current: current, isNight: isNight, nextChange: nextChange, sun: sun,
+    hasOverride: function(){ return !!override(Date.now()); },
+    setOverride: function(t){
+      var now = Date.now();
+      try{
+        if(t === (isNight(now) ? "dark" : "light")) localStorage.removeItem(KEY);   // same as automatic: nothing to hold
+        else localStorage.setItem(KEY, JSON.stringify({ t: t, until: nextChange(now) }));
+      }catch(e){}
+    },
+    clearOverride: function(){ try{ localStorage.removeItem(KEY); }catch(e){} }
+  };
+  apply();
 })();
 </script>
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1827,47 +1872,183 @@
   :root[data-theme="dark"] .action-item .ic-sun{display:block}
   :root[data-theme="dark"] .action-item .ic-moon{display:none}
 
-  /* ---------- dark theme ---------- */
+  /* ---------- dark theme ----------
+     Deep ink base with a faint blue-violet cast, layered glass surfaces, hairline borders and
+     periwinkle accents. It switches on by itself after sunset (IST) and off again at sunrise. */
   :root[data-theme="dark"]{
     color-scheme:dark;
-    --page:#0E1421;--card:#161E31;--line:#2A3552;--line-soft:#212B44;
-    --ink:#E6EBF5;--ink-soft:#BAC4D9;--mute:#8E9BB6;
-    --navy:#6FA0E6;--navy-tint:#1B2742;
-    --zone-bg:#0E1421;
+    --page:#0A0C13;--card:#12151F;--line:#262B3B;--line-soft:#1B1F2C;
+    --ink:#EDEFF8;--ink-soft:#B9BED2;--mute:#8A91AB;
+    --navy:#9DB0FF;--navy-deep:#D6DDFF;--navy-tint:#1A2034;
+    --zone-bg:#0A0C13;
+    --lift:0 1px 0 rgba(255,255,255,.045) inset,0 10px 26px -14px rgba(0,0,0,.75);
+    --lift-hover:0 1px 0 rgba(255,255,255,.06) inset,0 18px 38px -14px rgba(0,0,0,.85),0 0 0 4px rgba(120,140,255,.08);
+    --ring:0 0 0 4px rgba(130,150,255,.2);
+    --dk-glass:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.02));
+    --dk-fill:linear-gradient(180deg,#6F84F7,#5365E0);   /* solid buttons: white text stays readable */
   }
-  :root[data-theme="dark"] body[data-activetab]{--zone-bg:#0E1421}
-  :root[data-theme="dark"] html{scrollbar-color:#3A4766 transparent}
+  :root[data-theme="dark"] body[data-activetab]{--zone-bg:#0A0C13}
+  :root[data-theme="dark"] html{scrollbar-color:#2E3548 transparent}
+  /* soft aurora glow at the top + a barely-there dot grid */
   :root[data-theme="dark"] body::before{
     background-image:
-      radial-gradient(60rem 32rem at 8% -6%,rgba(78,134,216,.16),transparent 62%),
-      radial-gradient(48rem 28rem at 96% 2%,rgba(168,120,232,.12),transparent 60%),
-      linear-gradient(to right, rgba(140,170,230,.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(140,170,230,.05) 1px, transparent 1px);
-    background-size:auto,auto,36px 36px,36px 36px;
+      radial-gradient(56rem 30rem at 6% -8%,rgba(99,112,255,.20),transparent 62%),
+      radial-gradient(46rem 26rem at 98% 0%,rgba(186,104,255,.13),transparent 60%),
+      radial-gradient(40rem 24rem at 62% 42%,rgba(34,211,238,.06),transparent 64%),
+      radial-gradient(rgba(150,165,230,.10) 1px,transparent 1.4px);
+    background-size:auto,auto,auto,26px 26px;
   }
-  :root[data-theme="dark"] .funfact{background:linear-gradient(120deg,#161E31 0%,#1B2742 55%,#2A1E33 100%)}
-  :root[data-theme="dark"] .tabs::after{background:linear-gradient(180deg,#1A2338,#141C2E)}
-  :root[data-theme="dark"] .tabIndicator{background:rgba(255,255,255,.1);border-color:rgba(140,170,230,.25)}
-  :root[data-theme="dark"] .tab:hover:not([aria-selected="true"]){background:rgba(255,255,255,.07)}
-  :root[data-theme="dark"] .term{background:linear-gradient(180deg,#1B2742,#16203A)}
-  :root[data-theme="dark"] .subjectDD-menu,
-  :root[data-theme="dark"] .profileMenu,
-  :root[data-theme="dark"] .thumb .play{background:rgba(22,30,49,.96);color:var(--ink)}
+
+  /* ----- surfaces ----- */
+  :root[data-theme="dark"] .card,
+  :root[data-theme="dark"] .funfact,
+  :root[data-theme="dark"] .calendarWrap,
+  :root[data-theme="dark"] .timetable table,
+  :root[data-theme="dark"] .nlist{background:var(--dk-glass),var(--card);border-color:var(--line)}
+  :root[data-theme="dark"] .funfact{background:var(--dk-glass),linear-gradient(120deg,#14182A 0%,#181D33 55%,#1F1A33 100%)}
+  :root[data-theme="dark"] .funfact:hover{border-color:#343B54}
+  :root[data-theme="dark"] .card:hover{border-color:#3A4260}
   :root[data-theme="dark"] .card.pending,
   :root[data-theme="dark"] .waiting,
-  :root[data-theme="dark"] .empty{background:rgba(22,30,49,.7);border-color:var(--line)}
-  :root[data-theme="dark"] .card{background:var(--card);border-color:var(--line)}
+  :root[data-theme="dark"] .empty{background:rgba(255,255,255,.03);border-color:var(--line)}
+  :root[data-theme="dark"] .term{background:var(--dk-glass),#161B2B;border:1px solid var(--line);box-shadow:none}
+  :root[data-theme="dark"] .lockup img{background:#fff}
+
+  /* ----- tab bar ----- */
+  :root[data-theme="dark"] .tabs::after{background:var(--dk-glass),#10131D;border-color:var(--line)}
+  :root[data-theme="dark"] .tabIndicator{background:rgba(130,150,255,.16);border-color:rgba(140,160,255,.38);box-shadow:0 8px 20px -10px rgba(99,112,255,.55)}
+  :root[data-theme="dark"] .tab:hover:not([aria-selected="true"]){background:rgba(255,255,255,.06)}
+  :root[data-theme="dark"] .tabcount{background:#232940;color:var(--ink-soft);box-shadow:none}
+  :root[data-theme="dark"] .tab[aria-selected="true"] .tabcount{background:var(--dk-fill);color:#fff}
+  :root[data-theme="dark"] body[data-activetab="recordings"]{--zone-bg:#0D0B10}
+  :root[data-theme="dark"] .tabThemeZone{background:transparent}
+
+  /* ----- search, subject filter, menus ----- */
+  :root[data-theme="dark"] .search input,
+  :root[data-theme="dark"] .subjectDD-btn{background:var(--dk-glass),#12151F;border-color:var(--line);color:var(--ink)}
+  :root[data-theme="dark"] .search input::placeholder{color:#6F7691}
+  :root[data-theme="dark"] .subjectDD-menu,
+  :root[data-theme="dark"] .profileMenu,
+  :root[data-theme="dark"] .action-menu{background:rgba(20,24,36,.94);backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3);border-color:var(--line);color:var(--ink);box-shadow:0 18px 44px -12px rgba(0,0,0,.8)}
+  :root[data-theme="dark"] .subjectDD-item:hover,
+  :root[data-theme="dark"] .action-item:hover{background:rgba(255,255,255,.06)}
+  :root[data-theme="dark"] .subjectDD-item[aria-selected="true"]{background:var(--dk-fill);color:#fff}
+  :root[data-theme="dark"] .thumb .play{background:rgba(255,255,255,.92)}
+  :root[data-theme="dark"] a.thumb:hover .play{background:#fff}
+
+  /* ----- small touches ----- */
+  :root[data-theme="dark"] .thumb .play svg{fill:#16233A}
+  :root[data-theme="dark"] .newflag,
+  :root[data-theme="dark"] .tab[aria-selected="true"] .newflag{color:#FFC48A;background:rgba(251,146,60,.18)}
+  :root[data-theme="dark"] .calMonthHeader{background:linear-gradient(135deg,#2D3578,#43307F);box-shadow:inset 0 -1px 0 rgba(255,255,255,.06)}
+  :root[data-theme="dark"] .calMonthCard{border-color:var(--line)}
+  :root[data-theme="dark"] .nopen{border-radius:6px}
+
+  :root[data-theme="dark"] .calChip-event{background:color-mix(in srgb,var(--ev) 24%,#12151F);color:color-mix(in srgb,var(--ev) 38%,#fff)}
+  :root[data-theme="dark"] .calChip-event .calChipAdd{background:color-mix(in srgb,var(--ev) 30%,transparent);color:color-mix(in srgb,var(--ev) 38%,#fff)}
+  :root[data-theme="dark"] .calLegendCampus{color:#FDBA74}
+  :root[data-theme="dark"] .term .live{color:#4ADE80}
+
+  /* ----- solid buttons: periwinkle fill, white text ----- */
+  :root[data-theme="dark"] .open,
+  :root[data-theme="dark"] .reset,
+  :root[data-theme="dark"] .nopen,
+  :root[data-theme="dark"] .ackGo,
+  :root[data-theme="dark"] .authGo,
+  :root[data-theme="dark"] .action-btn,
+  :root[data-theme="dark"] .profileBtn.signedIn,
+  :root[data-theme="dark"] .calToday{background:var(--dk-fill);color:#fff;border-color:transparent}
+  :root[data-theme="dark"] .open:hover,
+  :root[data-theme="dark"] .ackGo:hover,
+  :root[data-theme="dark"] .authGo:hover{background:linear-gradient(180deg,#7E92FA,#5E70E8);box-shadow:0 8px 22px -6px rgba(99,112,255,.55)}
+  :root[data-theme="dark"] .pass,
+  :root[data-theme="dark"] .calBtn,
+  :root[data-theme="dark"] .calPastBtn{background:rgba(255,255,255,.045);border-color:var(--line);color:var(--ink-soft)}
+  :root[data-theme="dark"] .calBtn:hover,
+  :root[data-theme="dark"] .calPastBtn:hover{background:rgba(130,150,255,.14);border-color:rgba(140,160,255,.5);color:var(--navy-deep)}
+
+  /* ----- subject colours are mid-tone; lift them so labels read on the dark surface ----- */
+  :root[data-theme="dark"] .subject,
+  :root[data-theme="dark"] .calSubjFull,
+  :root[data-theme="dark"] .calSubjCode,
+  :root[data-theme="dark"] .nblock h3{filter:brightness(1.75) saturate(.92)}
+  :root[data-theme="dark"] .card h3,
+  :root[data-theme="dark"] .rail .dnum{color:var(--ink)}
+  :root[data-theme="dark"] .rail .dow,
+  :root[data-theme="dark"] .rail .cnt{color:var(--navy)}
+  :root[data-theme="dark"] .rail .cnt{background:rgba(130,150,255,.12)}
+  :root[data-theme="dark"] .termHead span{color:var(--navy-deep)}
+  :root[data-theme="dark"] .termHead::after{background:var(--line)}
+
+  /* ----- notes ----- */
+  :root[data-theme="dark"] .nrow{background:transparent;border-color:var(--line-soft)}
+  :root[data-theme="dark"] a.nrow:hover{background:rgba(255,255,255,.04)}
+  :root[data-theme="dark"] .nkind{background:#1D2336;color:var(--navy)}
+  :root[data-theme="dark"] a.nrow:hover .nkind,
+  :root[data-theme="dark"] a.nrow:active .nkind{background:#262E49}
+
+  /* ----- calendar: month grid + timetable ----- */
+  :root[data-theme="dark"] .calCell{background:#0F121B;border-color:var(--line-soft)}
   :root[data-theme="dark"] .calCell:nth-child(7n+1),
-  :root[data-theme="dark"] .calCell:nth-child(7n){background:#1A2338}
-  :root[data-theme="dark"] .calCell:hover{background:var(--navy-tint)}
-  :root[data-theme="dark"] .calCell:has(.calToday){background:var(--navy-tint)}
+  :root[data-theme="dark"] .calCell:nth-child(7n){background:#121624}
+  :root[data-theme="dark"] .calCell:hover{background:#171C2D}
+  :root[data-theme="dark"] .calCell:has(.calToday){background:#181E36;box-shadow:inset 0 0 0 1px rgba(140,160,255,.4)}
   :root[data-theme="dark"] .calCell-out,
   :root[data-theme="dark"] .calCell-out:nth-child(7n+1),
-  :root[data-theme="dark"] .calCell-out:nth-child(7n){background:var(--page)}
-  :root[data-theme="dark"] .calDow{background:#1B2640}
+  :root[data-theme="dark"] .calCell-out:nth-child(7n){background:#0B0D14}
+  :root[data-theme="dark"] .calDow{background:#151A2B;color:var(--mute)}
   :root[data-theme="dark"] .calDow:nth-child(7n+1),
-  :root[data-theme="dark"] .calDow:nth-child(7n){color:#E58A9E}
-  :root[data-theme="dark"] .calChip-done{background:#2A3550;color:#8E9BB6}
+  :root[data-theme="dark"] .calDow:nth-child(7n){color:#F08AA3}
+  :root[data-theme="dark"] .calChip-done{background:#232940;color:#8A91AB}
+  :root[data-theme="dark"] .caltable th{background:linear-gradient(180deg,#232B52,#1A2041);color:#DCE2FF}
+  :root[data-theme="dark"] .caltable tbody tr{background:transparent}
+  :root[data-theme="dark"] .caltable tbody tr:nth-child(even){background:rgba(255,255,255,.025)}
+  :root[data-theme="dark"] .caltable tbody tr:hover{background:rgba(130,150,255,.08)}
+  :root[data-theme="dark"] .caltable td{border-color:var(--line-soft)}
+  :root[data-theme="dark"] .calSlot{background:#1A2033;color:var(--ink-soft)}
+  :root[data-theme="dark"] .calBrk{background:rgba(240,138,163,.14);color:#F5A3B6}
+  :root[data-theme="dark"] .calBrk-new{background:rgba(130,150,255,.16);color:#B9C6FF}
+  :root[data-theme="dark"] .calBrk-off{background:rgba(255,255,255,.06);color:var(--mute)}
+  :root[data-theme="dark"] .calCampus{background:rgba(251,146,60,.14);color:#FDBA74;border-color:rgba(251,146,60,.3)}
+  :root[data-theme="dark"] .caltable a{color:var(--navy)}
+  :root[data-theme="dark"] .calPastToggle,
+  :root[data-theme="dark"] .caltable tbody tr.calPastToggle,
+  :root[data-theme="dark"] .caltable tbody tr.calPastToggle:hover{background:transparent}
+
+  /* ----- class summary + fun fact ----- */
+  :root[data-theme="dark"] .sumText{color:var(--ink);border-color:var(--line)}
+  :root[data-theme="dark"] .ffRow{border-color:rgba(255,255,255,.07)}
+  :root[data-theme="dark"] .ffRow.total .ffRowValue{color:#FF8F7E}
+  :root[data-theme="dark"] .funfactChev{background:rgba(130,150,255,.14)}
+  :root[data-theme="dark"] .funfactDots i{background:#2C3248}
+  :root[data-theme="dark"] .funfactDots i.on{background:#FF8F7E}
+  :root[data-theme="dark"] .funfactTag{color:#FF8F7E}
+
+  /* ----- announcements strip ----- */
+  :root[data-theme="dark"] .noticebar{background:linear-gradient(90deg,rgba(251,146,60,.10),rgba(251,191,36,.12));border-color:rgba(251,146,60,.22);color:#FFCB94}
+  :root[data-theme="dark"] .skelItem::after{background:linear-gradient(90deg,rgba(255,200,150,.08) 0%,rgba(255,200,150,.2) 50%,rgba(255,200,150,.08) 100%);background-size:200% 100%}
+  :root[data-theme="dark"] body.hasLive .noticebar{background:linear-gradient(90deg,rgba(251,146,60,.16),rgba(251,191,36,.18));border-color:rgba(251,146,60,.3)}
+
+  /* ----- dialogs: acknowledgement, announcements, sign-in ----- */
+  :root[data-theme="dark"] .ackBox,
+  :root[data-theme="dark"] .noticeBox,
+  :root[data-theme="dark"] .authBox{background:var(--dk-glass),#12151F;border-color:var(--line);color:var(--ink)}
+  :root[data-theme="dark"] .ackOverlay,
+  :root[data-theme="dark"] .noticeOverlay,
+  :root[data-theme="dark"] .authOverlay{background:rgba(5,6,10,.72)}
+  :root[data-theme="dark"] .ackWarn{background:rgba(251,146,60,.1);border-color:rgba(251,146,60,.28);color:#FDBA74}
+  :root[data-theme="dark"] .ackWarn svg{stroke:#FDBA74}
+  :root[data-theme="dark"] .ackIcon{background:rgba(130,150,255,.14)}
+  :root[data-theme="dark"] .authField input{background:#0E111A;border-color:var(--line);color:var(--ink)}
+  :root[data-theme="dark"] .authErr{background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.3);color:#FCA5A5}
+  :root[data-theme="dark"] .authErr.success{background:rgba(74,222,128,.12);border-color:rgba(74,222,128,.3);color:#86EFAC}
+  :root[data-theme="dark"] .noticeClose:hover{background:rgba(251,146,60,.2);color:#FDBA74}
+  :root[data-theme="dark"] .noticeSlide p{color:var(--ink)}
+  :root[data-theme="dark"] .installbar{background:linear-gradient(90deg,#3D4FD1,#5B6CF0)}
+  :root[data-theme="dark"] .noticeBoxHead h2{background:linear-gradient(90deg,#F4F6FF,#FDBA74);-webkit-background-clip:text;background-clip:text;color:transparent}
+  :root[data-theme="dark"] .noticeGo{background:var(--dk-fill);color:#fff}
+  :root[data-theme="dark"] .noticeArrow{background:#171B28;border-color:var(--line);color:var(--ink-soft)}
+  :root[data-theme="dark"] .noticeBoxIcon{box-shadow:0 8px 22px -8px rgba(251,146,60,.55)}
   /* spinner shown on any button while it waits for the server (see busy-buttons script) */
   .is-busy::before{
     content:"";display:inline-block;width:1em;height:1em;margin-right:.55em;
@@ -2067,6 +2248,10 @@
     <svg class="ic-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>
     <svg class="ic-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
     <span id="actThemeLabel">Dark mode</span>
+  </button>
+  <button class="action-item" id="actThemeAuto" role="menuitem" hidden>
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 010 18z" fill="currentColor" stroke="none"/></svg>
+    <span>Auto theme · sunrise / sunset</span>
   </button>
 </div>
 
@@ -4618,12 +4803,25 @@ window.mekapSetSuper = function(isSuper){
   var root = document.documentElement;
 
   function isDark(){ return root.getAttribute("data-theme") === "dark"; }
+  var T = window.mekapTheme, themeAuto = document.getElementById("actThemeAuto"), themeTimer = null;
   function syncTheme(){
     themeLabel.textContent = isDark() ? "Light mode" : "Dark mode";
     var meta = document.querySelector('meta[name="theme-color"]');
-    if(meta) meta.setAttribute("content", isDark() ? "#0E1421" : "#1B4B8F");
+    if(meta) meta.setAttribute("content", isDark() ? "#0A0C13" : "#1B4B8F");
+    themeAuto.hidden = !(T && T.hasOverride());
   }
+  // switch by itself at the next sunrise / sunset while the page stays open (and when it is reopened)
+  function followSun(){
+    if(!T) return;
+    clearTimeout(themeTimer);
+    T.apply(); syncTheme();
+    var wait = Math.max(1000, Math.min(T.nextChange(Date.now()) + 1500 - Date.now(), 2000000000));
+    themeTimer = setTimeout(followSun, wait);
+  }
+  document.addEventListener("visibilitychange", function(){ if(!document.hidden) followSun(); });
+  window.addEventListener("pageshow", followSun);
   syncTheme();
+  followSun();
 
   function closeMenu(){
     menu.hidden = true;
@@ -4680,9 +4878,13 @@ window.mekapSetSuper = function(isSuper){
     location.href = location.pathname;
   });
   document.getElementById("actTheme").addEventListener("click", function(){
-    var next = isDark() ? "light" : "dark";
-    if(next === "dark") root.setAttribute("data-theme", "dark"); else root.removeAttribute("data-theme");
-    try{ localStorage.setItem("theme", next); }catch(err){}
+    // a manual switch holds until the next sunrise / sunset
+    if(T){ T.setOverride(isDark() ? "light" : "dark"); T.apply(); }
+    syncTheme();
+    closeMenu();
+  });
+  themeAuto.addEventListener("click", function(){
+    if(T){ T.clearOverride(); T.apply(); }
     syncTheme();
     closeMenu();
   });

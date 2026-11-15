@@ -83,3 +83,12 @@ Signed-in users (any account) get a **Class summary** tab: the same date-grouped
 no video, just a written summary for each finished class ("Summary will be added soon" until one is written).
 Signed-out visitors don't see the tab, and the database rule (`classSummaries`: `auth != null`) keeps the text
 private too. Admins write the summaries in the admin page → **Recordings → Class summaries**.
+
+## Theme (light / dark)
+
+The site switches theme by itself using India time and the sun at IIM Kashipur (about 29.2°N, 79.0°E,
+worked out in the page, no location permission needed): **light after sunrise, dark after sunset**.
+It follows the seasons (e.g. sunset ≈ 17:20 in winter, ≈ 19:15 in June) and changes live while the page is
+open. The menu's **Dark mode / Light mode** item overrides it until the next sunrise or sunset; **Auto theme**
+(shown while an override is held) goes back to automatic straight away. The dark palette lives in the
+`dark theme` block of `index.html`. The admin and profile pages are light only.
