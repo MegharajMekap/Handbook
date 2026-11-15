@@ -326,11 +326,17 @@
     transition:background-color .5s ease;
   }
   /* only the Super Admin sees Recordings and Notes; everyone else gets the Calendar alone */
-  body.calOnly .tabs,body.calOnly .masthead-foot .controls,body.calOnly .masthead-foot .tallyrow{display:none!important}
+  body.calOnly:not(.signedIn) .tabs,body.calOnly .masthead-foot .controls,body.calOnly .masthead-foot .tallyrow{display:none!important}
   body.calOnly .masthead-foot{padding:0}
+  /* signed-in users who are not admins get just Class summary + Calendar; the Class summary tab is for signed-in users only */
+  body.calOnly #tabBtn-recordings,body.calOnly #tabBtn-notes{display:none}
+  body:not(.signedIn) #tabBtn-summary{display:none}
+  body.calOnly[data-activetab="summary"] .masthead-foot .controls{display:flex!important}
+  body.calOnly[data-activetab="summary"] .masthead-foot{padding:0 0 24px}
   body[data-activetab="recordings"]{--zone-bg:#FFF7EF}
   body[data-activetab="notes"]{--zone-bg:#EEFBF7}
   body[data-activetab="calendar"]{--zone-bg:#F8F1FD}
+  body[data-activetab="summary"]{--zone-bg:#EEF4FF}
   @media (max-width:520px){
     /* a little more breathing room inside the tinted panel, so the calendar and table don't hug its edges */
     .tabThemeZone{padding:14px 14px 22px;margin:0 -8px;border-radius:22px}
@@ -417,6 +423,14 @@
   .tabIconWrap.amber{background:linear-gradient(150deg,#FDBA74,#F97316)}
   .tabIconWrap.teal{background:linear-gradient(150deg,#5EEAD4,#0D9488)}
   .tabIconWrap.violet{background:linear-gradient(150deg,#D8B4FE,#9333EA)}
+  .tabIconWrap.blue{background:linear-gradient(150deg,#93C5FD,#2563EB)}
+  .tlShort{display:none}
+  @media (max-width:520px){.tlFull{display:none}.tlShort{display:inline}}
+  /* class summary cards: same look as the recording cards, just text (no video) */
+  .card.sumCard{display:block;padding:14px 16px 15px;border-left:4px solid var(--accent,var(--navy))}
+  .sumCard .cbody{padding:0}
+  .sumText{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);font-size:14px;line-height:1.65;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere}
+  .sumEmpty{display:inline-flex;align-items:center;gap:6px;margin-top:10px;font-size:13px;font-style:italic;color:var(--mute)}
   .tabIcon{width:19px;height:19px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
 
   .tab[aria-selected="true"] .tabIconWrap{
@@ -2123,6 +2137,10 @@
       <span class="tabIconWrap teal"><svg class="tabIcon" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/><path class="iconLines" d="M9 12.5h6M9 16.5h4"/></svg></span>
       <span class="tabMetaRow"><span class="tabLabel">Notes</span><span class="tabcount" id="cnt-notes"></span></span>
     </button>
+    <button class="tab" role="tab" id="tabBtn-summary" aria-selected="false">
+      <span class="tabIconWrap blue"><svg class="tabIcon" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>
+      <span class="tabMetaRow"><span class="tabLabel"><span class="tlFull">Class summary</span><span class="tlShort">Summary</span></span></span>
+    </button>
     <button class="tab" role="tab" id="tabBtn-calendar" aria-selected="false">
       <span class="tabIconWrap violet"><svg class="tabIcon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18"/><rect x="7" y="2.3" width="2" height="4.2" rx="1" fill="#fff" stroke="none"/><rect x="15" y="2.3" width="2" height="4.2" rx="1" fill="#fff" stroke="none"/><rect class="iconDate" x="7.3" y="13" width="3.4" height="3.4" rx="0.8" fill="#fff" stroke="none"/></svg></span>
       <span class="tabMetaRow"><span class="tabLabel">Calendar</span><span class="tabcount" id="cnt-calendar"></span></span>
@@ -2152,6 +2170,16 @@
         <span class="ntally" id="ntally"></span>
       </div>
       <div id="notesOut"></div>
+    </section>
+  </div>
+
+  <div class="tabpanel" id="panel-summary" hidden>
+    <section class="notes" id="summarySec">
+      <div class="nhead">
+        <h2>Class summary</h2>
+        <span class="ntally" id="sumTally"></span>
+      </div>
+      <div id="sumOut"></div>
     </section>
   </div>
 
@@ -2797,7 +2825,7 @@ const MON = ["January","February","March","April","May","June","July","August","
 const d0 = s => new Date(s + "T00:00:00");
 const longDate = s => { const d = d0(s); return d.getDate() + " " + MON[d.getMonth()]; };
 
-function group(list){
+function group(list, cardFn){
   const buckets = new Map();
   list.forEach(r => {
     if(!buckets.has(r.date)) buckets.set(r.date, []);
@@ -2818,7 +2846,7 @@ function group(list){
         '<span class="mon">' + MON[d.getMonth()] + " " + d.getFullYear() + '</span>' +
         '<div class="cnt">' + items.length + " session" + (items.length > 1 ? "s" : "") + '</div>' +
       '</div>' +
-      '<div class="stack">' + items.map(card).join("") + '</div>' +
+      '<div class="stack">' + items.map(cardFn || card).join("") + '</div>' +
     '</section>';
   }).join("");
 }
@@ -2885,6 +2913,7 @@ function render(){
     tally.textContent = "0 of " + sorted.length + " recordings";
     renderNotes();
     renderCalendar();
+    renderSummary();
     return;
   }
 
@@ -2896,6 +2925,7 @@ function render(){
   out.innerHTML = html;
   renderNotes();
   renderCalendar();
+  renderSummary();
 
   const withLink = held.filter(r => !r.campus && hasRecordedUrl(r)).length;
   tally.textContent = filtering
@@ -2906,6 +2936,12 @@ function render(){
 /* ── calendar tab ── */
 const calOut = document.getElementById("calOut");
 const caltally = document.getElementById("caltally");
+/* ── class summary tab (signed-in users only) ──
+   Text for each finished class, written by admins (Firebase "classSummaries", readable by signed-in users). */
+const sumOut = document.getElementById("sumOut");
+const sumTally = document.getElementById("sumTally");
+const summaryState = { map: {}, ready: false, failed: false, ref: null, cb: null };
+const isSignedIn = () => !!(window.mekapAuthState && window.mekapAuthState.user);
 const cntRecordings = document.getElementById("cnt-recordings");
 const cntNotes = document.getElementById("cnt-notes");
 const cntCalendar = document.getElementById("cnt-calendar");
@@ -3374,13 +3410,83 @@ if(typeof firebase !== "undefined" && firebase.apps && firebase.apps.length){
   }, () => calSyncDone("events")); // unreadable (e.g. rules not set yet) — calendar just shows classes
 }
 
+/* ── class summary: data, rendering, and who may see it ── */
+function watchSummaries(on){
+  if(!(typeof firebase !== "undefined" && firebase.apps && firebase.apps.length)) return;
+  if(on && !summaryState.ref){
+    const ref = firebase.database().ref("classSummaries");
+    const cb = snap => { summaryState.map = snap.val() || {}; summaryState.ready = true; summaryState.failed = false; renderSummary(); };
+    ref.on("value", cb, () => { summaryState.failed = true; summaryState.ready = true; renderSummary(); });
+    summaryState.ref = ref; summaryState.cb = cb;
+  }
+  if(!on && summaryState.ref){
+    summaryState.ref.off("value", summaryState.cb);
+    summaryState.ref = null; summaryState.map = {}; summaryState.ready = false; summaryState.failed = false;
+  }
+}
+
+function sumCard(r){
+  const s = sub(r.subject), e = summaryState.map[r._key];
+  const text = e && e.text ? String(e.text) : "";
+  return '<article class="card sumCard" id="sum-' + esc(r._key) + '" style="--accent:' + s.color + '"><div class="cbody">' +
+    '<span class="subject" style="color:' + s.color + '"><span class="swatch" style="background:' + s.color + '"></span>' + esc(r.subject) + '</span>' +
+    '<h3>' + esc(r.lecture) + '</h3>' +
+    '<p class="meta">' + slot(r) + (r.faculty ? '<br>' + esc(r.faculty) : "") + '</p>' +
+    (text ? '<div class="sumText">' + esc(text) + '</div>' : '<div class="sumEmpty">Summary will be added soon</div>') +
+  '</div></article>';
+}
+
+function renderSummary(){
+  if(!sumOut) return;
+  if(!isSignedIn()){ sumOut.innerHTML = ""; sumTally.textContent = ""; return; }
+  if(summaryState.failed){
+    sumOut.innerHTML = '<div class="empty"><h3>Couldn\'t load the summaries</h3><p>Please check your connection and reload the page.</p></div>';
+    sumTally.textContent = "";
+    return;
+  }
+  if(!summaryState.ready){ sumOut.innerHTML = '<div class="empty"><p>Loading summaries…</p></div>'; sumTally.textContent = ""; return; }
+  const q = qBox.value.trim().toLowerCase();
+  const past = RECORDINGS.filter(r => endStamp(r) <= Date.now()).sort((a, b) => stamp(b) - stamp(a));
+  const list = past.filter(r => {
+    if(active !== "All" && r.subject !== active) return false;
+    if(!q) return true;
+    const e = summaryState.map[r._key];
+    return [r.lecture, r.subject, sub(r.subject).code, r.faculty, r.term, r.date, e && e.text].join(" ").toLowerCase().indexOf(q) > -1;
+  });
+  const written = list.filter(r => summaryState.map[r._key] && summaryState.map[r._key].text).length;
+  sumTally.textContent = list.length + " of " + past.length + " past classes · " + written + " with a summary";
+  if(!past.length){
+    sumOut.innerHTML = '<div class="empty"><h3>No classes yet</h3><p>Summaries appear here once a class has finished.</p></div>';
+    return;
+  }
+  if(!list.length){
+    sumOut.innerHTML = '<div class="empty"><h3>Nothing matches that</h3><p>Try a different subject, or clear the search.</p></div>';
+    return;
+  }
+  sumOut.innerHTML = group(list, sumCard);
+}
+
+// who may see the tab follows the sign-in state
+function syncSignedIn(){
+  const on = isSignedIn();
+  document.body.classList.toggle("signedIn", on);
+  watchSummaries(on);
+  if(!on && document.body.getAttribute("data-activetab") === "summary") setTab("calendar");
+  else renderSummary();
+  moveTabIndicator(true);
+}
+window.addEventListener("mekap-auth", syncSignedIn);
+window.addEventListener("mekap-recordings", () => { if(!document.getElementById("panel-summary").hidden) renderSummary(); });
+setTimeout(syncSignedIn, 0);   // the sign-in state may already be known by the time this script runs
+
 /* ── tabs ── */
-const PANELS = ["recordings", "notes", "calendar"];
+const PANELS = ["recordings", "notes", "summary", "calendar"];
 let noticeModalOpen = false; // blocks tab keys/swipes and page scroll while the notice modal is up
 const seenTabs = new Set();
 function setTab(name, userAction){
   if(PANELS.indexOf(name) === -1) name = "recordings";
-  if(!window.isSuper) name = "calendar";
+  // admins can open every tab; signed-in users also get the class summary; everyone else only the calendar
+  if(!window.isSuper && !(name === "summary" && isSignedIn())) name = "calendar";
   PANELS.forEach(p => {
     document.getElementById("panel-" + p).hidden = p !== name;
     document.getElementById("tabBtn-" + p).setAttribute("aria-selected", p === name);
@@ -3395,6 +3501,7 @@ function setTab(name, userAction){
   const hash = name === "recordings" ? "" : "#" + name;
   if(location.hash !== hash) history.replaceState(null, "", location.pathname + location.search + hash);
   if(name === "calendar") renderCalendar();
+  if(name === "summary") renderSummary();
   moveTabIndicator();
   if(userAction){
     const flag = document.querySelector(".tab .newflag");
@@ -3653,7 +3760,7 @@ buildChips();
 render();
 cntRecordings.textContent = sorted.filter(function(r){ return r.campus || hasRecordedUrl(r); }).length;
 cntNotes.textContent = NOTES.length;
-const startTab = () => location.hash === "#notes" || location.hash === "#calendar" ? location.hash.slice(1) : "recordings";
+const startTab = () => ["#notes", "#summary", "#calendar"].indexOf(location.hash) > -1 ? location.hash.slice(1) : "recordings";
 setTab(startTab());
 
 /* called once the signed-in user's role is known: "admin" and "super" unlock Recordings and Notes

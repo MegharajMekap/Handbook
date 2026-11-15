@@ -613,6 +613,8 @@
   .adminMain{min-width:0;padding:26px 28px 10px}
   .navHide{display:none!important}
   .recPicked{padding:11px 13px;border:1px dashed var(--line);border-radius:9px;background:var(--page);font-size:14px;color:var(--mute)}
+  .rcCount{margin-top:5px;font-size:11.5px;color:var(--mute);text-align:right}
+  .rcSnip{display:block;margin-top:4px;color:var(--mute);font-size:12.5px;line-height:1.45;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
   .recPicked.on{border-style:solid;border-color:var(--navy);color:var(--ink);background:var(--navy-tint)}
   .recUrl{max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:bottom}
   .recMore{align-self:center;margin-top:4px}
@@ -1007,6 +1009,37 @@
         </div>
       </div>
       <div class="annList" id="rlList"><div class="empty">Loading…</div></div>
+    </div>
+
+    <div class="section" id="blkRecSummaries">
+      <div class="sectionHead"><h2><span class="dot" style="background:#2563EB"></span>Class summaries</h2></div>
+      <p class="sectionNote">Write a short summary for a class that has finished. It shows on the <strong>Class summary</strong> tab for signed-in users (no video link, just the text).</p>
+      <form class="annForm" id="rcForm">
+        <div class="evGrid">
+          <div class="field wide">
+            <label>Selected class</label>
+            <div class="recPicked" id="rcPicked">Choose a past class from the list below.</div>
+          </div>
+          <div class="field wide">
+            <label for="rcText">Summary</label>
+            <textarea id="rcText" maxlength="2000" rows="6" placeholder="What was covered, key takeaways, anything to prepare for next time…" disabled></textarea>
+            <div class="rcCount" id="rcCount">0 / 2000</div>
+          </div>
+        </div>
+        <button type="submit" class="annSubmit" id="rcSave" disabled><span>Save summary</span></button>
+        <button type="button" class="annCancel" id="rcClear" hidden>Remove summary</button>
+        <button type="button" class="annCancel" id="rcCancel" hidden>Cancel</button>
+        <div class="annMsg" id="rcMsg"></div>
+      </form>
+      <div class="histBar">
+        <select class="histSearch" id="rcSubject" aria-label="Filter by subject"></select>
+        <div class="rangeChips" id="rcStatus" role="group" aria-label="Filter by status">
+          <button type="button" class="rangeChip active" data-f="need">Needs summary</button>
+          <button type="button" class="rangeChip" data-f="written">Written</button>
+          <button type="button" class="rangeChip" data-f="all">All</button>
+        </div>
+      </div>
+      <div class="annList" id="rcList"><div class="empty">Loading…</div></div>
     </div>
 
     <div class="section" id="blkRecSessions">
@@ -1554,6 +1587,7 @@ const NAV = [
   ]},
   { id: "recordings", btn: "tabBtnRecordings", title: "Recordings", items: [
     { id: "recLinks", label: "Recording links", panel: "recordings", block: "blkRecLinks" },
+    { id: "recSummaries", label: "Class summaries", panel: "recordings", block: "blkRecSummaries" },
     { id: "recSessions", label: "Add class session", panel: "recordings", block: "blkRecSessions" },
     { id: "recSubjects", label: "Subjects", panel: "recordings", block: "blkRecSubjects" }
   ]},
@@ -1863,8 +1897,10 @@ function startRecordings(){
   /* ---------- subject pickers ---------- */
   function fillSubjectSelects(){
     const names = Object.keys(allSubjects()).sort();
-    const rl = $("rlSubject"), rs = $("rsSubject");
-    const rlPrev = rl.value, rsPrev = rs.value;
+    const rl = $("rlSubject"), rs = $("rsSubject"), rc = $("rcSubject");
+    const rlPrev = rl.value, rsPrev = rs.value, rcPrev = rc.value;
+    rc.innerHTML = '<option value="">All subjects</option>' + names.map(function(n){ return '<option>' + esc(n) + '</option>'; }).join("");
+    if(names.indexOf(rcPrev) > -1) rc.value = rcPrev;
     rl.innerHTML = '<option value="">All subjects</option>' + names.map(function(n){ return '<option>' + esc(n) + '</option>'; }).join("");
     rs.innerHTML = '<option value="">Choose a subject…</option>' + names.map(function(n){ return '<option>' + esc(n) + '</option>'; }).join("");
     if(names.indexOf(rlPrev) > -1) rl.value = rlPrev;
@@ -2001,6 +2037,107 @@ function startRecordings(){
     }).catch(function(){});
   }
 
+  /* ---------- class summaries ----------
+     Firebase "classSummaries/<class>" = { text, ts }. Signed-in users can read it (Class summary tab),
+     admins write it. Only classes that have finished get one. */
+  let summaries = {}, sumPicked = null, sumShown = 20, sumStatus = "need";
+  function classEnded(r){
+    const t = from12(r.ends || r.time) || "23:59";
+    return new Date(r.date + "T" + t).getTime() <= Date.now();
+  }
+  function sumSessions(){ return sessions().filter(function(s){ return classEnded(s.r); }); }
+  function sumText(key){ const o = summaries[key]; return o && o.text ? String(o.text) : ""; }
+  function setSumPicked(p){
+    sumPicked = p;
+    const s = p && sumSessions().filter(function(x){ return x.key === p.key; })[0];
+    const has = !!(s && sumText(s.key));
+    $("rcPicked").innerHTML = s ? sessionLabel(s) : "Choose a past class from the list below.";
+    $("rcPicked").classList.toggle("on", !!s);
+    $("rcText").disabled = !s;
+    $("rcText").value = has ? sumText(s.key) : "";
+    $("rcCount").textContent = $("rcText").value.length + " / 2000";
+    $("rcSave").disabled = !s;
+    $("rcCancel").hidden = !s;
+    $("rcClear").hidden = !has;
+    clearMsg($("rcMsg"));
+    if(s){
+      $("rcForm").scrollIntoView({ behavior: "smooth", block: "center" });
+      $("rcText").focus({ preventScroll: true });
+    }
+    renderSummaries();
+  }
+  function renderSummaries(){
+    const el = $("rcList");
+    const sub = $("rcSubject").value;
+    let list = sumSessions().filter(function(s){
+      if(sub && s.r.subject !== sub) return false;
+      const has = !!sumText(s.key);
+      if(sumStatus === "need") return !has;
+      if(sumStatus === "written") return has;
+      return true;
+    });
+    if(!classes.length){ el.innerHTML = '<div class="empty">No classes found. Check that the database rules are published, then reload the page.</div>'; return; }
+    if(!list.length){
+      el.innerHTML = '<div class="empty">' + (sumStatus === "need" ? "Every finished class here already has a summary." : "No classes match.") + '</div>';
+      return;
+    }
+    const total = list.length;
+    list = list.slice(0, sumShown);
+    el.innerHTML = list.map(function(s){
+      const txt = sumText(s.key);
+      const meta = [esc(s.r.date) + (s.r.time ? " · " + esc(s.r.time) : ""), esc(s.r.faculty || ""), esc(s.r.term || "")].filter(Boolean);
+      meta.push(txt ? '<span class="tag new">Written</span>' : '<span class="tag">Needs summary</span>');
+      return '<div class="annCard' + (sumPicked && sumPicked.key === s.key ? ' editing' : '') + '">' +
+        '<div class="txt"><p>' + esc(s.r.subject) + ' — ' + esc(s.r.lecture) + '</p><div class="meta">' + meta.join(" · ") + '</div>' +
+          (txt ? '<span class="rcSnip">' + esc(txt) + '</span>' : '') + '</div>' +
+        '<div class="annActions"><button class="annDel annEdit" data-sumpick="' + esc(s.key) + '">' + (txt ? "Edit summary" : "Add summary") + '</button></div>' +
+      '</div>';
+    }).join("") + (total > list.length ? '<button type="button" class="annDel recMore" id="rcMore">Show more (' + (total - list.length) + ' left)</button>' : "");
+    [].forEach.call(el.querySelectorAll("[data-sumpick]"), function(b){
+      b.addEventListener("click", function(){ setSumPicked({ key: b.dataset.sumpick }); });
+    });
+    const more = $("rcMore");
+    if(more) more.addEventListener("click", function(){ sumShown += 20; renderSummaries(); });
+  }
+  $("rcSubject").addEventListener("change", function(){ sumShown = 20; renderSummaries(); });
+  $("rcStatus").addEventListener("click", function(e){
+    const b = e.target.closest("[data-f]");
+    if(!b) return;
+    sumStatus = b.dataset.f; sumShown = 20;
+    [].forEach.call($("rcStatus").children, function(c){ c.classList.toggle("active", c === b); });
+    renderSummaries();
+  });
+  $("rcText").addEventListener("input", function(){ $("rcCount").textContent = $("rcText").value.length + " / 2000"; });
+  $("rcCancel").addEventListener("click", function(){ setSumPicked(null); });
+  $("rcForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    if(!sumPicked) return;
+    const text = $("rcText").value.trim();
+    if(!text){ say($("rcMsg"), "Write the summary first, or use Remove summary.", false); return; }
+    const s = sumSessions().filter(function(x){ return x.key === sumPicked.key; })[0];
+    if(!s) return;
+    $("rcSave").disabled = true;
+    db.ref("classSummaries/" + s.key).set({ text: text, ts: firebase.database.ServerValue.TIMESTAMP }).then(function(){
+      notifyRecording("add", s.r.subject + " — " + s.r.lecture + " (summary)");
+      setSumPicked(null);
+      say($("rcMsg"), "Summary saved — signed-in users can read it on the Class summary tab.", true);
+    }).catch(function(err){
+      say($("rcMsg"), "Failed to save: " + err.message, false);
+      $("rcSave").disabled = false;
+    });
+  });
+  $("rcClear").addEventListener("click", function(){
+    if(!sumPicked || !confirm("Remove this summary?")) return;
+    db.ref("classSummaries/" + sumPicked.key).remove()
+      .then(function(){ setSumPicked(null); })
+      .catch(function(err){ say($("rcMsg"), "Failed: " + err.message, false); });
+  });
+  trackListener(db.ref("classSummaries"), function(snap){
+    summaries = snap.val() || {};
+    if(sumPicked && !sumSessions().some(function(x){ return x.key === sumPicked.key; })) sumPicked = null;
+    renderSummaries();
+  });
+
   /* ---------- 2. class sessions ---------- */
   function syncDur(){ $("rsDur").value = recDuration($("rsStart").value, $("rsEnd").value); }
   $("rsStart").addEventListener("change", syncDur);
@@ -2095,7 +2232,7 @@ function startRecordings(){
       b.addEventListener("click", function(){
         const e = classes.filter(function(x){ return x.key === b.dataset.del; })[0];
         if(!e || !confirm("Delete this session?")) return;
-        db.ref().update({ ["classes/" + e.key]: null, ["recordingUrls/" + e.key]: null, ["joinLinks/" + e.key]: null }).then(function(){ notifyRecording("delete", e.val.subject + " — " + e.val.lecture); });
+        db.ref().update({ ["classes/" + e.key]: null, ["recordingUrls/" + e.key]: null, ["joinLinks/" + e.key]: null, ["classSummaries/" + e.key]: null }).then(function(){ notifyRecording("delete", e.val.subject + " — " + e.val.lecture); });
       });
     });
   }
@@ -2168,7 +2305,7 @@ function startRecordings(){
   function renderAll(){
     fillSubjectSelects();
     if(picked && !sessions().some(function(s){ return s.key === picked.key; })) picked = null;
-    renderLinks(); renderSessions(); renderSubjects();
+    renderLinks(); renderSessions(); renderSubjects(); renderSummaries();
   }
   loadRecBase().then(function(b){ base = b; renderAll(); });
   trackListener(db.ref("recordingUrls"), function(snap){ urls = snap.val() || {}; urlsLoaded = true; renderAll(); syncJoinLinks(); });

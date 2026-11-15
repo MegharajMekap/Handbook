@@ -10,6 +10,7 @@ The class schedule is stored in Firebase Realtime Database, not in the code.
 | `recordingUrls` | recording / join link and passcode per class (same key as in `classes`) | admins |
 | `recordingSubjects` | subject name, code and colour overrides | everyone |
 | `calendarEvents`, `announcements` | calendar events and notices | everyone |
+| `classSummaries` | text summary for each finished class (the **Class summary** tab) | signed-in users |
 
 The rules are in `database.rules.json`. Publish them in the Firebase console
 (Realtime Database → Rules) whenever that file changes.
@@ -75,3 +76,10 @@ countdown, and the calendar table's Time column shows the same: the new time in 
 with the scheduled time struck through. State is in `liveBreak/<class>` (public read, admin write):
 `{from, to}` for a manual break, `{from, to, off: true}` for a cancelled one. Publish `database.rules.json`
 after pulling this change.
+
+## Class summary tab
+
+Signed-in users (any account) get a **Class summary** tab: the same date-grouped cards as Recordings, but with
+no video, just a written summary for each finished class ("Summary will be added soon" until one is written).
+Signed-out visitors don't see the tab, and the database rule (`classSummaries`: `auth != null`) keeps the text
+private too. Admins write the summaries in the admin page → **Recordings → Class summaries**.
