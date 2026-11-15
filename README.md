@@ -62,9 +62,16 @@ One-time setup:
 
 On iPhone, push only works once the site is added to the Home Screen (iOS 16.4+).
 
-## Manual break (live banner)
+## Breaks (live banner)
 
-Admins and the Super Admin see a **Start break now** button on the live banner. It shows a 15-minute
-break for every visitor (countdown to the resume time), then the banner goes back to "Live now".
-**End break** ends it early. State is in `liveBreak/<class>` (public read, admin write) — publish
-`database.rules.json` after pulling this change.
+A class can have a scheduled break (e.g. 2:15 PM – 2:30 PM). Admins and the Super Admin can change it
+from the live banner, and everyone sees the change:
+
+- **Start break now** — a 15-minute break from this moment (replaces the scheduled one); **End break** finishes it early.
+- **Cancel break** — shown while a *scheduled* break is running; suspends it and the class carries on.
+
+The banner shows the break that applies (manual time if one was set, otherwise the scheduled time) with a
+countdown, and the calendar table's Time column shows the same: the new time in blue, or "Break cancelled"
+with the scheduled time struck through. State is in `liveBreak/<class>` (public read, admin write):
+`{from, to}` for a manual break, `{from, to, off: true}` for a cancelled one. Publish `database.rules.json`
+after pulling this change.

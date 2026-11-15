@@ -904,6 +904,9 @@
     display:inline-block;margin-top:6px;font-size:11px;font-weight:600;color:#B5504A;
     background:#FBEAE8;padding:3px 9px;border-radius:20px;white-space:nowrap;
   }
+  .calBrk-new{color:#1D4F91;background:#E3EEFB}                       /* break time changed by an admin */
+  .calBrk-off{color:#6B778F;background:#EEF1F6}                       /* scheduled break cancelled */
+  .calBrk-off s{opacity:.8}
   .caltable a{color:var(--navy);font-weight:600;text-decoration:none}
   .caltable a:hover{text-decoration:underline}
   .calBtn{
@@ -1170,7 +1173,8 @@
   /* every value has the same box height so labels line up whether or not it is highlighted */
   .livebar .lb-v{font-size:13.5px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;
     border:solid transparent;border-width:1px 0;padding:0}
-  .livebar .lb-item.hl .lb-v{align-self:flex-start;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:0 10px;margin-left:-11px}
+  .livebar .lb-item.hl .lb-v{align-self:flex-start;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:0 10px}
+  .livebar .lb-item.hl .lb-k{padding-left:11px}   /* label lines up with the text inside the pill */
   .livebar .lb-join{
     flex:none;display:inline-flex;align-items:center;gap:7px;
     background:#fff;color:#146B2E;border-radius:999px;
@@ -1226,6 +1230,7 @@
     .livebar .lb-title > span:last-child{white-space:normal;overflow:visible;text-overflow:clip}
     /* details in a tidy 3-column grid instead of a ragged wrapping row */
     .livebar .lb-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 8px}
+    .livebar .lb-item.wide{grid-column:span 2}
     .livebar .lb-v{font-size:12.5px}
     .livebar .lb-join{padding:7px 12px 7px 10px}
   }
@@ -2871,6 +2876,57 @@ function utcStamp(d){
     pad2(d.getUTCHours()) + pad2(d.getUTCMinutes()) + pad2(d.getUTCSeconds()) + "Z";
 }
 
+/* ── breaks ──
+   A class can have a scheduled break (r.brk, "2:15 PM – 2:30 PM"). From the live banner an admin can
+   change that for everyone (Firebase "liveBreak/<class>", public read, admin write):
+     { from, to }             a manual break, replacing the scheduled one
+     { from, to, off: true }  the scheduled break is cancelled / suspended
+   effectiveBreak() gives the break that applies; the live banner and the calendar table both use it. */
+const liveBreakState = { map: {} };
+const BREAK_MS = 15 * 60000;
+const istClock = ms => new Date(ms).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" }).toUpperCase();
+// "2:15 PM","2:30 PM" -> "2:15–2:30 PM" (kept short for the banner)
+function compactRange(a, b){
+  const pa = /^(.*?)\s*(AM|PM)$/i.exec(String(a).trim()), pb = /^(.*?)\s*(AM|PM)$/i.exec(String(b).trim());
+  if(pa && pb && pa[2].toUpperCase() === pb[2].toUpperCase()) return pa[1] + "–" + pb[1] + " " + pb[2].toUpperCase();
+  return String(a).trim() + "–" + String(b).trim();
+}
+function scheduledBreak(r){
+  if(!r.brk) return null;
+  const p = String(r.brk).split(/\s*[–-]\s*/);
+  if(p.length !== 2) return null;
+  const from = new Date(r.date + "T" + to24(p[0])).getTime(), to = new Date(r.date + "T" + to24(p[1])).getTime();
+  if(!isFinite(from) || !isFinite(to)) return null;
+  return { from, to, label: compactRange(p[0], p[1]), full: String(r.brk) };
+}
+function effectiveBreak(r){
+  const b = liveBreakState.map[r._key], sch = scheduledBreak(r);
+  if(b && b.off) return sch ? { kind: "cancelled", from: sch.from, to: sch.to, label: sch.label, full: sch.full } : null;
+  if(b && typeof b.from === "number" && typeof b.to === "number"){
+    return { kind: "manual", from: b.from, to: b.to, label: compactRange(istClock(b.from), istClock(b.to)), full: istClock(b.from) + " – " + istClock(b.to) };
+  }
+  return sch ? Object.assign({ kind: "scheduled" }, sch) : null;
+}
+if(typeof firebase !== "undefined" && firebase.apps && firebase.apps.length){
+  firebase.database().ref("liveBreak").on("value", snap => {
+    liveBreakState.map = snap.val() || {};
+    window.dispatchEvent(new Event("mekap-breaks"));
+  }, () => {});
+}
+// a break changed from the banner shows in the timetable straight away
+window.addEventListener("mekap-breaks", () => {
+  try { if(!document.getElementById("panel-calendar").hidden) renderCalendar(); } catch(e) {}
+});
+
+// break line under the class time in the timetable
+function calBreakHTML(r){
+  const eb = effectiveBreak(r);
+  if(!eb) return "";
+  if(eb.kind === "cancelled") return '<br><span class="calBrk calBrk-off" title="Break cancelled by an admin">☕ Break cancelled · <s>' + esc(eb.full) + '</s></span>';
+  if(eb.kind === "manual") return '<br><span class="calBrk calBrk-new" title="Break time set by an admin">☕ Break: ' + esc(eb.full) + '</span>';
+  return '<br><span class="calBrk">☕ Break: ' + esc(eb.full) + '</span>';
+}
+
 function googleCalUrl(r){
   const start = new Date(r.date + "T" + to24(r.time) + "+05:30");
   const end = new Date(r.date + "T" + to24(r.ends || r.time) + "+05:30");
@@ -2934,7 +2990,7 @@ function calRow(r){
       ' style="color:' + s.color + ';background:' + s.color + '1A;border-color:' + s.color + '40">' + esc(s.code) +
       (canOpenLink(r) ? '</a>' : '</span>') + '</td>' +
     '<td class="calLecture">' + esc(r.lecture) + '</td>' +
-    '<td><span class="calSlot">' + slot(r) + '</span>' + (r.brk ? '<br><span class="calBrk">☕ Break: ' + esc(r.brk) + '</span>' : '') + '</td>' +
+    '<td><span class="calSlot">' + slot(r) + '</span>' + calBreakHTML(r) + '</td>' +
     '<td>' + calLinkCell(r) + '</td>' +
     '<td><a class="calBtn" href="' + esc(googleCalUrl(r)) + '" target="_blank" rel="noopener">' +
       '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M12 14v6M9 17h6"/></svg>' +
@@ -3890,17 +3946,7 @@ window.mekapSetSuper = function(isSuper){
   const drumEl = document.getElementById("livebarDrum");
   if(!bar) return;
 
-  /* Manual breaks: an admin taps "Start break now" and the banner shows a 15-minute break for everyone
-     (Firebase "liveBreak/<class>", public read, admin write), then goes back to "Live now". */
-  const BREAK_MS = 15 * 60000;
-  let liveBreaks = {};
-  function manualBreak(r){
-    const b = liveBreaks[r._key], now = Date.now();
-    return b && typeof b.from === "number" && typeof b.to === "number" && now >= b.from && now < b.to ? b : null;
-  }
-  function fmtClock(ms){
-    return new Date(ms).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" }).toUpperCase();
-  }
+  /* Breaks: see effectiveBreak() — the scheduled break, an admin's manual break, or a cancelled one. */
 
   // " of 10" — how many numbered sessions this subject has in its term (blank for quizzes etc.)
   function sessionOf(r){
@@ -3939,7 +3985,7 @@ window.mekapSetSuper = function(isSuper){
   }
 
   // building blocks for the details line: label over value; `hl` = highlighted (time left)
-  const item = (k, v, hl) => '<span class="lb-item' + (hl ? ' hl' : '') + '"><span class="lb-k">' + k + '</span><span class="lb-v">' + v + '</span></span>';
+  const item = (k, v, hl, wide) => '<span class="lb-item' + (hl ? ' hl' : '') + (wide ? ' wide' : '') + '"><span class="lb-k">' + k + '</span><span class="lb-v">' + v + '</span></span>';
   const titleHTML = (s, r) => '<span class="lb-title"><span class="lb-code">' + esc(s.code) + '</span><span>' + esc(r.subject) + '</span></span>';
   // "Session 4" + total -> SESSION 4 of 5; anything else (quiz, exam...) -> CLASS <name>
   function sessionItem(r){
@@ -3985,38 +4031,27 @@ window.mekapSetSuper = function(isSuper){
 
     bar.classList.remove("soon", "near");
     const s2 = s;
-    // break window ("10:15 AM – 10:30 AM"), only for sessions that define one
-    let brk = null;
-    if(r.brk){
-      const p = r.brk.split(/\s*[–-]\s*/);
-      if(p.length === 2) brk = { from: new Date(r.date + "T" + to24(p[0])).getTime(),
-                                 to: new Date(r.date + "T" + to24(p[1])).getTime(), end: p[1].trim() };
-    }
-    // a break started by an admin from this banner overrides the scheduled one
-    const mb = manualBreak(r);
-    if(liveBreaks[r._key] && liveBreaks[r._key].from <= now) brk = null;   // a manual break was used: ignore the schedule
-    const onBreak = !!mb || (brk && now >= brk.from && now < brk.to);
+    // the break that applies: scheduled, set by an admin, or cancelled by an admin
+    const eb = effectiveBreak(r);
+    const onBreak = !!eb && eb.kind !== "cancelled" && now >= eb.from && now < eb.to;
     labelEl.textContent = onBreak ? "☕ Break" : "Live now";
-    bar.classList.toggle("onbreak", !!onBreak);
-    // admin button: start a 15-minute break, or end the running one
-    const canBreak = !!window.isSuper && !(onBreak && !mb);
-    breakBtn.hidden = !canBreak;
-    if(canBreak){
-      const mode = mb ? "end" : "start";
-      if(breakBtn.dataset.mode !== mode){
-        breakBtn.dataset.mode = mode;
-        // long label on wide screens, short one on phones (see .lb-bk-full / .lb-bk-short)
-        breakBtn.innerHTML = mb ? '<span class="lb-bk-full">End break</span><span class="lb-bk-short">End</span>'
-          : '☕ <span class="lb-bk-full">Start break now</span><span class="lb-bk-short">Break</span>';
-      }
+    bar.classList.toggle("onbreak", onBreak);
+    // admin button: start a break, end a manual one, or cancel (suspend) a scheduled one
+    const mode = !window.isSuper ? "" : onBreak ? (eb.kind === "manual" ? "end" : "cancel") : "start";
+    breakBtn.hidden = !mode;
+    if(mode && breakBtn.dataset.mode !== mode){
+      breakBtn.dataset.mode = mode;
+      // long label on wide screens, short one on phones (see .lb-bk-full / .lb-bk-short)
+      breakBtn.innerHTML = mode === "end" ? '<span class="lb-bk-full">End break</span><span class="lb-bk-short">End</span>'
+        : mode === "cancel" ? '<span class="lb-bk-full">Cancel break</span><span class="lb-bk-short">Cancel</span>'
+        : '☕ <span class="lb-bk-full">Start break now</span><span class="lb-bk-short">Break</span>';
     }
+    const brkItems = !eb ? "" : eb.kind === "cancelled" ? item("Break", "Cancelled", false, true)
+      : item("Break", esc(eb.label), false, true) + (onBreak ? item("Break left", mmss(eb.to - now), true) : "");
     setText(titleHTML(s2, r) + '<span class="lb-meta">' + sessionItem(r) +
-      (r.campus ? item("Venue", "On campus") : '') +
-      (mb ? item("Resumes", fmtClock(mb.to)) + item("Break left", mmss(mb.to - now), true)
-        : onBreak ? item("Resumes", esc(brk.end))
-        : brk && now < brk.from ? item("Break", esc(r.brk)) : '') +
+      (r.campus ? item("Venue", "On campus") : '') + brkItems +
       item("Ends", esc(r.ends || r.time)) +
-      item("Time left", leftText(endStamp(r) - now).replace(/ left$/, ""), !(mb || onBreak)) +
+      item("Time left", leftText(endStamp(r) - now).replace(/ left$/, ""), !onBreak) +
       '</span>');
     progEl.style.setProperty("--p", Math.max(0, Math.min(100, (now - stamp(r)) / (endStamp(r) - stamp(r)) * 100)) + "%");
     const waiting = !r.campus && !r.url && linksPending();
@@ -4035,15 +4070,16 @@ window.mekapSetSuper = function(isSuper){
   // the join link arrives (after sign-in) well after the banner first shows — refresh straight away
   window.addEventListener("mekap-recordings", tick);
   document.addEventListener("visibilitychange", function(){ if(!document.hidden) tick(); });
-  if(typeof firebase !== "undefined" && firebase.apps && firebase.apps.length){
-    firebase.database().ref("liveBreak").on("value", function(snap){ liveBreaks = snap.val() || {}; tick(); }, function(){});
-  }
+  window.addEventListener("mekap-breaks", tick);
   breakBtn.addEventListener("click", function(e){
     e.preventDefault(); e.stopPropagation();           // the banner itself is a link
     const r = currentClass();
     if(!r || !r._key || !window.isSuper) return;
-    const now = Date.now(), mb = manualBreak(r);
-    const data = mb ? { from: mb.from, to: now } : { from: now, to: now + BREAK_MS };
+    const now = Date.now(), eb = effectiveBreak(r), mode = breakBtn.dataset.mode;
+    let data;
+    if(mode === "end" && eb && eb.kind === "manual") data = { from: eb.from, to: Math.max(now, eb.from + 1) };   // finish now
+    else if(mode === "cancel") data = { from: now, to: now + 1, off: true };                                    // suspend the scheduled break
+    else data = { from: now, to: now + BREAK_MS };                                                              // start a 15-minute break
     breakBtn.disabled = true;
     firebase.database().ref("liveBreak/" + r._key).set(data)
       .catch(function(){ alert("Could not change the break. Check that you are signed in as an admin and that your device clock is correct."); })

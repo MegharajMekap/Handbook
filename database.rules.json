@@ -52,7 +52,7 @@
       ".read": true,
       ".write": "auth != null && root.child('roles').child(auth.uid).exists()",
       "$k": {
-        ".validate": "!newData.exists() || (newData.hasChildren(['from', 'to']) && newData.child('from').isNumber() && newData.child('to').isNumber() && newData.child('to').val() > newData.child('from').val() && newData.child('to').val() - newData.child('from').val() <= 3600000 && (data.exists() || (newData.child('from').val() <= now + 600000 && newData.child('from').val() >= now - 600000)))"
+        ".validate": "!newData.exists() || (newData.hasChildren(['from', 'to']) && newData.child('from').isNumber() && newData.child('to').isNumber() && newData.child('to').val() > newData.child('from').val() && newData.child('to').val() - newData.child('from').val() <= 3600000 && (!newData.child('off').exists() || newData.child('off').isBoolean()) && (data.exists() || (newData.child('from').val() <= now + 600000 && newData.child('from').val() >= now - 600000)))"
       }
     },
     "fcmTokens": {
