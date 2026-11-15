@@ -93,7 +93,26 @@
     box-shadow:0 1px 2px rgba(22,35,58,.05),0 8px 22px -12px rgba(22,35,58,.22);
   }
   .funfact[hidden]{display:none}
-  body.inSession .noticebar{display:none!important} /* keep students focused during class */
+  .funfact{cursor:pointer;flex-wrap:wrap;-webkit-tap-highlight-color:transparent;transition:box-shadow .2s ease,border-color .2s ease}
+  .funfact:hover{border-color:#C9D3E6;box-shadow:0 1px 2px rgba(22,35,58,.06),0 10px 26px -12px rgba(22,35,58,.3)}
+  .funfact:focus-visible{outline:2px solid var(--navy);outline-offset:2px}
+  .funfactChev{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:var(--navy);background:rgba(27,75,143,.08)}
+  .funfactChev svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform .25s ease}
+  .funfact.isOpen .funfactChev svg{transform:rotate(180deg)}
+  /* opened: every fact at once */
+  .funfactAll{flex:1 1 100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 28px;margin-top:8px;padding-top:10px;border-top:1px dashed var(--line);animation:ffOpen .25s ease}
+  .funfactAll[hidden]{display:none}
+  @keyframes ffOpen{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+  .ffRow{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:6px 0;border-bottom:1px solid rgba(22,35,58,.06)}
+  .ffRowLabel{font-size:13px;font-weight:500;color:var(--mute)}
+  .ffRowValue{font-size:15px;font-weight:600;color:var(--navy);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .ffRow.cur .ffRowLabel{color:var(--ink);font-weight:600}
+  .ffRow.total{grid-column:1/-1;border-bottom:0;margin-top:2px}
+  .ffRow.total .ffRowValue{font-size:17px;color:#C23A2D}
+  .ffNote{grid-column:1/-1;margin:4px 0 0;font-size:11px;color:var(--mute)}
+  .funfact.isOpen .funfactBar{display:none}
+  @media (max-width:560px){.funfactAll{grid-template-columns:minmax(0,1fr)}}
+  @media (prefers-reduced-motion:reduce){.funfactAll{animation:none}.funfactChev svg{transition:none}}
   .funfactIcon{
     flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;
     background:linear-gradient(135deg,#D9503F,#C23A2D);color:#fff;
@@ -832,6 +851,7 @@
   }
   .calCampus .calCampusIco{width:12px;height:12px}
   .calSoon{font-size:12.5px;font-weight:600;color:var(--mute);white-space:nowrap}
+  .calLinkOff{font-size:inherit;font-weight:600;color:var(--mute);opacity:.55;text-decoration:line-through;cursor:not-allowed;white-space:nowrap;user-select:none}
   .calLegendCampus{display:inline-flex;align-items:center;gap:4px;font-weight:600;color:#9A3412}
 
   /* admin-added events: tinted chip with a coloured edge, so they read apart from classes */
@@ -1031,6 +1051,27 @@
     mix-blend-mode:soft-light;
   }
   .noticebar[hidden]{display:none}
+  .notice-label{display:none}
+  /* while the live banner is on: a slimmer strip tucked right under it, with a fixed "Notice" tag,
+     so announcements stay readable without competing with the live banner */
+  body.hasLive .noticebar{
+    padding:6px 0;
+    background:linear-gradient(90deg,rgba(184,89,10,.14),rgba(224,123,26,.20));
+    border-top:0;border-bottom:1px solid rgba(184,89,10,.28);
+    box-shadow:inset 0 5px 7px -5px rgba(0,0,0,.28);
+    -webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 36px),transparent);
+    mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 36px),transparent);
+  }
+  body.hasLive .noticebar .notice-item{font-size:12.5px}
+  body.hasLive .noticebar .notice-dot{margin:0 16px}
+  body.hasLive .noticebar .notice-label{
+    display:flex;align-items:center;gap:6px;position:absolute;left:0;top:0;bottom:0;z-index:2;
+    padding:0 14px 0 12px;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#fff;
+    background:linear-gradient(135deg,#D9660F,#B8500A);border-radius:0 999px 999px 0;
+    box-shadow:2px 0 8px -2px rgba(0,0,0,.35);
+  }
+  body.hasLive .noticebar .notice-label svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  body.hasLive .noticebar::before{display:none}
   /* placeholder shown until the announcements arrive from the server */
   .noticebar.isLoading{cursor:default}
   .noticebar.isLoading::before{display:none}
@@ -1938,6 +1979,7 @@
 </a>
 
 <div class="noticebar isLoading" id="noticebar" role="status" aria-busy="true" aria-label="Loading announcements">
+  <span class="notice-label" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11v2a1 1 0 001 1h2l5 4V6L6 10H4a1 1 0 00-1 1z"/><path d="M15 9a4 4 0 010 6M18 6a8 8 0 010 12"/></svg>Notice</span>
   <div class="notice-track notice-skel" id="noticeSkel" aria-hidden="true"><span class="notice-half"><span class="notice-item skelItem">&#8203;</span><span class="notice-dot" style="visibility:hidden">•</span><span class="notice-item skelItem">&#8203;</span><span class="notice-dot" style="visibility:hidden">•</span><span class="notice-item skelItem">&#8203;</span><span class="notice-dot" style="visibility:hidden">•</span><span class="notice-item skelItem">&#8203;</span><span class="notice-dot" style="visibility:hidden">•</span><span class="notice-item skelItem">&#8203;</span></span></div>
   <div class="notice-track" id="noticeTrack"></div>
 </div>
@@ -2057,13 +2099,15 @@
     </div>
     <h1 class="srOnly"><span id="h1Text"></span><span id="h1Caret" class="typecaret done"></span></h1>
     <p class="standfirst" id="standfirst"><span id="greetLine" class="greetline"><span id="greetText"></span><span id="greetCaret" class="typecaret done"></span></span><span id="festivalLine" class="festivalline" hidden><span id="festivalText"></span><span id="festivalCaret" class="typecaret done"></span></span></p>
-    <div class="funfact" id="funFact" aria-live="off" hidden>
+    <div class="funfact" id="funFact" aria-live="off" role="button" tabindex="0" aria-expanded="false" aria-controls="funFactAll" aria-label="Fun fact about your programme fee. Tap to see all of them." hidden>
       <span class="funfactIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></span>
       <span class="funfactBody">
         <span class="funfactTag">Fun fact · your programme fee</span>
         <span class="funfactText" id="funFactText"></span>
       </span>
       <span class="funfactDots" id="funFactDots" aria-hidden="true"></span>
+      <span class="funfactChev" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
+      <div class="funfactAll" id="funFactAll" hidden></div>
       <span class="funfactBar" id="funFactBar" aria-hidden="true"></span>
     </div>
   </header>
@@ -2947,31 +2991,24 @@ function googleCalUrl(r){
 // small campus (building) icon marking offline classes
 const CAMPUS_ICO = '<svg class="calCampusIco" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10l9-6 9 6M5 10v9M19 10v9M9.5 10v9M14.5 10v9M3 21h18"/></svg>';
 
-/* Only the classes that matter right now show a join link: the one(s) live now and the next one to
-   start. Every other upcoming class says "Coming soon". */
-let linkKeysMemo = { at: 0, n: -1, keys: new Set() };
-function linkKeys(){
-  const now = Date.now();
-  if(now - linkKeysMemo.at < 5000 && linkKeysMemo.n === RECORDINGS.length) return linkKeysMemo.keys;
-  const up = RECORDINGS.filter(r => !r.campus && endStamp(r) > now).sort((a, b) => stamp(a) - stamp(b));
-  const keys = new Set(up.filter(r => stamp(r) <= now).map(r => r._key));
-  const next = up.find(r => stamp(r) > now);
-  if(next) keys.add(next._key);
-  linkKeysMemo = { at: now, n: RECORDINGS.length, keys };
-  return keys;
-}
+/* A class's link is only offered on the day of the class (India date). Classes on later dates say
+   "Coming soon". */
+const istToday = () => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });   // "YYYY-MM-DD"
+const isLinkDay = r => r.date === istToday();
 
-// a finished class's url is its recording, which only admins may open; an upcoming class's link
-// is only offered for the live class and the next one to start
-const canOpenLink = r => !r.campus && !isPending(r) && !!r.url &&
-  (endStamp(r) > Date.now() ? linkKeys().has(r._key) : !!window.isSuper);
+// links are only clickable on the day of the class: an upcoming class's link for everyone, and a class that
+// has already finished today shows its recording link to admins only. Links of earlier days are disabled.
+const canOpenLink = r => !r.campus && !isPending(r) && !!r.url && isLinkDay(r) &&
+  (endStamp(r) > Date.now() || !!window.isSuper);
 
 function calLinkCell(r){
   if(r.campus) return '<span class="calCampus">' + CAMPUS_ICO + 'On campus</span>';
   const upcoming = endStamp(r) > Date.now();
-  if(upcoming && !linkKeys().has(r._key)) return '<span class="calSoon">Coming soon</span>';
+  if(upcoming && !isLinkDay(r)) return '<span class="calSoon">Coming soon</span>';
   if(isPending(r) && linksPending()) return '<span class="calLinkLoad" role="status" aria-label="Loading link"></span>';
   if(isPending(r)) return upcoming ? '<span class="calSoon">Coming soon</span>' : "";
+  // a link from an earlier day is shown greyed out and cannot be opened
+  if(!upcoming && !isLinkDay(r)) return '<span class="calLinkOff" aria-disabled="true" title="Links can only be opened on the day of the class">Open link</span>';
   if(!canOpenLink(r)) return "";
   return '<a href="' + esc(r.url) + '" target="_blank" rel="noopener">Open link</a>';
 }
@@ -4071,6 +4108,10 @@ window.mekapSetSuper = function(isSuper){
   window.addEventListener("mekap-recordings", tick);
   document.addEventListener("visibilitychange", function(){ if(!document.hidden) tick(); });
   window.addEventListener("mekap-breaks", tick);
+  // let the rest of the page know the live banner is on (the announcement strip restyles itself)
+  new MutationObserver(function(){ document.body.classList.toggle("hasLive", !bar.hidden); })
+    .observe(bar, { attributes: true, attributeFilter: ["hidden"] });
+  document.body.classList.toggle("hasLive", !bar.hidden);   // the banner may already be showing (class in progress at page load)
   breakBtn.addEventListener("click", function(e){
     e.preventDefault(); e.stopPropagation();           // the banner itself is a link
     const r = currentClass();
@@ -4706,12 +4747,33 @@ window.mekapSetSuper = function(isSuper){
     document.body.classList.toggle("inSession", on); 
     if(card.hidden === !on) return;
     card.hidden = !on;
+    if(!on && typeof setOpen === "function") setOpen(false);
     if(on) show(i);
   }
+  // tap the card to open it: every fact at once (rotation pauses while it is open); tap again to close
+  const all = document.getElementById("funFactAll");
+  all.innerHTML = FACTS.map(function(f, n){
+    return '<div class="ffRow' + (n === FACTS.length - 1 ? ' total' : '') + '" data-n="' + n + '"><span class="ffRowLabel">' + f[0] +
+      '</span><span class="ffRowValue">' + f[1] + '</span></div>';
+  }).join("") + '<p class="ffNote">Based on a ₹12,00,000 programme fee over 2 years — figures are approximate.</p>';
+  function setOpen(on){
+    card.classList.toggle("isOpen", on);
+    card.setAttribute("aria-expanded", on ? "true" : "false");
+    all.hidden = !on;
+    if(on){
+      [].forEach.call(all.querySelectorAll(".ffRow"), function(row){ row.classList.toggle("cur", +row.dataset.n === i); });
+    } else {
+      show(i);   // restart the rotation timer bar
+    }
+  }
+  card.addEventListener("click", function(){ setOpen(!card.classList.contains("isOpen")); });
+  card.addEventListener("keydown", function(e){
+    if(e.key === "Enter" || e.key === " "){ e.preventDefault(); setOpen(!card.classList.contains("isOpen")); }
+  });
   syncCard();
   setInterval(syncCard, 15000);
   setInterval(function(){
-    if(document.hidden || card.hidden) return;
+    if(document.hidden || card.hidden || card.classList.contains("isOpen")) return;
     el.classList.add("out");
     setTimeout(function(){
       i = (i + 1) % FACTS.length;
