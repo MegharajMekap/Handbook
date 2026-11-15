@@ -142,22 +142,52 @@
   .funfact:hover{border-color:#C9D3E6;box-shadow:0 1px 2px rgba(22,35,58,.06),0 10px 26px -12px rgba(22,35,58,.3)}
   .funfact:focus-visible{outline:2px solid var(--navy);outline-offset:2px}
   .funfactChev{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:var(--navy);background:rgba(27,75,143,.08)}
-  .funfactChev svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform .25s ease}
-  .funfact.isOpen .funfactChev svg{transform:rotate(180deg)}
-  /* opened: every fact at once */
-  .funfactAll{flex:1 1 100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 28px;margin-top:8px;padding-top:10px;border-top:1px dashed var(--line);animation:ffOpen .25s ease}
-  .funfactAll[hidden]{display:none}
-  @keyframes ffOpen{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
-  .ffRow{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:6px 0;border-bottom:1px solid rgba(22,35,58,.06)}
-  .ffRowLabel{font-size:13px;font-weight:500;color:var(--mute)}
-  .ffRowValue{font-size:15px;font-weight:600;color:var(--navy);white-space:nowrap;font-variant-numeric:tabular-nums}
-  .ffRow.cur .ffRowLabel{color:var(--ink);font-weight:600}
-  .ffRow.total{grid-column:1/-1;border-bottom:0;margin-top:2px}
-  .ffRow.total .ffRowValue{font-size:17px;color:#C23A2D}
-  .ffNote{grid-column:1/-1;margin:4px 0 0;font-size:11px;color:var(--mute)}
-  .funfact.isOpen .funfactBar{display:none}
-  @media (max-width:560px){.funfactAll{grid-template-columns:minmax(0,1fr)}}
-  @media (prefers-reduced-motion:reduce){.funfactAll{animation:none}.funfactChev svg{transition:none}}
+  .funfactChev svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
+  .funfact:hover .funfactChev{background:rgba(27,75,143,.16)}
+  /* pop-up with every fact (opens when the card is tapped) */
+  .ffOverlay{
+    position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;
+    background:radial-gradient(ellipse at 50% 20%,rgba(194,58,45,.16),rgba(12,17,28,.72) 60%);
+    backdrop-filter:blur(8px) saturate(1.3);-webkit-backdrop-filter:blur(8px) saturate(1.3);
+    overscroll-behavior:contain;animation:noticeOverlayIn .25s ease;
+  }
+  .ffOverlay[hidden]{display:none}
+  .ffBox{
+    position:relative;isolation:isolate;width:100%;max-width:440px;
+    max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px);overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;
+    background:linear-gradient(var(--card),var(--card)) padding-box,linear-gradient(150deg,#D9503F,#C23A2D 35%,#1B4B8F 120%) border-box;
+    border:1px solid transparent;border-radius:22px;padding:26px 24px 22px;
+    box-shadow:0 30px 80px rgba(16,24,40,.5),0 4px 18px rgba(194,58,45,.18);
+    animation:noticeBoxIn .4s cubic-bezier(.2,.9,.25,1.15);
+  }
+  .ffBox::before{content:"";position:absolute;top:-60%;right:-30%;width:70%;height:160%;z-index:-1;
+    background:radial-gradient(closest-side,rgba(217,80,63,.14),transparent);pointer-events:none}
+  .ffClose{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;border:none;cursor:pointer;
+    background:var(--line-soft);color:var(--mute);display:flex;align-items:center;justify-content:center;
+    transition:background .15s ease,color .15s ease,transform .15s ease}
+  .ffClose:hover{background:#F6D5D0;color:#C23A2D;transform:rotate(90deg)}
+  .ffClose svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
+  .ffHead{display:flex;align-items:center;gap:14px;margin:0 0 12px;padding-right:36px}
+  .ffHeadIcon{flex:none;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;color:#fff;
+    background:linear-gradient(135deg,#D9503F,#C23A2D);box-shadow:0 8px 20px -6px rgba(194,58,45,.55)}
+  .ffHeadIcon svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .ffHead h2{font-family:var(--serif);font-weight:700;font-size:1.25rem;margin:0;color:var(--ink)}
+  .ffHead p{margin:2px 0 0;font-size:12.5px;color:var(--mute)}
+  .ffList{display:flex;flex-direction:column}
+  .ffRow{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px solid rgba(22,35,58,.07)}
+  .ffRowLabel{font-size:13.5px;font-weight:500;color:var(--mute)}
+  .ffRowValue{font-size:15.5px;font-weight:600;color:var(--navy);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .ffRow.cur .ffRowLabel{color:var(--ink);font-weight:700}
+  .ffRow.total{border-bottom:0;margin-top:4px;padding-top:12px;border-top:1px dashed var(--line)}
+  .ffRow.total .ffRowLabel{color:var(--ink);font-weight:700}
+  .ffRow.total .ffRowValue{font-size:19px;color:#C23A2D}
+  .ffNote{margin:10px 0 0;font-size:11.5px;color:var(--mute)}
+  .ffGo{margin-top:16px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;
+    background:linear-gradient(180deg,#2A5CA6,var(--navy-deep));color:#fff;border:none;border-radius:12px;padding:12px;
+    font-size:15px;font-weight:600;transition:transform .15s ease,box-shadow .15s ease}
+  .ffGo:hover{transform:translateY(-1px);box-shadow:0 8px 20px -8px rgba(27,75,143,.6)}
+  .ffGo svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+  @media (prefers-reduced-motion:reduce){.ffOverlay,.ffBox{animation:none}.ffClose,.ffGo{transition:none}}
   .funfactIcon{
     flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;
     background:linear-gradient(135deg,#D9503F,#C23A2D);color:#fff;
@@ -2020,6 +2050,14 @@
   :root[data-theme="dark"] .ffRow{border-color:rgba(255,255,255,.07)}
   :root[data-theme="dark"] .ffRow.total .ffRowValue{color:#FF8F7E}
   :root[data-theme="dark"] .funfactChev{background:rgba(130,150,255,.14)}
+  :root[data-theme="dark"] .ffOverlay{background:radial-gradient(ellipse at 50% 20%,rgba(255,120,100,.12),rgba(5,6,10,.78) 60%)}
+  :root[data-theme="dark"] .ffBox{background:linear-gradient(#12151F,#12151F) padding-box,linear-gradient(150deg,#FF8F7E,#C23A2D 35%,#5B6CF0 120%) border-box;box-shadow:0 30px 80px rgba(0,0,0,.7),0 4px 18px rgba(255,120,100,.12)}
+  :root[data-theme="dark"] .ffClose{background:#1D2233;color:var(--mute)}
+  :root[data-theme="dark"] .ffClose:hover{background:rgba(255,143,126,.18);color:#FF8F7E}
+  :root[data-theme="dark"] .ffRow{border-color:rgba(255,255,255,.07)}
+  :root[data-theme="dark"] .ffRow.total{border-top-color:var(--line)}
+  :root[data-theme="dark"] .ffRow.total .ffRowValue{color:#FF8F7E}
+  :root[data-theme="dark"] .ffGo{background:var(--dk-fill)}
   :root[data-theme="dark"] .funfactDots i{background:#2C3248}
   :root[data-theme="dark"] .funfactDots i.on{background:#FF8F7E}
   :root[data-theme="dark"] .funfactTag{color:#FF8F7E}
@@ -2103,6 +2141,19 @@
   try { window.ackAccepted = localStorage.getItem(window.ACK_KEY) === window.ACK_VERSION; } catch(e) { window.ackAccepted = false; }
   if(window.ackAccepted) document.getElementById("ackOverlay").hidden = true;
 </script>
+
+<div class="ffOverlay" id="ffOverlay" role="dialog" aria-modal="true" aria-labelledby="ffTitle" hidden>
+  <div class="ffBox">
+    <button class="ffClose" id="ffClose" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <div class="ffHead">
+      <span class="ffHeadIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></span>
+      <div><h2 id="ffTitle">Fun facts</h2><p>Your programme fee, broken down</p></div>
+    </div>
+    <div class="ffList" id="ffList"></div>
+    <p class="ffNote">Based on a ₹12,00,000 programme fee over 2 years — figures are approximate.</p>
+    <button class="ffGo" id="ffGo"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>Got it</button>
+  </div>
+</div>
 
 <div class="noticeOverlay" id="noticeOverlay" role="dialog" aria-modal="true" aria-labelledby="noticeBoxTitle" hidden>
   <div class="noticeBox">
@@ -2298,15 +2349,14 @@
     </div>
     <h1 class="srOnly"><span id="h1Text"></span><span id="h1Caret" class="typecaret done"></span></h1>
     <p class="standfirst" id="standfirst"><span id="greetLine" class="greetline"><span id="greetText"></span><span id="greetCaret" class="typecaret done"></span></span><span id="festivalLine" class="festivalline" hidden><span id="festivalText"></span><span id="festivalCaret" class="typecaret done"></span></span></p>
-    <div class="funfact" id="funFact" aria-live="off" role="button" tabindex="0" aria-expanded="false" aria-controls="funFactAll" aria-label="Fun fact about your programme fee. Tap to see all of them." hidden>
+    <div class="funfact" id="funFact" aria-live="off" role="button" tabindex="0" aria-haspopup="dialog" aria-label="Fun fact about your programme fee. Tap to see all of them." hidden>
       <span class="funfactIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></span>
       <span class="funfactBody">
         <span class="funfactTag">Fun fact · your programme fee</span>
         <span class="funfactText" id="funFactText"></span>
       </span>
       <span class="funfactDots" id="funFactDots" aria-hidden="true"></span>
-      <span class="funfactChev" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span>
-      <div class="funfactAll" id="funFactAll" hidden></div>
+      <span class="funfactChev" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-8 8M10 20H4v-6M4 20l8-8"/></svg></span>
       <span class="funfactBar" id="funFactBar" aria-hidden="true"></span>
     </div>
   </header>
@@ -5056,33 +5106,54 @@ window.mekapSetSuper = function(isSuper){
     document.body.classList.toggle("inSession", on); 
     if(card.hidden === !on) return;
     card.hidden = !on;
-    if(!on && typeof setOpen === "function") setOpen(false);
+    if(!on && typeof closeFF === "function") closeFF();
     if(on) show(i);
   }
-  // tap the card to open it: every fact at once (rotation pauses while it is open); tap again to close
-  const all = document.getElementById("funFactAll");
-  all.innerHTML = FACTS.map(function(f, n){
+  // tap the card to open a pop-up with every fact; close it with Got it, the X, Esc or a tap outside
+  const ov = document.getElementById("ffOverlay"), ffList = document.getElementById("ffList");
+  const ffClose = document.getElementById("ffClose"), ffGo = document.getElementById("ffGo");
+  ffList.innerHTML = FACTS.map(function(f, n){
     return '<div class="ffRow' + (n === FACTS.length - 1 ? ' total' : '') + '" data-n="' + n + '"><span class="ffRowLabel">' + f[0] +
       '</span><span class="ffRowValue">' + f[1] + '</span></div>';
-  }).join("") + '<p class="ffNote">Based on a ₹12,00,000 programme fee over 2 years — figures are approximate.</p>';
-  function setOpen(on){
-    card.classList.toggle("isOpen", on);
-    card.setAttribute("aria-expanded", on ? "true" : "false");
-    all.hidden = !on;
-    if(on){
-      [].forEach.call(all.querySelectorAll(".ffRow"), function(row){ row.classList.toggle("cur", +row.dataset.n === i); });
-    } else {
-      show(i);   // restart the rotation timer bar
-    }
+  }).join("");
+  let ffScrollY = 0;
+  function openFF(){
+    if(!ov.hidden) return;
+    [].forEach.call(ffList.querySelectorAll(".ffRow"), function(row){ row.classList.toggle("cur", +row.dataset.n === i); });
+    ov.hidden = false;
+    noticeModalOpen = true;                       // also blocks the tab swipes / arrow keys behind it
+    ffScrollY = window.scrollY;
+    document.body.style.position = "fixed";
+    document.body.style.top = "-" + ffScrollY + "px";
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.overflow = "hidden";
+    ffGo.focus();
   }
-  card.addEventListener("click", function(){ setOpen(!card.classList.contains("isOpen")); });
+  function closeFF(){
+    if(ov.hidden) return;
+    ov.hidden = true;
+    noticeModalOpen = false;
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.overflow = "";
+    window.scrollTo(0, ffScrollY);
+    if(!card.hidden) card.focus({ preventScroll: true });
+  }
+  card.addEventListener("click", openFF);
   card.addEventListener("keydown", function(e){
-    if(e.key === "Enter" || e.key === " "){ e.preventDefault(); setOpen(!card.classList.contains("isOpen")); }
+    if(e.key === "Enter" || e.key === " "){ e.preventDefault(); openFF(); }
   });
+  ffClose.addEventListener("click", closeFF);
+  ffGo.addEventListener("click", closeFF);
+  ov.addEventListener("click", function(e){ if(e.target === ov) closeFF(); });
+  document.addEventListener("keydown", function(e){ if(!ov.hidden && e.key === "Escape") closeFF(); });
   syncCard();
   setInterval(syncCard, 15000);
   setInterval(function(){
-    if(document.hidden || card.hidden || card.classList.contains("isOpen")) return;
+    if(document.hidden || card.hidden || !ov.hidden) return;   // paused while the pop-up is open
     el.classList.add("out");
     setTimeout(function(){
       i = (i + 1) % FACTS.length;
