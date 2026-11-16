@@ -2352,8 +2352,8 @@ function evEndMs(v){
 function evAnnText(d){
   const dt = new Date(d.date + "T00:00:00");
   const day = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][dt.getDay()] + ", " + dt.getDate() + " " + evMON[dt.getMonth()];
-  const when = d.time ? day + " · " + d.time + (d.ends ? " – " + d.ends : "") : day;
-  return (d.title + " — " + when).slice(0, 200);
+  const when = d.time ? day + " · " + d.time + (d.ends ? " - " + d.ends : "") : day;
+  return (d.title + " - " + when).slice(0, 200);
 }
 function evAnnExpires(d){
   return new Date(d.date + "T" + (from12(d.ends || d.time) || "23:59")).toISOString();
