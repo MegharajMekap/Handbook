@@ -427,6 +427,7 @@
   .evGrid{display:grid;grid-template-columns:2fr 1fr;gap:14px}
   .evGrid .field{margin-bottom:0}
   .evGrid .wide{grid-column:1 / -1}
+  .evRow3 .field[hidden]{display:none}
   .evRow3{display:grid;grid-template-columns:1fr 1.35fr 1fr 1.35fr;gap:14px}
   @media (max-width:980px){.evRow3{grid-template-columns:1fr 1fr}}
   @media (max-width:640px){.evGrid,.evRow3{grid-template-columns:1fr}}
@@ -1182,14 +1183,14 @@
               <input type="date" id="evDate" required>
             </div>
             <div class="field">
-              <label>Start time (optional)</label>
+              <label id="evStartLabel">Start time (optional)</label>
               <div class="time12" id="evStart" data-label="Start time"></div>
             </div>
-            <div class="field">
+            <div class="field" id="evDurField">
               <label for="evDur">Duration (optional)</label>
               <select id="evDur"></select>
             </div>
-            <div class="field">
+            <div class="field" id="evEndField">
               <label>End time (optional)</label>
               <div class="time12" id="evEnd" data-label="End time"></div>
             </div>
@@ -2412,6 +2413,14 @@ function startEvents(){
   const cancel = document.getElementById("evCancel");
   const list = document.getElementById("evList");
   const f = id => document.getElementById(id);
+  // a deadline is a single point in time: one "Deadline time", no duration / end time
+  function applyEvType(){
+    const dl = f("evType").value === "deadline";
+    f("evDurField").hidden = dl;
+    f("evEndField").hidden = dl;
+    f("evStartLabel").textContent = dl ? "Deadline time (optional)" : "Start time (optional)";
+    if(dl){ f("evEnd").value = ""; f("evDur").value = ""; }
+  }
   function setEditMode(key, v){
     evEditingKey = key;
     evEditingPrev = key ? evPayload(v) : null;
@@ -2426,6 +2435,7 @@ function startEvents(){
       f("evEnd").value = from12(v.ends);
       evLastStart = f("evStart").value;
       syncEvDuration();
+      applyEvType();
       f("evLink").value = v.link || "";
       f("evNote").value = v.note || "";
       f("evAnnounce").checked = evLinkedAnn(v);
@@ -2440,6 +2450,7 @@ function startEvents(){
       f("evAnnHint").textContent = "Adds “title — date, time” to the banner with a “New” badge; it expires when the event ends. Edit its wording any time in the Announcements tab.";
       evLastStart = "";
       syncEvDuration();
+      applyEvType();
     }
     renderList();
   }
@@ -2506,6 +2517,7 @@ function startEvents(){
       syncEvDuration();
     });
     f("evEnd").addEventListener("change", syncEvDuration);
+    f("evType").addEventListener("change", function(){ applyEvType(); syncEvDuration(); });
 
     f("evFilter").addEventListener("click", function(e){
       const b = e.target.closest("button[data-f]");
