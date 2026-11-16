@@ -145,6 +145,7 @@
   .funfactChev svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
   .funfact:hover .funfactChev{background:rgba(27,75,143,.16)}
   /* step 1: collapsed to just the icon; first tap expands to the full card, second tap opens the pop-up */
+  .funfact.mini[hidden]{display:none}
   .funfact.mini{display:inline-flex;flex-wrap:nowrap;width:auto;gap:0;padding:6px;border-radius:16px}
   .funfact.mini .funfactBody,.funfact.mini .funfactDots,.funfact.mini .funfactChev,.funfact.mini .funfactBar{display:none}
   .funfact:not(.mini){animation:ffExpand .35s cubic-bezier(.2,.9,.25,1.1)}
